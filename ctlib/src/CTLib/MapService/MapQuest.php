@@ -1,0 +1,209 @@
+<?php
+
+namespace CTLib\MapService;
+
+use CTLib\Util\Arr,
+    CTLib\Util\CTCurl;
+
+
+class MapQuest extends MapProviderAbstract
+{
+    const BATCH_GEOCODE_LIMIT = 100;
+
+    public static function getJavascriptApiUrl()
+    {
+        return "https://www.mapquestapi.com/sdk/js/v7.0.s/mqa.toolkit.js?key=Gmjtd%7Clu6zn1ua2d%2C7s%3Do5-l07g0";
+    }
+
+
+    protected function geocodeBuildRequest($request, $address, $country = null)
+    {
+        $request->url = "https://www.mapquestapi.com/geocoding/v1/address?key=Gmjtd%7Clu6zn1ua2d%2C7s%3Do5-l07g0";
+        if (is_string($address)) {
+            $request->data = array("location" => $address);
+        }
+        else {
+            $request->data = $this->buildAddressRequestData($address);
+        }
+    }
+
+
+    protected function geocodeProcessResult($result)
+    {
+        $decodedResult = json_decode($result, true);
+        return $this->buildAddressFromMapQuestResult($decodedResult, "results.0.locations.0");
+    }
+
+    
+    protected function geocodeBatchBuildRequest($request, $addresses, $country = null)
+    {
+        $request->IsBatch = true;
+        $request->BatchLimit = static::BATCH_GEOCODE_LIMIT;
+        $request->Url = "https://www.mapquestapi.com/geocoding/v1/batch?key=Gmjtd%7Clu6zn1ua2d%2C7s%3Do5-l07g0";
+        $request->Method = CTCurl::REQUEST_POST;
+
+        $data = array();
+        foreach ($addresses as $address) {
+            if (is_string($address)) {
+                $data[] = array("location" => $address);
+            }
+            else {
+                $data[] = array("location" => json_encode($this->buildAddressRequestData($address)));
+            }
+        }
+        $request->data = $data;
+    }
+
+
+    protected function geocodeBatchProcessResult($result)
+    {
+        if (empty($result) || !is_array($result)) {
+            throw new \Exception("result is not valid");
+        }
+
+        $combinedResult = array();
+        foreach($result as $batch) {
+            $decodedResult = json_decode($batch, true);
+            if (!$decodedResult) {
+                throw new \Exception("result is invalid");
+            }
+
+            $batchResults = Arr::mustGet("results", $decodedResult);
+            foreach ($batchResults as $row) {
+                $combinedResult[] = $this->buildAddressFromMapQuestResult($row, "locations.0");
+            }
+        }
+        return $combinedResult;
+    }
+
+
+    protected function reverseGeocodeBuildRequest($request, $latitude, $longitude, $country = null)
+    {
+        $request->url = "https://www.mapquestapi.com/geocoding/v1/reverse?key=Gmjtd%7Clu6zn1ua2d%2C7s%3Do5-l07g0";
+        $request->data = array(
+            "lat" => $latitude,
+            "lng" => $longitude
+        );
+    }
+
+
+    protected function reverseGeocodeProcessResult($result)
+    {
+        $decodedResult = json_decode($result, true);
+        return $this->buildAddressFromMapQuestResult($decodedResult, "results.0.locations.0");
+    }
+
+
+    protected function reverseGeocodeBatchBuildRequest($request, array $latLngs, $country = null)
+    {
+        return false;
+    }
+    
+
+    protected function reverseGeocodeBatchProcessResult($result)
+    {
+        return false;
+    }
+
+
+    public function reverseGeocodeBatch(array $latLngs, $country = null)
+    {
+        $result = array();
+        foreach ($latLngs as $latLng) {
+            $result[] = $this->reverseGeocode($latLng[0], $latLng[1], $country);
+        }
+        return $result;
+    }
+
+
+    protected function routeBuildRequest($request, $fromLatitude, $fromLongitude, $toLatitude, $toLongitude, $options, $country = null)
+    {
+        $request->url = "https://www.mapquestapi.com/directions/v1/route?key=Gmjtd%7Clu6zn1ua2d%2C7s%3Do5-l07g0";
+        $request->data = 
+            array_merge(
+                array(
+                    "from" => $fromLatitude . "," . $fromLongitude,
+                    "to" => $toLatitude . "," . $toLongitude
+                ),
+                $options
+            );
+        $request->method = CTCurl::REQUEST_GET;
+    }
+    
+
+    protected function routeProcessResult($result)
+    {
+        $decodedResult = json_decode($result, true);
+        if (!$decodedResult) {
+            throw new \Exception("result is invalid");
+        }
+
+        $route = Arr::get("route", $decodedResult);
+        if (!$route) {
+            throw new \Exception("result is invalid");
+        }
+
+        $routeResult = array(
+            "distance" => Arr::get("distance", $route),
+            "time" => Arr::get("time", $route),
+            "from" => $this->buildAddressFromMapQuestResult($route, "locations.0"),
+            "to" => $this->buildAddressFromMapQuestResult($route, "locations.1"),
+            "directions" => array()
+        );
+
+        $maneuvers = Arr::findByKeyChain($route, "legs.0.maneuvers");
+        if (!$maneuvers) {
+            throw new \Exception("result is invalid");
+        }
+
+        foreach ($maneuvers as $maneuver) {
+            $routeResult["directions"][] = array(
+                "narrative" => Arr::get("narrative", $maneuver),
+                "iconUrl" => Arr::get("iconUrl", $maneuver),
+                "distance" => Arr::get("distance", $maneuver),
+                "time" => Arr::get("time", $maneuver),
+                "mapUrl" => Arr::get("mapUrl", $maneuver),
+                "startLat" => Arr::get("startPoint.lat", $maneuver),
+                "startLng" => Arr::get("startPoint.lng", $maneuver)
+            );
+        }
+        return $routeResult;
+    }
+
+
+    protected function buildAddressFromMapQuestResult($result, $keyChain)
+    {
+        $mapquestResult = Arr::findByKeyChain($result, $keyChain);
+        if (empty($mapquestResult)) {
+            throw new \Exception("Array is invalid");
+        }
+
+        return array(
+            "qualityCode" => Arr::mustGet("geocodeQualityCode", $mapquestResult),
+            "street"      => Arr::mustGet("street", $mapquestResult),
+            "city"        => Arr::mustGet("adminArea5", $mapquestResult),
+            "district"    => Arr::mustGet("adminArea4", $mapquestResult),
+            "locality"    => null,
+            "subdivision" => Arr::mustGet("adminArea3", $mapquestResult),
+            "postalCode"  => Arr::mustGet("postalCode", $mapquestResult),
+            "country"     => Arr::mustGet("adminArea1", $mapquestResult),
+            "mapUrl"      => Arr::get("mapUrl", $mapquestResult),
+            "lat"         => Arr::findByKeyChain($mapquestResult, "latLng.lat"),
+            "lng"         => Arr::findByKeyChain($mapquestResult, "latLng.lng")
+        );
+    }
+
+
+    protected function buildAddressRequestData($address)
+    {
+        $params = array(
+            "street"     => Arr::mustGet("street", $address),
+            "adminArea5" => Arr::mustGet("city", $address),
+            "adminArea3" => Arr::mustGet("subdivision", $address),
+            "postalCode" => Arr::mustGet("postalCode", $address),
+        );
+        $country = Arr::get("country", $address);
+        if ($country) { $params["adminArea1"] = $country; }
+        return $params;
+    }
+}
