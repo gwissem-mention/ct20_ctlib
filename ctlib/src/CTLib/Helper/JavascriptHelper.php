@@ -10,11 +10,11 @@ class JavascriptHelper
     protected $values;
     protected $routes;
 
-    public function __construct($translator, $router, $appSession=null)
+    public function __construct($translator, $router, $authorization=null)
     {
         $this->translator       = $translator;
         $this->router           = $router;
-        $this->appSession       = $appSession;
+        $this->authorization    = $authorization;
         $this->translations     = array();
         $this->values           = array();
         $this->routes           = array();
@@ -299,9 +299,9 @@ class JavascriptHelper
      */
     public function getPermissions()
     {
-        if ($this->appSession) {
+        if ($this->authorization) {
             return array_fill_keys(
-                $this->appSession->getPermissionSet()->getObjectPermissions(),
+                $this->authorization->getObjectPermissions(),
                 true
             );
         } else {

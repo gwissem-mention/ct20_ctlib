@@ -109,7 +109,7 @@ abstract class DynaPartController extends BaseController
         }
 
         //grab preset parameters from session
-        $sessData = $this->get('app_session')->getDynapartPreSetParameters(
+        $sessData = $this->get('session')->getDynapartPreSetParameters(
             $this->currentController(),
             $domId
         );
@@ -121,7 +121,7 @@ abstract class DynaPartController extends BaseController
                     $processedSessData
                 );
             }
-            $this->get('app_session')->clearDynapartPreSetParameters(
+            $this->get('session')->clearDynapartPreSetParameters(
                 $this->currentController(),
                 $domId
             );
@@ -211,7 +211,7 @@ abstract class DynaPartController extends BaseController
      */
     protected function isSessionStorageValid()
     {
-        $lastVisitedRouteName = $this->get("app_session")->getLastVisitedRouteName();
+        $lastVisitedRouteName = $this->get("session")->getLastVisitedRouteName();
         $currentRouteName = $this->currentRouteName();
 
         // Storage is invalid if returning to page after session timeout.
