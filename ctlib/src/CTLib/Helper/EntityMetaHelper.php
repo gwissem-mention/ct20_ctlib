@@ -220,7 +220,7 @@ class EntityMetaHelper
             list($namespaceAlias, $simpleClassName) = explode(':', $className);
             $realClassName = $this->entityManager->getConfiguration()->getEntityNamespace($namespaceAlias) . '\\' . $simpleClassName;
         } else {
-            $realClassName = \Doctrine\Common\Util\ClassUtils::getRealClass($realClassName);
+            $realClassName = \Doctrine\Common\Util\ClassUtils::getRealClass($className);
         }
         return $realClassName;
     }
