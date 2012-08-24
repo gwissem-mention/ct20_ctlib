@@ -25,8 +25,6 @@ class RecordSetController extends DynaPartController
     protected function addDynaPartDependencies($domId, $json, $assetLoader, $jsHelper)
     {
         $jsHelper
-            ->addConstants(
-                'AppBundle\Helper\AuthorizationEvaluator', '/_ACCESS$/')
             ->addTranslation('recordSet*');
 
         //load needed css and javascript lib and script
