@@ -4,7 +4,6 @@ namespace CTLib\Listener;
 use Symfony\Component\EventDispatcher\Event,
     Symfony\Component\HttpFoundation\RedirectResponse,
     Symfony\Component\HttpFoundation\Response,
-    CTLib\Component\Runtime\Runtime,
     CTLib\Component\HttpFoundation\JsonResponse,
     CTLib\WebService\WebServiceException,
     CTLib\WebService\StatusCode as WebServiceStatusCode,
@@ -63,7 +62,7 @@ class ExceptionListener
     {
         $this->logger->addError((string) $event->getException());
 
-        if ($this->execMode == Runtime::EXEC_MODE_SERVICE) {
+        if ($this->execMode == 'svc') {
             if ($event->getException() instanceof WebServiceException) {
                 $exception = $event->getException();
             } else {
