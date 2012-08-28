@@ -43,9 +43,12 @@ class TimePickerController extends DynaPartController
      */
     protected function buildDynaPartHtml($domAttributes)
     {
+        $class = $domAttributes["class"];
+        unset($domAttributes["class"]);
+        
         return
         '<div class="timepicker-plugin">' .
-            '<input type="text" class="timepicker_input" ' .
+            '<input type="text" class="timepicker_input ' . $class . '" ' .
             $this->compileDomAttributes($domAttributes) .
             '/>' .
         '</div>';
