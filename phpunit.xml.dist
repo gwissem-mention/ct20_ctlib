@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- http://www.phpunit.de/manual/current/en/appendixes.configuration.html -->
+<!--
+-->
+<phpunit
+  colors="true"
+  bootstrap="bootstrap.php"
+  backupGlobals               = "false"
+  backupStaticAttributes      = "false"
+  convertErrorsToExceptions   = "true"
+  convertNoticesToExceptions  = "true"
+  convertWarningsToExceptions = "true"
+  processIsolation            = "false"
+  stopOnFailure               = "false"
+  syntaxCheck                 = "true"
+  strict                      = "true"
+  verbose                     = "true"
+>
+
+  <testsuites>
+    <testsuite name="CTLib Test Suite">
+      <directory suffix="Test.php">./ctlib/src/CTLib/Tests/</directory>
+    </testsuite>
+  </testsuites>
+
+  <groups>
+    <include>
+      <!--<group>__nogroup__</group>-->
+      <group>unit</group>
+      <group>integration</group>
+      <!--<group>functional</group>-->
+      <!--<group>longRunning</group>-->
+    </include>
+    <exclude>
+      <group>selenium</group>
+      <group>DoNotTest</group>
+    </exclude>
+  </groups>
+
+
+  <php>
+    <server name="SYMFONY__CT__ENVIRONMENT" value="test"/>
+    <server name="SYMFONY__CT__DEBUG" value="true"/>
+    <server name="SYMFONY__CT__BRAND_ID" value="CT"/>
+    <server name="SYMFONY__CT__BRAND_NAME" value="CellTrak"/>
+  </php>
+
+  <filter>
+    <!--<blacklist> </blacklist>-->
+    <whitelist addUncoveredFilesFromWhitelist="true">
+    <!--<whitelist>-->
+      <directory suffix=".php">./src/CTLib/</directory>
+      <exclude>
+        <directory>./ctlib/src/CTLib/Tests</directory>
+        <directory>./ctlib/src/CTLib/Resources</directory>
+      </exclude>
+    </whitelist>
+  </filter>
+
+</phpunit>
