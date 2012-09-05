@@ -102,11 +102,19 @@ class EntityListener
 
             if ($entity instanceof EffectiveEntity) {
 
-                // If EffectiveTime has not been explicitly changed,
-                // set it to time().
-                $entity->setEffectiveTime(
-                    $entity->getUpdatedEffectiveTime() ?: time()
-                );
+                // Check to see if effectiveTime has been explicitly set.
+                $changeSet = $unitOfWork->getEntityChangeSet($entity);
+                
+                if (! isset($changeSet['effectiveTime'])) {
+                    // effectiveTime was not set by developer. Need to use
+                    // either current time or (current effectiveTime + 1) if the
+                    // latter happens to be equal to the current time.
+                    $effectiveTime = max(
+                        time(),
+                        $entity->getEffectiveTime() + 1
+                    );
+                    $entity->setEffectiveTime($effectiveTime);
+                }
 
                 // Added__ housekeeping fields need updating
                 if (method_exists($entity, 'setAddedOn')) {

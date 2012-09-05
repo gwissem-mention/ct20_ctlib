@@ -3,11 +3,7 @@ namespace CTLib\Entity;
 
 abstract class EffectiveEntity extends BaseEntity
 {
-    /**
-     * @var integer $_effectiveTime
-     * Stores user-updated effectiveTime.
-     */
-    protected $_effectiveTime = null;
+    
     
     /**
      * Sets Doctrine-used effectiveTime field as well as custom effectiveTime
@@ -18,7 +14,6 @@ abstract class EffectiveEntity extends BaseEntity
     public final function setEffectiveTime($effectiveTime)
     {
         $this->effectiveTime	= $effectiveTime;
-        $this->_effectiveTime	= $effectiveTime;
     }
 
     /**
@@ -30,17 +25,7 @@ abstract class EffectiveEntity extends BaseEntity
     {
         return $this->effectiveTime;
     }
-    
-    /**
-     * Get custom effectiveTime set only when user updates value (not when
-     * loaded from database).
-     * @return integer $_effectiveTime
-     */
-    public final function getUpdatedEffectiveTime()
-    {
-        return $this->_effectiveTime;
-    }
-    
+        
     /**
      * Throw Exception because effective entities don't have modifiedOn.
      *
