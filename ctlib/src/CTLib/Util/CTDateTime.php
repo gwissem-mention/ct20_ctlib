@@ -32,6 +32,16 @@ class CTDateTime extends \DateTime
     }
 
     /**
+     * Returns DateTime as UNIX timestamp.
+     *
+     * @return integer
+     */
+    public function toTimestamp()
+    {
+        return (int) $this->format('U');
+    }
+
+    /**
      * Get timestamp range given start/end time or start/interval
      *
      * @param string $start A date/time string. detail see: http://www.php.net/manual/en/datetime.formats.php
@@ -166,6 +176,22 @@ class CTDateTime extends \DateTime
             $dt->setTimezone(new \DateTimezone($timezone));
         }
         return $dt;
+    }
+
+    /**
+     * Calculates number of minutes different between two DateTime instances.
+     *
+     * NOTE: Substracts $datetime1 from $datetime2.
+     *
+     * @param DateTime $datetime1
+     * @param DateTime $datetime2
+     *
+     * @return integer
+     */
+    public static function diffMinutes($datetime1, $datetime2)
+    {
+        $secsDiff = (int)$datetime2->format('U') - (int)$datetime1->format('U');
+        return Util::secsToMins($secsDiff);
     }
 
 }
