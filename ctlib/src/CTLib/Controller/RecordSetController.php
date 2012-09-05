@@ -34,14 +34,16 @@ class RecordSetController extends DynaPartController
                 'actionGroup.plugin.js',
                 'loadingBox.plugin.js',
                 'recordSet.plugin.js',
-                'abridge.plugin.js'
+                'abridge.plugin.js',
+                'tooltip.plugin.js'
             )
             ->addInlineJs('$("#'.$domId.'").recordSet('.$json.');')
             ->addAppCss(
                 'recordSet.css',
                 'actionGroup.css',
                 'loadingBox.css',
-                'abridge.css'
+                'abridge.css',
+                'tooltip.css'
             );
     }
 
