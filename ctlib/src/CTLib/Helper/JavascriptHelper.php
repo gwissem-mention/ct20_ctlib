@@ -155,12 +155,7 @@ class JavascriptHelper
                 throw new \Exception("Route already set for routeName: $routeName");
             }
 
-            $route = $this->router->getRouteCollection()->get($routeName);
-
-            if (! $route) {
-                throw new \Exception("Invalid routeName: $routeName");
-            }
-            $this->routes[$routeName] = $route->getPattern();
+            $this->routes[$routeName] = $this->getRouteUrl($routeName);
         }
         return $this;
     }
@@ -293,6 +288,24 @@ class JavascriptHelper
         return $this->routes;
     }
 
+    /**
+     * get Route Url from route name
+     *
+     * @param string $routeName route name
+     * @return string route url
+     *
+     */
+    public function getRouteUrl($routeName)
+    {
+        $route = $this->router->getRouteCollection()->get($routeName);
+
+        if (! $route) {
+            throw new \Exception("Invalid routeName: $routeName");
+        }
+
+        return $route->getPattern();
+    }
+    
     /**
      * Returns permissions.
      * @return string
