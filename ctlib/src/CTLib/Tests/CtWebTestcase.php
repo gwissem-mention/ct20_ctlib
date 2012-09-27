@@ -50,26 +50,26 @@ class CtWebTestcase extends WebTestCase
      *
      * @return HttpKernelInterface A HttpKernelInterface instance
      */
-    static protected function createKernel(array $config=array(), $site=null, $session=array())
-    {
-        if (null === static::$class) {
-            static::$class = static::getKernelClass();
-        }
+    //static protected function createKernel(array $config=array(), $site=null, $session=array())
+    //{
+        //if (null === static::$class) {
+            //static::$class = static::getKernelClass();
+        //}
 
-        return new static::$class(
+        //return new static::$class(
             //new \CTLib\Component\Runtime\Runtime($config, $site)
             //\CTLib\Component\Runtime\Runtime::createForGateway()
-            new Runtime(
-                $_SERVER['SYMFONY__CT__ENVIRONMENT'],
-                $_SERVER['SYMFONY__CT__DEBUG'],
-                Runtime::EXEC_MODE_CONSOLE,
-                $_SERVER['SYMFONY__CT__BRAND_ID'],
-                $_SERVER['SYMFONY__CT__BRAND_NAME'],
-                $site,
-                $_SERVER['SYMFONY__CT__APP_VERSION']
-            )
-        );
-    }
+            //new Runtime(
+                //$_SERVER['SYMFONY__CT__ENVIRONMENT'],
+                //$_SERVER['SYMFONY__CT__DEBUG'],
+                //Runtime::EXEC_MODE_CONSOLE,
+                //$_SERVER['SYMFONY__CT__BRAND_ID'],
+                //$_SERVER['SYMFONY__CT__BRAND_NAME'],
+                //$site,
+                //$_SERVER['SYMFONY__CT__APP_VERSION']
+            //)
+        //);
+    //}
 
     /**
      * Creates a Client.

@@ -60,6 +60,7 @@
       <exclude>
         <directory>./ctlib/src/CTLib/Tests</directory>
         <directory>./ctlib/src/CTLib/Resources</directory>
+        <file>./ctlib/src/CTLib/Util/Curl.php</file>
       </exclude>
     </whitelist>
   </filter>
