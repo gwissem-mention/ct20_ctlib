@@ -47,7 +47,6 @@ class BaseExtension extends \Twig_Extension
             'brandName'      => new \Twig_Function_Method($this, 'brandName'),
             'routeUrl'       => new \Twig_Function_Method($this, 'routeUrl'),
             'siteConfig'     => new \Twig_Function_Method($this, 'siteConfig'),
-            'classConstant'  => new \Twig_Function_Method($this, 'classConstant')
         );
     }
 
@@ -452,21 +451,6 @@ class BaseExtension extends \Twig_Extension
     public function routeUrl($routeName)
     {
         return $this->jsHelper->getRouteUrl($routeName);
-    }
-    
-
-    /**
-     * Get constant value in class
-     *
-     * @param string $className class name
-     * @param string $constantName constant name
-     * @return mixed Value of the constant in class
-     *
-     */
-    public function classConstant($className, $constantName)
-    {
-        $reflection = new \ReflectionClass($className);
-        return Arr::get($constantName, $reflection->getConstants(), null);
     }
     
     /**
