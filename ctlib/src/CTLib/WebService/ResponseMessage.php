@@ -33,17 +33,16 @@ class ResponseMessage
 
     /**
      * @param integer $commonStatusCode     Response status code.
-     * @param array $updates                Device updates.
      */
-    public function __construct($commonStatusCode, $updates=array())
+    public function __construct($commonStatusCode)
     {
         if (! is_int($commonStatusCode) || $commonStatusCode < 0) {
             throw new \Exception('$commonStatusCode must be unsigned int');
         }
         $this->commonStatusCode = $commonStatusCode;
         $this->commonBuffer     = new \stdClass;
-        $this->updates          = $updates;
         $this->responseParts    = array();
+        $this->updates          = array();
     }
 
     /**
@@ -90,18 +89,39 @@ class ResponseMessage
     }
 
     /**
-     * Creates new response part and adds to message.
+     * Adds multiple response parts.
      *
-     * @param int $statusCode
-     * @param RequestPart $requestPart
-     *
-     * @return ResponsePart
+     * @param array $responseParts
+     * @return ResponseMessage Returns $this.
      */
-    public function newPart($statusCode, $requestPart)
+    public function addParts($responseParts)
     {
-        $rspPart = ResponsePart::createForRequest($statusCode, $requestPart);
-        $this->addPart($rspPart);
-        return $rspPart;
+        $this->responseParts += $responseParts;
+        return $this;
+    }
+
+    /**
+     * Adds individual device update.
+     *
+     * @param DeviceUpdate $deviceUpdate
+     * @return ResponseMessage  Returns $this.
+     */
+    public function addUpdate($deviceUpdate)
+    {
+        $this->updates[] = $deviceUpdate;
+        return $this;
+    }
+
+    /**
+     * Adds multiple device updates.
+     *
+     * @param array $deviceUpdates
+     * @return ResponseMessage  Returns $this.
+     */
+    public function addUpdates($deviceUpdates)
+    {
+        $this->updates += $deviceUpdates;
+        return $this;
     }
 
     /**
