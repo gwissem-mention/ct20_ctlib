@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project name="CellTrak_2.0" default="build" basedir=".">
+<project name="CellTrak_2.0" default="build_all" basedir=".">
   <property name="source" value="ctlib/src"/>
   <property name="doctrine.version" value="2.2.2"/>
   <property name="vendor.version" value="2.0.15"/>
@@ -69,7 +69,7 @@
     <exec executable="phpcs" output="/dev/null">
       <arg line="--report=checkstyle
         --report-file=${basedir}/build/logs/checkstyle.xml
-        --standard=Symfony2
+        --standard=${basedir}/../php/celltrak_coding_standard.xml
         ${source}" />
     </exec>
   </target>
