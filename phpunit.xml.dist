@@ -52,17 +52,20 @@
     <log type="junit" target="build/logs/junit.xml" logIncompleteSkipped="false"/>
   </logging>
 
+  <!-- Add files not covered with tests into Code Coverage Analysis -->
   <filter>
-    <!--<blacklist> </blacklist>-->
+
+    <blacklist> </blacklist>
+
     <whitelist addUncoveredFilesFromWhitelist="true">
-    <!--<whitelist>-->
-      <directory suffix=".php">./src/CTLib/</directory>
+      <directory suffix=".php">./ctlib/src</directory>
       <exclude>
-        <directory>./ctlib/src/CTLib/Tests</directory>
+        <directory suffix=".php">./ctlib/src/CTLib/Tests</directory>
         <directory>./ctlib/src/CTLib/Resources</directory>
         <file>./ctlib/src/CTLib/Util/Curl.php</file>
       </exclude>
     </whitelist>
+
   </filter>
 
 </phpunit>
