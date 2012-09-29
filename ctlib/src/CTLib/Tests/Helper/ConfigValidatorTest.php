@@ -115,15 +115,78 @@ class ConfigValidatorTest extends \PHPUnit_Framework_Testcase
     }
 
     /**
-     * Test createFromFile.
+     * Test configuration can be loaded from a file.
      *
      * @group unit
      * @return void
      */
-    public function testCreateFromFile()
+    public function testLoadConfigurationFromFile()
     {
-        $this->markTestSkipped('This function ASSUMES path is correct and file will load and parse correctly. Should correct. Currently no testing is required.');
+        // TODO can I mock the Yaml classes too?
+        //$this->markTestSkipped('The namespace hack is actually working. Now I am missing Symfony\'s Yaml classes. :(');
         //$this->assertEquals(expected, actual);
+
+        $newHelper = $this->helper->createFromFile('/some/path');
+        $this->assertInstanceOf('\CTLib\Helper\ConfigValidator', $newHelper);
+        $this->assertEquals(
+            [
+                'activity.exec_sources',
+                'activity.filter_groups',
+                'activity.travel_distance_sources',
+                'activity.travel_time_sources',
+                'activity.export_when_alerts_cleared'
+            ],
+            $newHelper->getConfigKeys()
+        );
+    }
+}
+
+/* ********************************** */
+/* MOCK existing or missing functions */
+/* ********************************** */
+namespace CTLib\Helper;
+/**
+ * Mock file_get_contents function.
+ *
+ * @param string $path
+ *
+ * @return string
+ */
+function file_get_contents($path)
+{
+    return <<< EOT
+# Activities.
+activity.exec_sources: array
+activity.filter_groups: array
+activity.travel_distance_sources: array
+activity.travel_time_sources: array
+activity.export_when_alerts_cleared: bool
+EOT;
+
+}
+
+namespace Symfony\Component\Yaml;
+/**
+ * Mock Yaml class.
+ */
+class Yaml
+{
+    /**
+     * Mock parse function.
+     *
+     * @param mixed $content
+     *
+     * @return array
+     */
+    public static function parse($content)
+    {
+        return [
+            'activity.exec_sources'               => 'array',
+            'activity.filter_groups'              => 'array',
+            'activity.travel_distance_sources'    => 'array',
+            'activity.travel_time_sources'        => 'array',
+            'activity.export_when_alerts_cleared' => 'bool'
+        ];
     }
 }
 
