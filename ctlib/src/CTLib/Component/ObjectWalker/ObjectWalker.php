@@ -256,6 +256,23 @@ class ObjectWalker
 
     /**
      * Indicates whether object contains $property. If it does, its value
+     * must be an unsigned integer (>= 0).
+     *
+     * @param string $property
+     *
+     * @return boolean
+     * @throws MalformedObjectException     If object has $property but its
+     *                                      value is not an unsigned int.
+     */
+    public function hasUnsignedInt($property)
+    {
+        return $this->has($property, function($v) {
+            return is_int($v) && $v >= 0;
+        });
+    }
+
+    /**
+     * Indicates whether object contains $property. If it does, its value
      * must be an 'id' (integer greater than 0).
      *
      * @param string $property
