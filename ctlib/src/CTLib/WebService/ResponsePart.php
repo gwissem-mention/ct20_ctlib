@@ -80,7 +80,7 @@ class ResponsePart
     public function append($collection)
     {
         foreach ($collection as $key => $value) {
-            $this->addToBuffer($key, $value);
+            $this->add($key, $value);
         }
         return $this;
     }
@@ -147,7 +147,7 @@ class ResponsePart
     public static function createForWebServiceException($exception, $requestPart)
     {
         $rspPart = self::createForRequest($exception->getCode(), $requestPart);
-        $rspPart->add('exception', $exception->getMessage());
+        // $rspPart->add('exception', $exception->getMessage());
         return $rspPart;
     }
 
