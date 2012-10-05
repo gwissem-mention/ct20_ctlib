@@ -139,13 +139,14 @@ class ResponseMessage
         $rsp->common->status_code = $this->commonStatusCode;
         $rsp->common->buffer = $this->commonBuffer;
 
-        if ($this->updates) {
-            $rsp->updates = $this->updates;
-        }
-
         if ($this->responseParts) {
             $rsp->responses = $this->responseParts;
         }
+
+        if ($this->updates) {
+            $rsp->updates = $this->updates;
+        }
+        
         return $rsp;
     }
 
@@ -161,18 +162,18 @@ class ResponseMessage
         $rsp->common->status_code = $this->commonStatusCode;
         $rsp->common->buffer = $this->commonBuffer;
 
-        if ($this->updates) {
-            $rsp->updates = array_map(
-                function ($u) { return $u->forJson(); },
-                $this->updates
-            );    
-        }
-
         if ($this->responseParts) {
             $rsp->responses = array_map(
                 function ($part) { return $part->forJson(); },
                 $this->responseParts
             );
+        }
+
+        if ($this->updates) {
+            $rsp->updates = array_map(
+                function ($u) { return $u->forJson(); },
+                $this->updates
+            );    
         }
         return json_encode($rsp);
     }
