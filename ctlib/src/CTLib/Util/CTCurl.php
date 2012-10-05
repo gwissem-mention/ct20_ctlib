@@ -114,7 +114,7 @@ class CTCurl extends Curl
             $this->buildRequestData($this->data);
             $response = parent::exec();
             if ($response === false) {
-                throw new \Exception($curl->error(), $curl->errno());
+                throw new \Exception($this->error(), $this->errno());
             }
             return $response;
         }
@@ -138,7 +138,7 @@ class CTCurl extends Curl
             $response = parent::exec();
 
             if ($response === false) {
-                throw new \Exception($curl->error(), $curl->errno());
+                throw new \Exception($this->error(), $this->errno());
             }
             $result[] = $response;
         }
