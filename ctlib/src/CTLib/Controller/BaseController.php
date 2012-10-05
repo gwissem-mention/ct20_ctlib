@@ -4,8 +4,10 @@ namespace CTLib\Controller;
 
 use Symfony\Bundle\FrameworkBundle\Controller\Controller,
     CTLib\Component\HttpFoundation\JsonResponse,
+    CTLib\Component\HttpFoundation\PdfResponse,
     CTLib\Util\Util,
-    CTLib\Component\Doctrine\ORM\EntityManagerEvent;
+    CTLib\Component\Doctrine\ORM\EntityManagerEvent,
+    CTLib\Component\Pdf\HtmlPdf;
 
 /**
  * BaseController
@@ -539,6 +541,29 @@ abstract class BaseController extends Controller
     }
 
     /**
+     * Renders PDF Response, let browser show it inline or force download
+     *
+     * @param string $view name of view template.
+     * @param array $parameters parameters for rendering template
+     * @param string $fileName downloadable file name
+     * @param string $destination show pdf within the browser or force download
+     * @return PdfResponse 
+     *
+     */   
+    public function renderPdf($view, array $parameters=array(), 
+        $fileName="celltrak.pdf", $destination=PdfResponse::DESTINATION_INLINE)
+    {
+        $html = $this->renderView(
+            $this->buildFullTemplateName($view),
+            $parameters
+        );
+
+        $htmlPdf = new HtmlPdf($html);
+
+        return new PdfResponse($htmlPdf->render($html), $fileName, $destination);
+    }
+    
+    /**
      * Determines bundle name (sans 'Bundle') of this controller.
      * @return string
      */
@@ -699,10 +724,15 @@ abstract class BaseController extends Controller
      */
     protected function buildFullTemplateName($view, $type='html', $controller=null, $bundle=null)
     {
+        // Full path of template name
+        if (preg_match("/\w+:\w+:\w+.\w+.twig/", $view, $match)) {
+            return $view;
+        }
+
         if (! strpos($view, '.twig')) {
             $view .= ".{$type}.twig";
         }
-
+        
         return ( $bundle ? ucfirst($bundle) : $this->currentBundle() ) . 'Bundle'
             . ':' . ( $controller ?: $this->currentController() )
             . ':' . $view;
