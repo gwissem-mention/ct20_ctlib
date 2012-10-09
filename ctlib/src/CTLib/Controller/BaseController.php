@@ -558,7 +558,7 @@ abstract class BaseController extends Controller
             $parameters
         );
 
-        $htmlPdf = new HtmlPdf($html);
+        $htmlPdf = new HtmlPdf($this->get("kernel"));
 
         return new PdfResponse($htmlPdf->render($html), $fileName, $destination);
     }

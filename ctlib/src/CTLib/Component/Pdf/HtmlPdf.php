@@ -8,11 +8,11 @@ namespace CTLib\Component\Pdf;
  */
 class HtmlPdf
 {
-    protected $html;
+    protected $kernel;
     
-    public function __construct($html)
+    public function __construct($kernel)
     {
-        $this->html = $html;
+        $this->kernel = $kernel;
     }
 
     /**
@@ -21,10 +21,12 @@ class HtmlPdf
      * @return string PDF string
      *
      */
-    public function render()
+    public function render($html)
     {
+        $rootDir = $this->kernel->getRootDir();
+        require_once $rootDir . '/../vendor/dompdf/dompdf_config.inc.php';
         $pdf = new \DOMPDF;
-        $pdf->load_html($this->html);
+        $pdf->load_html($html);
         $pdf->render();
         return $pdf->output();
     }
