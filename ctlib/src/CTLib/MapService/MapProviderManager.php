@@ -182,6 +182,36 @@ class MapProviderManager implements MapProviderInterface
             ->route($fromLatitude, $fromLongitude, $toLatitude, $toLongitude, $options, $country);
     }
 
+    /**
+     * Calculates estimated time and distance for route between two points.
+     *
+     * @param float $fromLatitude
+     * @param float $fromLongitude
+     * @param float $toLatitude
+     * @param float $toLongitude
+     * @param array $options        Map service-specific options.
+     * @param string $country       If null, will use site-configured country.
+     *
+     * @return array                array($time, $distance)
+     *                              $time in seconds
+     *                              $distance in country-specific unit.
+     */
+    public function routeTimeAndDistance($fromLatitude, $fromLongitude,
+        $toLatitude, $toLongitude, array $options=array(), $country=null)
+    {
+        $country = $country ?: $this->countryInSiteConfig;
+
+        return $this
+                ->getMapProviderByCountry($country)
+                ->routeTimeAndDistance(
+                    $fromLatitude,
+                    $fromLongitude,
+                    $toLatitude,
+                    $toLongitude,
+                    $options,
+                    $country);
+    }
+
     public function getAllowedAddressQualityCodes($country = null)
     {
         //if country is not given in the parameter, use country code 

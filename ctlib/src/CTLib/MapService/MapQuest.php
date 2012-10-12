@@ -118,30 +118,71 @@ class MapQuest extends MapProviderAbstract
 
     protected function routeBuildRequest($request, $fromLatitude, $fromLongitude, $toLatitude, $toLongitude, $options, $country = null)
     {
-        $request->url = "https://www.mapquestapi.com/directions/v1/route?key=Gmjtd%7Clu6zn1ua2d%2C7s%3Do5-l07g0";
+        $request->url = "https://www.mapquestapi.com/directions/v1/alternateroutes?key=Gmjtd%7Clu6zn1ua2d%2C7s%3Do5-l07g0";
         $request->data = 
             array_merge(
                 array(
                     "from" => $fromLatitude . "," . $fromLongitude,
-                    "to" => $toLatitude . "," . $toLongitude
+                    "to" => $toLatitude . "," . $toLongitude,
+                    "maxRoutes" => 3
                 ),
                 $options
             );
         $request->method = CTCurl::REQUEST_GET;
     }
     
-
-    protected function routeProcessResult($result)
+    /**
+     * Returns shortest route information contained within raw MapQuest route
+     * response.
+     *
+     * @param string $result    JSON MapQuest route response.
+     * @param string $metric    Shortest will be determined using this metric:
+     *                          either 'distance' or 'time'.
+     * @return array
+     */
+    protected function extractShortestRoute($result, $metric)
     {
+        if (! in_array($metric, array('time', 'distance'))) {
+            throw new \Exception('Invalid $metric');
+        }
+
         $decodedResult = json_decode($result, true);
-        if (!$decodedResult) {
+
+        if (! $decodedResult) {
             throw new \Exception("result is invalid");
         }
 
         $route = Arr::get("route", $decodedResult);
-        if (!$route) {
+        if (! $route) {
             throw new \Exception("result is invalid");
         }
+
+        $alternateRoutes = Arr::extract('alternateRoutes', $route);
+
+        if (! $alternateRoutes) {
+            // No need to compute shortest route when there's only one
+            // available.
+            return $route;
+        }
+
+        // Concatenate primary route with alternates, and return shortest of the
+        // set.
+        $routes = array_map(
+            function($r) { return $r['route']; },
+            $alternateRoutes
+        );
+        array_unshift($routes, $route);
+
+        usort($routes, function($r1, $r2) use ($metric) {
+            if ($r1[$metric] == $r2[$metric]) { return 0; }
+            return $r1[$metric] < $r2[$metric] ? -1 : 1;
+        });
+        return $routes[0];
+    }
+
+    protected function routeProcessResult($result)
+    {
+        $route = $this->extractShortestRoute($result, 'distance');
 
         $routeResult = array(
             "distance" => Arr::get("distance", $route),
@@ -170,6 +211,14 @@ class MapQuest extends MapProviderAbstract
         return $routeResult;
     }
 
+    /**
+     * @inherit
+     */
+    protected function routeTimeAndDistanceProcessResult($result)
+    {
+        $route = $this->extractShortestRoute($result, 'distance');
+        return array(Arr::get("time", $route), Arr::get("distance", $route));
+    }
 
     protected function buildAddressFromMapQuestResult($result, $keyChain)
     {

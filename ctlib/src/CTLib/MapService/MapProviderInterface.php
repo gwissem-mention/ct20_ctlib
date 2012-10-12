@@ -91,6 +91,23 @@ interface MapProviderInterface
     public function route($fromLatitude, $fromLongitude, $toLatitude, $toLongitude, array $options, $country = null);
 
     /**
+     * Calculates estimated time and distance for route between two points.
+     *
+     * @param float $fromLatitude
+     * @param float $fromLongitude
+     * @param float $toLatitude
+     * @param float $toLongitude
+     * @param array $options        Map service-specific options.
+     * @param string $country       If null, will use site-configured country.
+     *
+     * @return array                array($time, $distance)
+     *                              $time in seconds
+     *                              $distance in country-specific unit.
+     */
+    public function routeTimeAndDistance($fromLatitude, $fromLongitude,
+     $toLatitude, $toLongitude, array $options=array(), $country=null);
+
+    /**
      * Get Allowed Quality codes for address
      *
      * @param string $country country

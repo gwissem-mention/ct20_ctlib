@@ -204,6 +204,15 @@ abstract class MapProviderAbstract implements MapProviderInterface
      */
     abstract protected function routeProcessResult($result);
 
+    /**
+     * Process Result of routing for time and distance only.
+     *
+     * @param mixed $result result
+     * @return array                array($time, $distance)
+     *                              $time in seconds
+     *                              $distance in country-specific unit.
+     */
+    abstract protected function routeTimeAndDistanceProcessResult($result);
 
     /**
      * Implements method in MapProviderInterface
@@ -218,8 +227,27 @@ abstract class MapProviderAbstract implements MapProviderInterface
 
         return $this->routeProcessResult($response);
     }
-    
 
+    /**
+     * @inherit
+     */
+    public function routeTimeAndDistance($fromLatitude, $fromLongitude,
+        $toLatitude, $toLongitude, array $options=array(), $country=null)
+    {
+        $curl = $this->createMapServiceRequest();
+        $this->routeBuildRequest(
+            $curl,
+            $fromLatitude,
+            $fromLongitude,
+            $toLatitude,
+            $toLongitude,
+            $options,
+            $country
+        );
+        $response = $curl->exec();
+        return $this->routeTimeAndDistanceProcessResult($response);
+    }
+    
     protected function createMapServiceRequest()
     {
         $curl = new CTCurl();
