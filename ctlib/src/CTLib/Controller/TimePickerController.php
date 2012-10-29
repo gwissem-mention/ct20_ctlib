@@ -31,6 +31,7 @@ class TimePickerController extends DynaPartController
         //load needed css and javascript lib and script
         $assetLoader
             ->addAppCss('timepicker.css')
+            ->addAppJs('timepicker.plugin.js')
             ->addInlineJs('$("#'.$domId.'").timepicker(' . $json . ');');
     }
 
