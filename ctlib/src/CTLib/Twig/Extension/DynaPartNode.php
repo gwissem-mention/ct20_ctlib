@@ -44,7 +44,7 @@ class DynaPartNode extends \Twig_Node
             ->write('else {'."\n")
                 ->indent()
                 ->write('$jsonObject = new \CTLib\Helper\JavascriptObject(' . trim($json) . ");"."\n")
-                ->write('$cache->set("'.$cacheKey.'", $jsonObject->toObject());'."\n")
+                ->write('$cache->set("'.$cacheKey.'", $jsonObject);'."\n")
             ->outdent()
             ->write('}'."\n")
             ->write('echo $this->env->getExtension("actions")->renderAction("'.$qualifiedAction.'", ')
