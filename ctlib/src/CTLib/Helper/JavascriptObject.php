@@ -137,35 +137,21 @@ class JavascriptObject
         if ($object instanceof JavascriptObject) {
             $object = $object->getObject();
         }
-
-        $object = $this->convertToJavascriptObject($object);
-
-        if (is_object($object)) {
-            $object = get_object_vars($object);
+        else {
+            $object = $this->convertToJavascriptObject($object);
         }
-
-        if (!is_array($object)) {
-            $object = array($object);
-        }
-
-        $isObject = $this->jsObject instanceof \stdClass;
-        if ($isObject) {
-            $this->jsObject = get_object_vars($this->jsObject);
-        }
-
-        $isNull = false;
-        if (!$this->jsObject) {
-            $this->jsObject = $object;
-            $isNull = true;
+        
+        $thisJsObject = $this->getObject();
+        if (!$thisJsObject) {
+            $this->jsObject = (object)$object;
         }
         else {
-            $this->jsObject = (object)array_merge($this->jsObject, $object);
+            $this->jsObject = (object)array_merge(
+                get_object_vars($thisJsObject),
+                get_object_vars($object)
+            );
         }
-
-        if ($isObject || $isNull) {
-            $this->jsObject = (object)$this->jsObject;
-        }
-
+        
         $this->isDirty = true;
         return $this;
     }

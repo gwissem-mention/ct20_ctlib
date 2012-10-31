@@ -32,21 +32,28 @@ class DynaPartNode extends \Twig_Node
         $qualifiedAction = "{$dynaPartName}:show";
         
         $json = $this->convertJsonNodeToString($compiler, $this->getNode("jsonBody"));
-        $cacheKey = md5($json);
-
-        $compiler
-            ->write('$cache = $this->env->getExtension("dynapart")->getCache();'."\n")
-            ->write('if ($cache->has("'.$cacheKey.'")) {'."\n")
+        $json = trim($json);
+        
+        if (empty($json)) {
+            $compiler->write('$jsonObject = new \CTLib\Helper\JavascriptObject(' . trim($json) . ");"."\n");
+        }
+        else {
+            $cacheKey = md5($json);
+            $compiler
+                ->write('$cache = $this->env->getExtension("dynapart")->getCache();'."\n")
+                ->write('if ($cache->has("'.$cacheKey.'")) {'."\n")
                 ->indent()
                 ->write('$jsonObject = $cache->get("'.$cacheKey.'");'."\n")
-            ->outdent()
-            ->write('}'."\n")
-            ->write('else {'."\n")
+                ->outdent()
+                ->write('}'."\n")
+                ->write('else {'."\n")
                 ->indent()
                 ->write('$jsonObject = new \CTLib\Helper\JavascriptObject(' . trim($json) . ");"."\n")
                 ->write('$cache->set("'.$cacheKey.'", $jsonObject);'."\n")
-            ->outdent()
-            ->write('}'."\n")
+                ->outdent()
+                ->write('}'."\n");
+        }
+        $compiler
             ->write('echo $this->env->getExtension("actions")->renderAction("'.$qualifiedAction.'", ')
             ->raw("array(")
             ->raw('"id" => ')->repr($this->getAttribute("id"))->raw(', ')
@@ -62,9 +69,9 @@ class DynaPartNode extends \Twig_Node
     {
         $result = "";
 
-        if (empty($jsonNode)) {
-            return $result;
-        }
+        //if ($jsonNode->count() == 0 ) {
+        //    return $result;
+        //}
 
         if ($jsonNode instanceof \Twig_Node_Expression) {
             return $this->getTwigExpressionSource($compiler, $jsonNode);
@@ -110,16 +117,17 @@ class DynaPartNode extends \Twig_Node
         }
 
         $iterator = $jsonNode->getIterator();
-        if ($iterator->count() <= 0) {
-            throw new \Exception("Not supported Twig Expression");
-        }
+        //if ($iterator->count() <= 0) {
+        //    throw new \Exception("Not supported Twig Expression");
+        //}
 
-        foreach ($iterator as $key => $node) {
-            $result .= 
-                (empty($result)?"":' . ') . 
-                $this->convertJsonNodeToString($compiler, $node);
+        if ($iterator->count() != 0) {
+            foreach ($iterator as $key => $node) {
+                $result .= 
+                    (empty($result)?"":' . ') . 
+                    $this->convertJsonNodeToString($compiler, $node);
+            }
         }
-
         return $result;
     }
 
