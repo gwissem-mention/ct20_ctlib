@@ -11,6 +11,8 @@ class StatusCode
 {
     const SUCCESS                       = 1;
 
+    const IGNORED                       = 100;
+
     const ERROR_PROCESSING_REQUEST      = 900;
     const ERROR_PROCESSING_REQUEST_PART = 901;
     const SKIPPED_REQUEST_PART          = 902;
