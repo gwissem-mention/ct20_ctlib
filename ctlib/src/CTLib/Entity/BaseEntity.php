@@ -1,4 +1,10 @@
 <?php
+/**
+ * CellTrak VisitManager 2.x.
+ *
+ * @package CTLib
+ */
+
 namespace CTLib\Entity;
 
 /**
@@ -6,20 +12,22 @@ namespace CTLib\Entity;
  */
 abstract class BaseEntity
 {
-    
+
     /**
+     * Constructor.
+     *
      * @param array $fieldValues    Associative array of entity field => value.
      */
     public function __construct($fieldValues=array())
     {
-        foreach ($fieldValues AS $field => $value) {
+        foreach ($fieldValues as $field => $value) {
             $setter = 'set' . ucfirst($field);
             $this->$setter($value);
         }
     }
-        
+
     /**
-     * Set addedOn
+     * Set addedOn.
      *
      * @param integer $addedOn
      */
@@ -29,7 +37,7 @@ abstract class BaseEntity
     }
 
     /**
-     * Get addedOn
+     * Get addedOn.
      *
      * @return integer $addedOn
      */
@@ -39,7 +47,7 @@ abstract class BaseEntity
     }
 
     /**
-     * Set modifiedOn
+     * Set modifiedOn.
      *
      * @param integer $modifiedOn
      */
@@ -49,7 +57,7 @@ abstract class BaseEntity
     }
 
     /**
-     * Get modifiedOn
+     * Get modifiedOn.
      *
      * @return integer $modifiedOn
      */
@@ -57,17 +65,21 @@ abstract class BaseEntity
     {
         return $this->modifiedOn;
     }
-    
+
     /**
+     * Update the fieldValues from array.
+     *
      * @param array $fieldValues    Associative array of entity field => value.
+     *
+     * @return void
      */
     public function update($fieldValues=array())
     {
-        foreach ($fieldValues AS $field => $value) {
+        foreach ($fieldValues as $field => $value) {
             $setter = 'set' . ucfirst($field);
             $this->$setter($value);
         }
-    }    
+    }
 
 
 }
