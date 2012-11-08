@@ -79,3 +79,16 @@ subdivisions:
     - [WV, West Virginia]
     - [WI, Wisconsin]
     - [WY, Wyoming]
+
+timezones:
+    'America/New_York':     Eastern
+    'America/Chicago':      Central
+    'America/Boise':        Mountain
+    'America/Los_Angeles':  Pacific
+    'America/Phoenix':      Arizona (Mountain/Pacific)
+    'America/Juneau':       Alaska
+    #'Pacific/Honolulu':     Hawaii
+    #'Pacific/Guam':         ChST
+    #'Pacific/Samoa':        SST
+    #'Pacific/Wake':         Wake Island
+    #'America/Puerto_Rico':  Atlantic
