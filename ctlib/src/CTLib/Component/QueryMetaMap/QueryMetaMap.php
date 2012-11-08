@@ -50,9 +50,14 @@ class QueryMetaMap
             $this->addEntity($entity);
 
             // Parse join entities.
-            foreach ($rootAst->joinVariableDeclarations AS $joinAst) {
-                $entity = $this->createJoinEntity($joinAst->join, $entityMetaHelper);
-                $this->addEntity($entity);
+            if (isset($rootAst->joins)) {
+                foreach ($rootAst->joins AS $joinAst) {
+                    $entity = $this->createJoinEntity(
+                        $joinAst->joinAssociationDeclaration,
+                        $entityMetaHelper
+                    );
+                    $this->addEntity($entity);
+                }
             }
         }
     }
