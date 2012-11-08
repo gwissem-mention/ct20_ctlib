@@ -165,7 +165,8 @@ EOT;
 
 }
 
-namespace Symfony\Component\Yaml;
+// My clever hack here is causing redeclaration errors :-(
+namespace Symfony\Component\Yaml_REMOVE_ME;
 /**
  * Mock Yaml class.
  */
