@@ -20,9 +20,8 @@ abstract class BaseEntity
      */
     public function __construct($fieldValues=array())
     {
-        foreach ($fieldValues as $field => $value) {
-            $setter = 'set' . ucfirst($field);
-            $this->$setter($value);
+        if ($fieldValues) {
+            $this->update($fieldValues);
         }
     }
 
@@ -77,8 +76,30 @@ abstract class BaseEntity
     {
         foreach ($fieldValues as $field => $value) {
             $setter = 'set' . ucfirst($field);
+            if (! method_exists($this, $setter)) {
+                throw new \Exception("Invalid field '{$field}' for " . get_class($this));
+            }
             $this->$setter($value);
         }
+    }
+
+    /**
+     * Returns values for multiple fields.
+     *
+     * @param array $fields     array($fieldName1, $fieldName2, ...)
+     * @return array            array($fieldName1 => $fieldValue1, ...)
+     */
+    public function multiGet($fields)
+    {
+        $values = array();
+        foreach ($fields as $field) {
+            $getter = 'get' . ucfirst($field);
+            if (! method_exists($this, $getter)) {
+                throw new \Exception("Invalid field '{$field}' for " . get_class($this));
+            }
+            $values[$field] = $this->$getter();
+        }
+        return $values;
     }
 
 
