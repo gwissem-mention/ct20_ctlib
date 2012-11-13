@@ -14,10 +14,10 @@ class DynaPartExtension extends \Twig_Extension
     private $parameterBag = array();
 
 
-    public function __construct($cacheHelper, $container)
+    public function __construct($container)
     {
-        $this->cacheHelper  = $cacheHelper;
-        $this->request      = $container->get('request');
+        $this->cacheHelper = $container->get('cache');
+        $this->request     = $container->get('request');
     }
 
 
@@ -54,7 +54,7 @@ class DynaPartExtension extends \Twig_Extension
      */
     public function getTokenParsers()
     {
-        return array(new DynaPartTokenParser($this->translator));
+        return array(new DynaPartTokenParser());
     }
 
     public function getCache()

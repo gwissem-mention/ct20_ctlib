@@ -40,16 +40,17 @@ class DynaPartNode extends \Twig_Node
         else {
             $cacheKey = md5($json);
             $compiler
+                ->write('$cacheKey = $this->getContext($context, "app")->getRequest()->getRequestUri() . "' . $cacheKey . '";'."\n")
                 ->write('$cache = $this->env->getExtension("dynapart")->getCache();'."\n")
-                ->write('if ($cache->has("'.$cacheKey.'")) {'."\n")
+                ->write('if ($cache->has($cacheKey)) {'."\n")
                 ->indent()
-                ->write('$jsonObject = $cache->get("'.$cacheKey.'");'."\n")
+                ->write('$jsonObject = $cache->get($cacheKey);'."\n")
                 ->outdent()
                 ->write('}'."\n")
                 ->write('else {'."\n")
                 ->indent()
                 ->write('$jsonObject = new \CTLib\Helper\JavascriptObject(' . trim($json) . ");"."\n")
-                ->write('$cache->set("'.$cacheKey.'", $jsonObject);'."\n")
+                ->write('$cache->set($cacheKey, $jsonObject);'."\n")
                 ->outdent()
                 ->write('}'."\n");
         }
