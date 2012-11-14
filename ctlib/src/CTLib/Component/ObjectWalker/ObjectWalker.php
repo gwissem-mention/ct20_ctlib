@@ -564,6 +564,16 @@ class ObjectWalker
     }
 
     /**
+     * Returns JSON-encoded source object.
+     *
+     * @return string
+     */
+    public function __toString()
+    {
+        return json_encode($this->object);
+    }
+
+    /**
      * Creates ObjectWalker from associative array.
      *
      * @param array $source     array($property => $value, ...)
