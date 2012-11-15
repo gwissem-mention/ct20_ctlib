@@ -125,6 +125,9 @@ class DataProviderQueryBuilder extends QueryBuilder
      */
     public function getResultTotal()
     {
+        $paginator = new Paginator($this);
+        return count($paginator);
+
         $rootEntityAlias = $this->getRootAlias();
 
         // Create clone of original query builder in order to change it into a
@@ -166,9 +169,9 @@ class DataProviderQueryBuilder extends QueryBuilder
      * @return Paginator paginatable result
      *
      */
-    public function getPaginatedResult()
+    public function getPaginatedResult($fetchJoinCollection = true)
     {
-        $paginator = new Paginator($this);
+        $paginator = new Paginator($this, $fetchJoinCollection);
 
         return $paginator;
     }

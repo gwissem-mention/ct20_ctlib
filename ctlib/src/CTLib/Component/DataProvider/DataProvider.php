@@ -50,7 +50,7 @@ class DataProvider
      * @param Request $request
      * @return array    array('data' => array, 'total' => int, 'model' => array)
      */
-    public function getData($request)
+    public function getData($request, $fetchJoinCollection = true)
     {
         $queryConfig    = $this->getQueryConfig($request);
         $session        = $request->getSession();
@@ -60,11 +60,12 @@ class DataProvider
             $session->set($cacheId, $queryConfig);
         }
 
+        // fixme: there is no access to post data
         if ($this->fromPost('notify', $request)) {
             // Just needed to save the updated query config.
             return $this->getFormattedData();
         } else {
-            return $this->run($queryConfig);
+            return $this->run($queryConfig, $fetchJoinCollection);
         }
     }
 
@@ -170,8 +171,6 @@ class DataProvider
         $cnf->cachePages        = $this->fromPost('cachedPage', $request, 0);
         $cnf->filters           = $this->fromPost('filters', $request, array());
         $cnf->sorts             = $this->fromPost('sorts', $request, array());
-        $cnf->actionObjectIds   = $this->fromPost(
-                                    'actionObjectIds', $request, array());
         $cnf->suppressTotal     = $this->fromPost(
                                     'suppressTotal', $request, false);
         $cnf->suppressResults   = $this->fromPost(
@@ -199,7 +198,7 @@ class DataProvider
      * @param StdClass $queryConfig
      * @return array
      */
-    protected function run($queryConfig)
+    protected function run($queryConfig, $fetchJoinCollection = true)
     {
         $this->applyFilters($queryConfig);
 
@@ -219,7 +218,7 @@ class DataProvider
         $this->applySorts($queryConfig);
         $this->applyLimit($queryConfig);
 
-        $data   = $this->getQueryResultSet($queryConfig);
+        $data   = $this->getQueryResultSet($queryConfig, $fetchJoinCollection);
         $model  = $this->getModel($queryConfig);
         return $this->getFormattedData($data, $total, $model);
     }
@@ -388,9 +387,9 @@ class DataProvider
      * @return array    Enumerated array of records (each as their own
      *                  enumerated array of column values).
      */
-    protected function getQueryResultSet($queryConfig)
+    protected function getQueryResultSet($queryConfig, $fetchJoinCollection = true)
     {
-        $rawResultSet = $this->queryBuilder->getPaginatedResult();
+        $rawResultSet = $this->queryBuilder->getPaginatedResult($fetchJoinCollection);
 
         if (! $rawResultSet) {
             return array();
@@ -399,11 +398,16 @@ class DataProvider
         $queryMetaMap = $this->queryBuilder->getQueryMetaMap();
         $processedResultSet = array();
         foreach ($rawResultSet as $rawRecord) {
-            $processedResultSet[] = $this->processResultRecord(
+            $record = $this->processResultRecord(
                 $rawRecord,
                 $queryMetaMap,
                 $queryConfig
             );
+            // record can be ignored by returning null from
+            // function processResultRecord
+            if (isset($record)) {
+                $processedResultSet[] = $record;
+            }
         }
         return $processedResultSet;
     }
@@ -563,4 +567,14 @@ class DataProvider
         return $dataEntity;
     }
 
+    /**
+     * Get QueryBuilder
+     *
+     * @return QueryBuilder
+     *
+     */
+    public function getQueryBuilder()
+    {
+        return $this->queryBuilder;
+    }
 }

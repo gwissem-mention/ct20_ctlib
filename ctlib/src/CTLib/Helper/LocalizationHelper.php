@@ -627,6 +627,24 @@ class LocalizationHelper
     }
 
     /**
+     * format the raw address array into abbreviated single line address
+     * address format is configured in country localization file like US.yml
+     *
+     * @param array $rawAddress array of address return by getRawAddress
+     * @param string $countryCode country code
+     * @return string single line address
+     *
+     */
+    public function abbreviatedAddress($rawAddress, $countryCode = null)
+    {
+        return $this->formatSingleLineAddress(
+            $this->getCountryConfigValue("address.abbreviated", $countryCode),
+            $rawAddress,
+            $countryCode
+        );
+    }
+
+    /**
      * format the raw address array into short single line address
      * address format is configured in country localization file like US.yml
      *
