@@ -128,7 +128,9 @@ class BlackBerryPushDriver implements PushDriver
         $deliveryMethod = 'unconfirmed';
         $deliverBefore  = strtotime("+{$this->ttlSeconds} seconds");
         $deliverBefore  = gmdate('Y-m-d\TH:i:s\Z', $deliverBefore);
-        $params         = json_encode($message->getParameters());
+        $params         = json_encode(
+                            $message->getParameters(),
+                            JSON_FORCE_OBJECT);
         $body           = <<<TXT
         --%1\$s
         Content-Type: application/xml; charset=UTF-8
