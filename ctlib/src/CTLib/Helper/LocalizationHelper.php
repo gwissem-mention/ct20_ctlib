@@ -251,6 +251,9 @@ class LocalizationHelper
         $formattedDatetime = $formatter->format($value);
 
         if ($formattedDatetime === false) {
+            if ($value instanceof \DateTime) {
+                $value = "{DateTime: {$value->format('c')}}";
+            }
             throw new \Exception("Could not format: $value. \nError: " . $formatter->getErrorMessage());
         }
         return $formattedDatetime;
