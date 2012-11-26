@@ -230,7 +230,12 @@ class LocalizationHelper
     {
         $locale = $locale ?: $this->getSessionLocale();
         $timezone = new \DateTimeZone($timezone ?: $this->getSessionTimezone());
-        
+
+        // Only needed for PHP <5.3.4
+        if ($value instanceof \DateTime) {
+            $value = $value->getTimestamp();
+        }
+
         $formatter = new \IntlDateFormatter(
             $locale,
             null,
@@ -312,14 +317,14 @@ class LocalizationHelper
                         );
 
             if (! $showTz) {
-                return sprintf('%s %s', $fmtDate, $fmtTime);                
+                return sprintf('%s %s', $fmtDate, $fmtTime);
             } else {
                 $fmtTz = $this->formatDatetimeByKey(
                                 $value,
                                 "{$format}Timezone",
                                 $locale,
                                 $tz
-                            ); 
+                            );
                 return sprintf('%s %s (%s)', $fmtDate, $fmtTime, $fmtTz);
             }
         }
@@ -346,13 +351,13 @@ class LocalizationHelper
                                 $format,
                                 $locale,
                                 $tz
-                            ); 
+                            );
                 return sprintf('%s (%s)', $fmt, $fmtTz);
             }
         }
 
         throw new \Exception("Invalid method: {$methodName}");
-    }    
+    }
 
     /**
      * Format float number into currency
