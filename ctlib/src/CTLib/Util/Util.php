@@ -205,4 +205,16 @@ class Util
             return false;
         }
     }
+
+    /**
+     * Copies object but rather than use clone which maintains references, all
+     * properties are copied by value.
+     *
+     * @param mixed $object
+     * @return mixed
+     */
+    public static function deepCopy($object)
+    {
+        return unserialize(serialize($object));
+    }
 }
