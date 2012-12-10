@@ -73,11 +73,13 @@ class DateRangeFilter implements DataProviderFilter
                     ->setParameter('weekStart', $weekStart->format('Y-m-d'));
                 break;
             default:
+                $dateFrom = new \DateTime(Arr::mustGet('dateFrom', $value), $this->timezone);
+                $dateTo = new \DateTime(Arr::mustGet('dateTo', $value), $this->timezone);
                 // Use the passed range from and to dates.
                 $qbr->andWhere("{$this->dateField} >= :from")
                     ->andWhere("{$this->dateField} <= :to")
-                    ->setParameter('from', Arr::mustGet('dateFrom', $value))
-                    ->setParameter('to', Arr::mustGet('dateTo', $value));
+                    ->setParameter('from', $dateFrom->format("Y-m-d"))
+                    ->setParameter('to', $dateTo->format("Y-m-d"));
                 break;
         }
     }
