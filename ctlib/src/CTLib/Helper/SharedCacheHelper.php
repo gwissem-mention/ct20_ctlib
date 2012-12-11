@@ -127,7 +127,7 @@ class SharedCacheHelper
     protected function initCacheHandler()
     {
         $this->cacheHandler = new \Memcache;
-        foreach ($this->servers AS $server) {
+        foreach ($this->servers as $server) {
             $this->cacheHandler->addServer($server);
         }
     }
@@ -145,13 +145,19 @@ class SharedCacheHelper
     public function set($key, $value, $ttl=0)
     {
         if (! $this->isEnabled()) { return; }
+        
         $ttlSeconds = $ttl * 60;
-        $this->cache()->set(
-            $this->formatQualifiedCacheKey($key),
-            $value,
-            0,
-            $ttlSeconds
-        );
+        try {
+            $this
+                ->cache()
+                ->set(
+                    $this->formatQualifiedCacheKey($key),
+                    $value,
+                    0,
+                    $ttlSeconds);    
+        } catch (\Exception $e) {
+            $this->logWarning((string) $e);
+        }
     }
 
     /**
@@ -163,8 +169,14 @@ class SharedCacheHelper
     public function get($key)
     {
         if (! $this->isEnabled()) { return null; }
-        $result = $this->cache()->get($this->formatQualifiedCacheKey($key));
-        return $result !== false ? $result : null;
+
+        try {
+            $result = $this->cache()->get($this->formatQualifiedCacheKey($key));
+            return $result !== false ? $result : null;    
+        } catch (\Exception $e) {
+            $this->logWarning((string) $e);
+            return null;
+        }        
     }
 
     /**
@@ -176,7 +188,13 @@ class SharedCacheHelper
     public function has($key)
     {
         if (! $this->isEnabled()) { return false; }
-        return $this->get($this->formatQualifiedCacheKey($key)) !== null;
+
+        try {
+            return $this->get($this->formatQualifiedCacheKey($key)) !== null;    
+        } catch (\Exception $e) {
+            $this->logWarning((string) $e);
+            return false;
+        }
     }
 
     /**
@@ -188,7 +206,12 @@ class SharedCacheHelper
     public function delete($key)
     {
         if (! $this->isEnabled()) { return; }
-        $this->cache()->delete($this->formatQualifiedCacheKey($key));
+
+        try {
+            $this->cache()->delete($this->formatQualifiedCacheKey($key));    
+        } catch (\Exception $e) {
+            $this->logWarning((string) $e);
+        }
     }
 
     /**
