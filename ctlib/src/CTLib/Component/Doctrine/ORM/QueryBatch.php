@@ -11,11 +11,12 @@ class QueryBatch implements \Iterator
     private $batchNum      = 0;
     private $query         = null;
     private $queryResult   = null;
-    private $isFixedOffset = null;
+    private $isFixedOffset = false;
 
     public function __construct($query, $batchLimit, $isFixedOffset = false)
     {
         $this->batchLimit = $batchLimit;
+        $this->isFixedOffset = $isFixedOffset;
         if ($query instanceof \Doctrine\ORM\QueryBuilder) {
             $this->query = clone $query->getQuery();
         }
