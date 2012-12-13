@@ -7,13 +7,13 @@ use Doctrine\ORM\Query;
 */
 class QueryBatch implements \Iterator
 {
-    private $batchLimit = null;
-    private $batchNum = 0;
-    private $query = null;
-    private $queryResult = null;
+    private $batchLimit    = null;
+    private $batchNum      = 0;
+    private $query         = null;
+    private $queryResult   = null;
+    private $isFixedOffset = null;
 
-
-    public function __construct($query, $batchLimit)
+    public function __construct($query, $batchLimit, $isFixedOffset = false)
     {
         $this->batchLimit = $batchLimit;
         if ($query instanceof \Doctrine\ORM\QueryBuilder) {
@@ -53,12 +53,13 @@ class QueryBatch implements \Iterator
         if ($this->batchNum == 0
             || count($this->queryResult) == $this->batchLimit
         ) {
-            if ($this->queryResult) { unset($this->queryResult); }
-            $this->queryResult = $this->query
-                ->setFirstResult($this->batchNum * $this->batchLimit)
-                ->getResult();
+            if (!$this->isFixedOffset) {
+                $this->query->setFirstResult($this->batchNum * $this->batchLimit);
+            }
+            
+            $this->queryResult = $this->query->getResult();
 
-            if (count($this->queryResult) == 0) { return false; }
+            if (empty($this->queryResult)) { return false; }
 
             return true;
         }
