@@ -11,17 +11,16 @@ class BaseExtension extends \Twig_Extension
     protected $assetHelper;
     protected $localizer;
     protected $jsHelper;
-    protected $runtime;
+    protected $brandName;
     protected $controller;
-    protected $siteConfig;
 
-    public function __construct($assetHelper, $localizer, $jsHelper, $kernel, $siteConfig=null)
+    public function __construct($assetHelper, $localizer, $jsHelper,
+        $brandName=null)
     {
         $this->assetHelper  = $assetHelper;
         $this->localizer    = $localizer;
         $this->jsHelper     = $jsHelper;
-        $this->runtime      = $kernel->getRuntime();
-        $this->siteConfig   = $siteConfig;
+        $this->brandName    = $brandName;
     }
 
     /**
@@ -45,8 +44,7 @@ class BaseExtension extends \Twig_Extension
             'jsRoutes'       => new \Twig_Function_Method($this, 'jsRoutes'),
             'jsPermissions'  => new \Twig_Function_Method($this, 'jsPermissions'),
             'brandName'      => new \Twig_Function_Method($this, 'brandName'),
-            'routeUrl'       => new \Twig_Function_Method($this, 'routeUrl'),
-            'siteConfig'     => new \Twig_Function_Method($this, 'siteConfig'),
+            'routeUrl'       => new \Twig_Function_Method($this, 'routeUrl')
         );
     }
 
@@ -240,7 +238,7 @@ class BaseExtension extends \Twig_Extension
      */
     public function brandName()
     {
-        return $this->runtime->getBrandName();
+        return $this->brandName;
     }
 
     /**
@@ -451,21 +449,6 @@ class BaseExtension extends \Twig_Extension
     public function routeUrl($routeName)
     {
         return $this->jsHelper->getRouteUrl($routeName);
-    }
-    
-    /**
-     * get value for siteConfig from key
-     *
-     * @param string $key site config key
-     * @return string site config value
-     *
-     */
-    public function siteConfig($key)
-    {
-        if (!isset($this->siteConfig)) {
-            throw new \Exception("site config does not exist");
-        }
-        return $this->siteConfig->get($key);
     }
     
     /**
