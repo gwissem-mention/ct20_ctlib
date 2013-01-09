@@ -15,7 +15,8 @@ class DateRangeFilter implements DataProviderFilter
     const YESTERDAY                 = 'yesterday';
     const THIS_WEEK                 = 'thisWeek';
     const EARLIER_THAN_THIS_WEEK    = 'prevThisWeek';
-
+    const SPECIFY                   = 'specify';
+    
     /**
      * @var string
      */
@@ -42,7 +43,8 @@ class DateRangeFilter implements DataProviderFilter
      */
     public function apply($qbr, $value)
     {
-        switch ($value)
+        $date = Arr::mustGet("date", $value);
+        switch ($date["value"])
         {
             case self::TODAY:
                 $today = new \DateTime('today', $this->timezone);
@@ -72,15 +74,20 @@ class DateRangeFilter implements DataProviderFilter
                 $qbr->andWhere("{$this->dateField} < :weekStart")
                     ->setParameter('weekStart', $weekStart->format('Y-m-d'));
                 break;
-            default:
-                $dateFrom = new \DateTime(Arr::mustGet('dateFrom', $value), $this->timezone);
-                $dateTo = new \DateTime(Arr::mustGet('dateTo', $value), $this->timezone);
+            case self::SPECIFY:
+                $dateFrom = Arr::mustGet('dateFrom', $value);
+                $dateTo   = Arr::mustGet('dateTo', $value);
+                $dateFromDateTime = new \DateTime($dateFrom["value"], $this->timezone);
+                $dateToDateTime   = new \DateTime($dateTo["value"], $this->timezone);
+                
                 // Use the passed range from and to dates.
                 $qbr->andWhere("{$this->dateField} >= :from")
                     ->andWhere("{$this->dateField} <= :to")
-                    ->setParameter('from', $dateFrom->format("Y-m-d"))
-                    ->setParameter('to', $dateTo->format("Y-m-d"));
+                    ->setParameter('from', $dateFromDateTime->format("Y-m-d"))
+                    ->setParameter('to', $dateToDateTime->format("Y-m-d"));
                 break;
+            default:
+                throw new \Exception("date can not be found");
         }
     }
 
