@@ -127,40 +127,6 @@ class DataProviderQueryBuilder extends QueryBuilder
     {
         $paginator = new Paginator($this);
         return count($paginator);
-
-        $rootEntityAlias = $this->getRootAlias();
-
-        // Create clone of original query builder in order to change it into a
-        // SELECT COUNT(*) ...
-        // This holds only when there is no computed field and computed field are
-        // not in where or having clause.
-        // ex: select m, ArcDistance as distance from member having distance < 10
-        // this won't work if only replace select field with count(*)
-        if (! $this->isComputedFieldInWhereOrHavingClause()) {
-            $paginator = new Paginator($this);
-            return count($paginator);
-        }
-
-        // the following codes will be remove after doctrine release new version
-        // that can handle selected computional fields. now it is in doctrine project's
-        // trunk.
-        $conn = $this->getEntityManager()->getConnection();
-        $sqlQueryBuilder = $conn->createQueryBuilder()
-            ->select("COUNT(*) AS total")
-            ->from("(" . $this->getQuery()->getSQL().")", "t");
-
-        $parameters = array_values($this->getParameters());
-
-        foreach($parameters as $key => $param) {
-            $sqlQueryBuilder->setParameter(
-                $key,
-                $param,
-                ParameterTypeInferer::inferType($param)
-            );
-        }
-
-        $result = $sqlQueryBuilder->execute()->fetch(\PDO::FETCH_ASSOC);
-        return (int)$result["total"];
     }
 
     /**

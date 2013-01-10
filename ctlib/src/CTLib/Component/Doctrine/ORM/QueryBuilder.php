@@ -141,49 +141,6 @@ class QueryBuilder extends \Doctrine\ORM\QueryBuilder
     }
 
     /**
-     * Is the computed field in a WHERE or HAVING clause?
-     *
-     * Determine if the query builder has computed fields
-     * and the computed fields exist in where or having clause
-     *
-     * @return boolean
-     */
-    public function isComputedFieldInWhereOrHavingClause()
-    {
-        //get all computed select expressions
-        $computedFields = $this->findSelectExpressionByType(
-            "Doctrine\ORM\Query\AST\AggregateExpression",
-            "Doctrine\ORM\Query\AST\SimpleArithmeticExpression",
-            "Doctrine\ORM\Query\AST\Functions\FunctionNode"
-        );
-
-        if (empty($computedFields)) {
-            return false;
-        }
-
-        //get where and having clause, convert them into string
-        $whereClause = (string) $this->getDQLPart("where");
-        $havingClause = (string) $this->getDQLPart("having");
-
-        if (empty($whereClause) && empty($havingClause)) { return false; }
-
-        foreach ($computedFields as $field) {
-            $alias = $field->fieldIdentificationVariable;
-
-            if (empty($alias)) { continue; }
-
-            //test if alias exist in having or where clause
-            if (!empty($whereClause) && preg_match("/\W*".$alias."\W*/", $whereClause)
-                || !empty($havingClause) && preg_match("/\W*".$alias."\W*/", $havingClause))
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
-
-    /**
      * Set the permission alias.
      *
      * NOTE: Value stored is compatible with QueryBuuilder::getRootEntities().
