@@ -112,33 +112,6 @@ class QueryBuilder extends \Doctrine\ORM\QueryBuilder
         }
         return parent::getDQL();
     }
-    /**
-     * Find select expressions by given expression type
-     *
-     * @param mixed $class Select expression type, takes multiple class
-     *
-     * @return mixed select expression
-     */
-    private function findSelectExpressionByType($class)
-    {
-        $classes = is_array($class) ? $class : func_get_args();
-        if (empty($classes)) {
-            return false;
-        }
-
-        $resultSelectExpressions = array();
-        $selectExpressions = $this->getQuery()->getAST()->selectClause->selectExpressions;
-
-        foreach ($selectExpressions as $selectExpression) {
-            foreach ($classes as $expressionClassName) {
-                if ($selectExpression->expression instanceof $expressionClassName) {
-                    $resultSelectExpressions[] = $selectExpression;
-                }
-            }
-        }
-
-        return $resultSelectExpressions;
-    }
 
     /**
      * Set the permission alias.
