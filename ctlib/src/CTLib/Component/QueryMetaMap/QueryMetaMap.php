@@ -53,7 +53,7 @@ class QueryMetaMap
             if (isset($rootAst->joins)) {
                 foreach ($rootAst->joins AS $joinAst) {
                     $entity = $this->createJoinEntity(
-                        $joinAst->joinAssociationDeclaration,
+                        $joinAst,
                         $entityMetaHelper
                     );
                     $this->addEntity($entity);
@@ -90,11 +90,13 @@ class QueryMetaMap
      */
     protected function createJoinEntity($joinAst, $entityMetaHelper)
     {
-        $alias                  = $joinAst->aliasIdentificationVariable;
-        $parentAlias            = $joinAst
+        $joinAsscDcl            = $joinAst->joinAssociationDeclaration;
+        $alias                  = $joinAsscDcl->aliasIdentificationVariable;
+        $joinType               = $joinAst->joinType;
+        $parentAlias            = $joinAsscDcl
                                     ->joinAssociationPathExpression
                                     ->identificationVariable;
-        $parentAssociationName  = $joinAst
+        $parentAssociationName  = $joinAsscDcl
                                     ->joinAssociationPathExpression
                                     ->associationField;
 
@@ -111,11 +113,12 @@ class QueryMetaMap
         );
         $entity->alias      = $alias;
         $entity->fieldNames = $entityMetaHelper->getFieldNames($entity->name);
-        $entity->route = $parentEntity->route;
-        $entity->route[] = array(
-            'alias' => $parentAlias,
+        $entity->route      = $parentEntity->route;
+        $entity->route[]    = array(
+            'alias'           => $parentAlias,
             'associationName' => $parentAssociationName,
-            'isEffective' => $entityMetaHelper->isEffective($entity->name)
+            'joinType'        => $joinType,
+            'isEffective'     => $entityMetaHelper->isEffective($entity->name)
         );
         return $entity;
     }

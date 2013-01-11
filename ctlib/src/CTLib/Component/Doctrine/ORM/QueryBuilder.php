@@ -2,7 +2,8 @@
 namespace CTLib\Component\Doctrine\ORM;
 
 use CTLib\Helper\EntityMetaHelper,
-    CTLib\Util\Util;
+    CTLib\Util\Util,
+    Doctrine\ORM\Query\AST\Join;
 
 /**
  * CellTrak customer QueryBuilder class.
@@ -252,5 +253,89 @@ class QueryBuilder extends \Doctrine\ORM\QueryBuilder
             ->andEffectiveWhere($alias, $effectiveTime);
         $this->effectiveWhere[$alias]["isLeftJoin"] = true;
         return $this;
+    }
+
+    /**
+     * Test if join of given type exists or not
+     *
+     * @param string $join The relationship to join
+     * @param string $alias The alias of the join
+     * @param int $joinType Doctrine\ORM\Query\AST\Join::JOIN_TYPE
+     * @return boolean
+     *
+     */
+    protected function isJoinExists($join, $alias, $joinType)
+    {
+        $queryMetaMap = $this->getQueryMetaMap();
+        $entity = $queryMetaMap->getEntity($alias);
+
+        if (!$entity || empty($entity->route)) { return false; }
+
+        foreach ($entity->route as $r) {
+            if ($r['alias'].".".$r['associationName'] == $join
+                && $r['joinType'] == $joinType
+            )
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * perform a inner join on query builder only when the same join does not exist
+     *
+     * @param string $join The relationship to join
+     * @param string $alias The alias of the join
+     * @param string $conditionType The condition type constant. Either ON or WITH.
+     * @param string $condition The condition for the join
+     * @param string $indexBy The index for the join
+     * @return QueryBuilder This QueryBuilder instance.
+     *
+     */
+    public function innerJoinIfNotExists($join, $alias,
+        $conditionType = null, $condition = null, $indexBy = null)
+    {
+        if ($this->isJoinExists($join, $alias, Join::JOIN_TYPE_INNER)) {
+            return $this;
+        }
+        return parent::innerJoin($join, $alias, $conditionType, $condition, $indexBy);
+    }
+
+    /**
+     * perform a left join on query builder only when the same join does not exist
+     *
+     * @param string $join The relationship to join
+     * @param string $alias The alias of the join
+     * @param string $conditionType The condition type constant. Either ON or WITH.
+     * @param string $condition The condition for the join
+     * @param string $indexBy The index for the join
+     * @return QueryBuilder This QueryBuilder instance.
+     *
+     */
+    public function leftJoinIfNotExists($join, $alias,
+        $conditionType = null, $condition = null, $indexBy = null)
+    {
+        if ($this->isJoinExists($join, $alias, Join::JOIN_TYPE_LEFT)) {
+            return $this;
+        }
+        return parent::innerJoin($join, $alias, $conditionType, $condition, $indexBy);
+    }
+
+    /**
+     * Shortcut to innerJoinIfNotExists
+     *
+     * @param string $join The relationship to join
+     * @param string $alias The alias of the join
+     * @param string $conditionType The condition type constant. Either ON or WITH.
+     * @param string $condition The condition for the join
+     * @param string $indexBy The index for the join
+     * @return QueryBuilder This QueryBuilder instance.
+     *
+     */
+    public function joinIfNotExists($join, $alias,
+        $conditionType = null, $condition = null, $indexBy = null)
+    {
+        return $this->innerJoinIfNotExists($join, $alias, $conditionType, $condition, $indexBy);
     }
 }
