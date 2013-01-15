@@ -227,6 +227,13 @@ class MapQuest extends MapProviderAbstract
             throw new \Exception("Array is invalid");
         }
 
+        $country     = Arr::mustGet("adminArea1", $mapquestResult);
+        $postalCode  = Arr::mustGet("postalCode", $mapquestResult);
+        
+        if ($country == "US") {
+            $postalCode = array_shift(explode("-", $postalCode));
+        }
+        
         return array(
             "qualityCode" => Arr::mustGet("geocodeQualityCode", $mapquestResult),
             "street"      => Arr::mustGet("street", $mapquestResult),
@@ -234,8 +241,8 @@ class MapQuest extends MapProviderAbstract
             "district"    => Arr::mustGet("adminArea4", $mapquestResult),
             "locality"    => null,
             "subdivision" => Arr::mustGet("adminArea3", $mapquestResult),
-            "postalCode"  => Arr::mustGet("postalCode", $mapquestResult),
-            "country"     => Arr::mustGet("adminArea1", $mapquestResult),
+            "postalCode"  => $postalCode,
+            "country"     => $country,
             "mapUrl"      => Arr::get("mapUrl", $mapquestResult),
             "lat"         => Arr::findByKeyChain($mapquestResult, "latLng.lat"),
             "lng"         => Arr::findByKeyChain($mapquestResult, "latLng.lng")

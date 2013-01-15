@@ -108,7 +108,7 @@ class MapProviderManager implements MapProviderInterface
                     "city"        => $address["city"],
                     "subdivision" => $address["subdivision"],
                     "postalCode"  => $address["postalCode"],
-                    "country"     => $address["country"]
+                    "country"     => $country
                 ),
                 $country
             );
@@ -132,7 +132,7 @@ class MapProviderManager implements MapProviderInterface
                     "city"        => $address["city"],
                     "subdivision" => $address["subdivision"],
                     "postalCode"  => $address["postalCode"],
-                    "country"     => $address["country"]
+                    "country"     => $country
                 );
             },
             $addresses
