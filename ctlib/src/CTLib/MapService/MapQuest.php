@@ -231,7 +231,10 @@ class MapQuest extends MapProviderAbstract
         $postalCode  = Arr::mustGet("postalCode", $mapquestResult);
         
         if ($country == "US") {
-            $postalCode = array_shift(explode("-", $postalCode));
+            $arr = explode("-", $postalCode);
+            if (count($arr) > 0) {
+                $postalCode = $arr[0];
+            }
         }
         
         return array(
