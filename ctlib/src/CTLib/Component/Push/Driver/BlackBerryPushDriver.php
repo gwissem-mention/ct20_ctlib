@@ -82,6 +82,9 @@ class BlackBerryPushDriver implements PushDriver
         $contentType    = 'Content-Type: multipart/related; ' .
                           'type="application/xml"; ' .
                           'boundary=' . self::CONTENT_BOUNDARY;
+        $requestBody    = $this->buildRequestBody($message, $pushMessageId);
+
+        $this->logger->debug("BlackBerry push driver: request body\n\n{$requestBody}");
 
         $request = new Curl($this->serviceUrl);
         $request->post              = true;
@@ -89,10 +92,7 @@ class BlackBerryPushDriver implements PushDriver
         $request->userpwd           = "{$this->appId}:{$this->serviceAuth}";
         $request->returntransfer    = true;
         $request->httpheader        = array($contentType);
-        $request->postfields        = $this
-                                        ->buildRequestBody(
-                                            $message,
-                                            $pushMessageId);
+        $request->postfields        = $requestBody;
 
         $response = $request->exec();
 

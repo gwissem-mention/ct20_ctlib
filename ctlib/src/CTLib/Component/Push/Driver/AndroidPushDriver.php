@@ -54,13 +54,17 @@ class AndroidPushDriver implements PushDriver
     {
         $this->logger->debug("Android push driver: send message {$message}");
 
+        $requestBody = $this->buildRequestBody($message);
+
+        $this->logger->debug("Android push driver: request body\n\n{$requestBody}");
+
         $request = new Curl($this->serviceUrl);
         $request->post = true;
         $request->httpheader = array(
             'Authorization: key=' . $this->serviceAuth,
             'Content-Type: application/json'
         );
-        $request->postfields = $this->buildRequestBody($message);
+        $request->postfields = $requestBody;
 
         $response = $request->exec();
 
