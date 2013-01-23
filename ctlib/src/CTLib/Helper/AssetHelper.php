@@ -94,6 +94,7 @@ class AssetHelper
 
     protected function buildLocalAssetUrl($path)
     {
+        if (! $this->runtime) { return $this->getWebRoot() . $path; }
         return $this->getWebRoot()
             . $path
             . ($this->runtime->isDevelopment() ? '?' . time() : '');
@@ -113,11 +114,13 @@ class AssetHelper
 
     public function getAppAssetDir()
     {
+        if (! $this->runtime) { return '/bundles/hq/'; }
         return '/bundles/ctapp/' . $this->runtime->getAppAssetDir();
     }
 
     protected function getBrandAssetDir()
     {
+        if (! $this->runtime) { return '/bundles/hq/'; }
         return '/bundles/ctgateway/' . $this->runtime->getBrandAssetDir();
     }
 
