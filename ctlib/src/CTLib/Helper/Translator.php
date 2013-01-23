@@ -50,7 +50,11 @@ class Translator extends \Symfony\Bundle\FrameworkBundle\Translation\Translator
     public function getCatalog($locale)
     {
         if (! isset($this->catalogues[$locale])) {
-            throw new \Exception("Catalog not found for locale: $locale");
+            $this->loadCatalogue($locale);
+
+            if (! isset($this->catalogues[$locale])) {
+                throw new \Exception("Catalog not found for locale: $locale");
+            }
         }
         return $this->catalogues[$locale];
     }
