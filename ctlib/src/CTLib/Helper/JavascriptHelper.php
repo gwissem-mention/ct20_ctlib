@@ -330,9 +330,9 @@ class JavascriptHelper
      */
     public function defaultTranslations($messageIds)
     {
-        $messageIds = (array)$messageIds;
+        $messageIds = is_array($messageIds) ? $messageIds : func_get_args();
         foreach ($messageIds as $messageId) {
-            $this->addSingleTranslation($messageId);
+            $this->addTranslation($messageId);
         }
     }
 }
