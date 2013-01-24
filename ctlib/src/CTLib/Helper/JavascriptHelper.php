@@ -322,4 +322,17 @@ class JavascriptHelper
         }
     }
 
+    /**
+     * Add default message Ids
+     *
+     * @param mixed $messageIds
+     * @return void
+     */
+    public function defaultTranslations($messageIds)
+    {
+        $messageIds = (array)$messageIds;
+        foreach ($messageIds as $messageId) {
+            $this->addSingleTranslation($messageId);
+        }
+    }
 }
