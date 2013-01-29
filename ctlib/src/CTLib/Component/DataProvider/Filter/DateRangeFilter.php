@@ -48,32 +48,32 @@ class DateRangeFilter implements DataProviderFilter
         {
             case self::TODAY:
                 $today = new \DateTime('today', $this->timezone);
-                $qbr->andWhere("{$this->dateField} = :today")
-                    ->setParameter('today', $today->format('Y-m-d'));
+                $qbr->andWhere("{$this->dateField} BETWEEN :todayStart AND :todayEnd")
+                    ->setParameter('todayStart', $today->format('Y-m-d 00:00:00'))
+                    ->setParameter('todayEnd', $today->format('Y-m-d 23:59:59'));
                 break;
+
             case self::YESTERDAY:
                 $yesterday = new \DateTime('yesterday', $this->timezone);
-                $qbr->andWhere("{$this->dateField} = :yesterday")
-                    ->setParameter('yesterday', $yesterday->format('Y-m-d'));
+                $qbr->andWhere("{$this->dateField} BETWEEN :yesterdayStart AND :yesterdayEnd")
+                    ->setParameter('yesterdayStart', $yesterday->format('Y-m-d 00:00:00'))
+                    ->setParameter('yesterdayEnd', $yesterday->format('Y-m-d 23:59:59'));
                 break;
+
             case self::THIS_WEEK:
                 $today = new \DateTime('today', $this->timezone);
-                $weekStart = clone($today);
-                $weekStart->sub(new \DateInterval('P6D'));
-
-                $qbr->andWhere("{$this->dateField} >= :weekStart")
-                    ->andWhere("{$this->dateField} <= :today")
-                    ->setParameter('weekStart', $weekStart->format('Y-m-d'))
-                    ->setParameter('today', $today->format('Y-m-d'));
+                $weekStart = new \DateTime('Sunday last week', $this->timezone);
+                $qbr->andWhere("{$this->dateField} BETWEEN :weekStart AND :today")
+                    ->setParameter('weekStart', $weekStart->format('Y-m-d 00:00:00'))
+                    ->setParameter('today', $today->format('Y-m-d 23:59:59'));
                 break;
+
             case self::EARLIER_THAN_THIS_WEEK:
-                $today = new \DateTime('today', $this->timezone);
-                $weekStart = clone($today);
-                $weekStart->sub(new \DateInterval('P6D'));
-
+                $weekStart = new \DateTime('Sunday last week', $this->timezone);
                 $qbr->andWhere("{$this->dateField} < :weekStart")
-                    ->setParameter('weekStart', $weekStart->format('Y-m-d'));
+                    ->setParameter('weekStart', $weekStart->format('Y-m-d 00:00:00'));
                 break;
+
             case self::SPECIFY:
                 $dateFrom = Arr::mustGet('dateFrom', $value);
                 $dateTo   = Arr::mustGet('dateTo', $value);
@@ -81,16 +81,14 @@ class DateRangeFilter implements DataProviderFilter
                 $dateToDateTime   = new \DateTime($dateTo["value"], $this->timezone);
                 
                 // Use the passed range from and to dates.
-                $qbr->andWhere("{$this->dateField} >= :from")
-                    ->andWhere("{$this->dateField} <= :to")
-                    ->setParameter('from', $dateFromDateTime->format("Y-m-d"))
-                    ->setParameter('to', $dateToDateTime->format("Y-m-d"));
+                $qbr->andWhere("{$this->dateField} BETWEEN :from AND :to")
+                    ->setParameter('from', $dateFromDateTime->format("Y-m-d 00:00:00"))
+                    ->setParameter('to', $dateToDateTime->format("Y-m-d 23:59:59"));
                 break;
+
             default:
                 throw new \Exception("date can not be found");
         }
     }
-
-
 
 }
