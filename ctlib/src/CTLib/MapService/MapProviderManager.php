@@ -126,7 +126,7 @@ class MapProviderManager implements MapProviderInterface
 
         //clean up the 
         $addresses = array_map(
-            function($address) {
+            function($address) use ($country) {
                 return array(
                     "street"      => $address["street"],
                     "city"        => $address["city"],
