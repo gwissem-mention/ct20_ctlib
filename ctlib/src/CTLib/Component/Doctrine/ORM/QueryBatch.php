@@ -3,8 +3,8 @@ namespace CTLib\Component\Doctrine\ORM;
 
 use Doctrine\ORM\Query;
 /**
-  Class QueryBatch
-*/
+ * Class QueryBatch
+ */
 class QueryBatch implements \Iterator
 {
     private $batchLimit    = null;
@@ -19,13 +19,12 @@ class QueryBatch implements \Iterator
         $this->isFixedOffset = $isFixedOffset;
         if ($query instanceof \Doctrine\ORM\QueryBuilder) {
             $this->query = clone $query->getQuery();
-        }
-        else if ($query instanceof \Doctrine\ORM\Query) {
+        } else if ($query instanceof \Doctrine\ORM\Query) {
             $this->query = clone $query;
-        }
-        else {
+        } else {
             throw new \Exception("query is invalid");
         }
+        $this->query->setParameters($query->getParameters());
         $this->query->setMaxResults($this->batchLimit);
     }
 
@@ -57,7 +56,7 @@ class QueryBatch implements \Iterator
             if (!$this->isFixedOffset) {
                 $this->query->setFirstResult($this->batchNum * $this->batchLimit);
             }
-            
+
             $this->queryResult = $this->query->getResult();
 
             if (empty($this->queryResult)) { return false; }
