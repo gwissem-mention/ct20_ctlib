@@ -43,6 +43,9 @@ class JavascriptObject
 
     public function cleanJson($json)
     {
+        // Disable cleaning operation for now.
+        return $json;
+
         $json = preg_replace("/=\s*{([^{}]*)}[ \t\v\f]*[\r\n]*[ \t\v\f]*/", '={$1};', $json);
         return preg_replace("/(\/\*.*\*\/|\/\/.*[\r\n]|[\t\r\n\v\f]| {2,})/", "", $json);
     }

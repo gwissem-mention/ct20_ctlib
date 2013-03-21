@@ -34,7 +34,12 @@ class DynaPartNode extends \Twig_Node
         $json = $this->convertJsonNodeToString($compiler, $this->getNode("jsonBody"));
         $json = trim($json);
         
-        if (empty($json)) {
+        if (true || empty($json)) {
+            // MT + SL + ZK on Mar 21, 2013:
+            // Disabling jsonObject caching because it universally caches a
+            // post Twig-evaluated JSON string for every session. This is
+            // extremely problematic because many Twig calls in the JSON will
+            // evaluate to session-specific values (i.e., memberId).
             $compiler->write('$jsonObject = new \CTLib\Helper\JavascriptObject(' . trim($json) . ");"."\n");
         }
         else {
