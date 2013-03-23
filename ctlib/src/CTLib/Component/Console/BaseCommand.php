@@ -4,7 +4,6 @@ namespace CTLib\Component\Console;
 use Symfony\Bundle\FrameworkBundle\Command\ContainerAwareCommand,
     Symfony\Component\Console\Input\InputArgument,
     Symfony\Component\Console\Input\InputOption,
-    CTLib\Component\Doctrine\ORM\EntityManagerEvent,
     CTLib\Util\Util;
 
 
@@ -90,11 +89,7 @@ abstract class BaseCommand extends ContainerAwareCommand
      */
     protected function replaceEm($em, $name='default')
     {
-        $this->getContainer()->set("doctrine.orm.{$name}_entity_manager", $em);
-        $this->getService('event_dispatcher')->dispatch(
-            'entity_manager.replace',
-            new EntityManagerEvent($name, $em)
-        );
+        $this->getService('entity_manager_reopener')->reopen($em, $name);
     }
 
     /**

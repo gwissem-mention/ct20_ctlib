@@ -6,7 +6,6 @@ use Symfony\Bundle\FrameworkBundle\Controller\Controller,
     CTLib\Component\HttpFoundation\JsonResponse,
     CTLib\Component\HttpFoundation\PdfResponse,
     CTLib\Util\Util,
-    CTLib\Component\Doctrine\ORM\EntityManagerEvent,
     CTLib\Component\Pdf\HtmlPdf;
 
 /**
@@ -73,11 +72,7 @@ abstract class BaseController extends Controller
      */
     protected function replaceEm($em, $name='default')
     {
-        $this->container->set("doctrine.orm.{$name}_entity_manager", $em);
-        $this->get('event_dispatcher')->dispatch(
-            'entity_manager.replace',
-            new EntityManagerEvent($name, $em)
-        );
+        return $this->get('entity_manager_reopener')->reopen($em, $name);
     }
 
     /**
