@@ -9,10 +9,71 @@ class CTLibExtension extends Extension
 {
     public function load(array $configs, ContainerBuilder $container)
     {
+        $this->loadEmailLoggerConfig($configs, $container);
         $this->loadMapServiceConfig($configs, $container);
         $this->loadSharedCacheConfig($configs, $container);
         $this->loadPushDriverConfig($configs, $container);
         $this->loadBusinessValidatorConfig($configs, $container);
+    }
+
+    protected function loadEmailLoggerConfig(array $configs,
+        ContainerBuilder $container)
+    {
+        $container->setParameter('ctlib.email_logger.threshold_count', null);
+        $container->setParameter('ctlib.email_logger.threshold_seconds', null);
+        $container->setParameter('ctlib.email_logger.sleep_seconds', null);
+
+        $rules = array();
+
+        foreach ($configs as $config) {
+            $from = Arr::findByKeyChain($config, 'email_logger.from');
+            if ($from) {
+                $container->setParameter('ctlib.email_logger.from', $from);
+            }
+
+            $defaultTo = Arr::findByKeyChain($config, 'email_logger.default_to');
+            if ($defaultTo) {
+                $container
+                    ->setParameter('ctlib.email_logger.default_to', $defaultTo);
+            }
+
+            $thresholdCount = Arr::findByKeyChain(
+                                $config,
+                                'email_logger.threshold_count');
+            if ($thresholdCount) {
+                $container
+                    ->setParameter(
+                        'ctlib.email_logger.threshold_count', $thresholdCount);
+            }
+
+            $thresholdSeconds = Arr::findByKeyChain(
+                                    $config,
+                                    'email_logger.threshold_seconds');
+            if ($thresholdSeconds) {
+                $container
+                    ->setParameter(
+                        'ctlib.email_logger.threshold_seconds', $thresholdSeconds);
+            }
+
+            $sleepSeconds = Arr::findByKeyChain(
+                                $config,
+                                'email_logger.sleep_seconds');
+            if ($sleepSeconds) {
+                $container
+                    ->setParameter(
+                        'ctlib.email_logger.sleep_seconds', $sleepSeconds);
+            }
+
+            $rules = array_merge(
+                        $rules,
+                        Arr::findByKeyChain(
+                            $config,
+                            'email_logger.rules',
+                            array()));
+        }
+
+        $container->setParameter('ctlib.email_logger.rules', $rules);
+
     }
 
     protected function loadMapServiceConfig(array $configs,

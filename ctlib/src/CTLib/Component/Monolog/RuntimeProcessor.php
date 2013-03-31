@@ -36,18 +36,20 @@ class RuntimeProcessor
     {
         if (! $this->runtime) { return; }        
 
-        $record['extra'] = array_merge(
-            $record['extra'],
-            array(
-                'environment'   => $this->runtime->getEnvironment(),
-                'exec_mode'     => $this->runtime->getExecMode(),
-                'brand_id'      => $this->runtime->getBrandId(),
-                'site_id'       => $this->runtime->getSiteId() ?: '',
-                'app_version'   => $this->runtime->getAppVersion() ?: '',
-                'app_platform'  => $this->runtime->getAppPlatform() ?: '',
-                'app_modules'   => join(',', $this->runtime->getAppModules())
-            )
-        );
+        $extra = array(
+                    'environment'   => $this->runtime->getEnvironment(),
+                    'exec_mode'     => $this->runtime->getExecMode(),
+                    'brand_id'      => $this->runtime->getBrandId(),
+                    'app_version'   => $this->runtime->getAppVersion() ?: '',
+                    'app_platform'  => $this->runtime->getAppPlatform() ?: '',
+                    'app_modules'   => join(',', $this->runtime->getAppModules()));
+
+        if ($this->runtime->getSite()) {
+            $extra['site_id']   = $this->runtime->getSite()->id;
+            $extra['site_name'] = $this->runtime->getSite()->name;
+        }
+
+        $record['extra'] += $extra;
         return $record;
     }
 
