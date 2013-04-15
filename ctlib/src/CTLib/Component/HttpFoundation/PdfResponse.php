@@ -13,8 +13,9 @@ class PdfResponse extends \Symfony\Component\HttpFoundation\Response
     public function __construct($pdfContent, $fileName, $destination)
     {
         $header = array(
-            'Content-type' => 'application/pdf',
-			'Cache-control' => 'private'
+            'Content-type'  => 'application/pdf',
+			'Cache-control' => 'private',
+			'Pragma'        => ''
         );
 
         if ($destination == static::DESTINATION_INLINE) {
