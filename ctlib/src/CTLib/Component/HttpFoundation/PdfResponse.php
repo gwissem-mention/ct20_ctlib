@@ -14,7 +14,8 @@ class PdfResponse extends \Symfony\Component\HttpFoundation\Response
     {
         $header = array(
             'Content-type'  => 'application/pdf',
-            'Cache-control' => 'no-store'
+            'Cache-control' => 'no-store',
+            'Pragma'        => 'no-store'
         );
 
         if ($destination == static::DESTINATION_INLINE) {
