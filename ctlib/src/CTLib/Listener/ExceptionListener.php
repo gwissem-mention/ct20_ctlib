@@ -18,6 +18,11 @@ class ExceptionListener
 {
 
     /**
+     * @var string
+     */
+    protected $environment;
+
+    /**
      * @var boolean
      */
     protected $debug;
@@ -44,9 +49,10 @@ class ExceptionListener
      */
     public function __construct($kernel, $logger, $session=null)
     {
-        $this->debug    = $kernel->isDebug();
-        $this->logger   = $logger;
-        $this->session  = $session;
+        $this->environment  = $kernel->getEnvironment();
+        $this->debug        = $kernel->isDebug();
+        $this->logger       = $logger;
+        $this->session      = $session;
 
         if (method_exists($kernel, 'getRuntime')) { 
             $this->execMode = $kernel->getRuntime()->getExecMode();
@@ -77,7 +83,7 @@ class ExceptionListener
             $event->setResponse(new JsonResponse($msg));
             $event->stopPropagation();
 
-        } elseif ($this->debug) {
+        } elseif ($this->environment != 'prod' && $this->debug) {
             if ($this->isXmlHttpRequest($event->getRequest())) {
                 $exception = $event->getException();
                 $body = array(
