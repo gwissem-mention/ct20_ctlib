@@ -691,7 +691,9 @@ abstract class BaseController extends Controller
     {
         $routerContext = $this->get('router')->getContext();
 
-        return $routerContext->getScheme() . '://' .
+        $scheme = $this->getParameter('use_ssl') ? 'https' : 'http';
+
+        return $scheme . '://' .
             $routerContext->getHost() .
             $routerContext->getBaseUrl();
     }
