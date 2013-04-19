@@ -83,7 +83,7 @@ class ExceptionListener
             $event->setResponse(new JsonResponse($msg));
             $event->stopPropagation();
 
-        } elseif ($this->environment != 'prod' && $this->debug) {
+        } elseif ($this->debug) {
             if ($this->isXmlHttpRequest($event->getRequest())) {
                 $exception = $event->getException();
                 $body = array(
