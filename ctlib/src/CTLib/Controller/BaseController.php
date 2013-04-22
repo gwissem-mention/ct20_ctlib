@@ -399,7 +399,7 @@ abstract class BaseController extends Controller
             $params['locale'] = $this->get('translator')->getLocale();
         }
 
-        $subject = $this->trans($subject, array(), 'messages', $params['locale']);
+        $subject = $this->trans($subject, $params, 'messages', $params['locale']);
 
         $body = $this->renderView(
             $this->buildFullTemplateName($template, 'txt', '_Messages'),
