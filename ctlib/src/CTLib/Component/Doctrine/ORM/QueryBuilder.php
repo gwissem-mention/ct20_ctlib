@@ -3,7 +3,7 @@ namespace CTLib\Component\Doctrine\ORM;
 
 use CTLib\Helper\EntityMetaHelper,
     CTLib\Util\Util,
-    Doctrine\ORM\Query\AST\Join;
+    Doctrine\ORM\Query\Expr\Join;
 
 /**
  * CellTrak customer QueryBuilder class.
@@ -260,23 +260,24 @@ class QueryBuilder extends \Doctrine\ORM\QueryBuilder
      *
      * @param string $join The relationship to join
      * @param string $alias The alias of the join
-     * @param int $joinType Doctrine\ORM\Query\AST\Join::JOIN_TYPE
+     * @param int $joinType Doctrine\ORM\Query\Expr\Join::JOIN_TYPE
      * @return boolean
      *
      */
     protected function isJoinExists($join, $alias, $joinType)
     {
-        $queryMetaMap = $this->getQueryMetaMap();
-        $entity = $queryMetaMap->getEntity($alias);
+        $joinPart = $this->getDQLPart("join");
 
-        if (!$entity || empty($entity->route)) { return false; }
+        if (empty($joinPart)) { return false; }
 
-        foreach ($entity->route as $r) {
-            if ($r['alias'].".".$r['associationName'] == $join
-                && $r['joinType'] == $joinType
-            )
-            {
-                return true;
+        foreach ($joinPart as $joinRoot) {
+            foreach ($joinRoot as $j) {
+                if ($j->getJoin() == $join
+                    && $j->getAlias() == $alias
+                    && $j->getJoinType() == $joinType
+                ) {
+                    return true;
+                }
             }
         }
         return false;
@@ -296,7 +297,7 @@ class QueryBuilder extends \Doctrine\ORM\QueryBuilder
     public function innerJoinIfNotExists($join, $alias,
         $conditionType = null, $condition = null, $indexBy = null)
     {
-        if ($this->isJoinExists($join, $alias, Join::JOIN_TYPE_INNER)) {
+        if ($this->isJoinExists($join, $alias, Join::INNER_JOIN)) {
             return $this;
         }
         return parent::innerJoin($join, $alias, $conditionType, $condition, $indexBy);
@@ -316,7 +317,7 @@ class QueryBuilder extends \Doctrine\ORM\QueryBuilder
     public function leftJoinIfNotExists($join, $alias,
         $conditionType = null, $condition = null, $indexBy = null)
     {
-        if ($this->isJoinExists($join, $alias, Join::JOIN_TYPE_LEFT)) {
+        if ($this->isJoinExists($join, $alias, Join::LEFT_JOIN)) {
             return $this;
         }
         return parent::innerJoin($join, $alias, $conditionType, $condition, $indexBy);
