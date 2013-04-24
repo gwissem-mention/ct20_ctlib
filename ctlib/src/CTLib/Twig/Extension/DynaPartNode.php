@@ -30,7 +30,7 @@ class DynaPartNode extends \Twig_Node
         }
 
         $qualifiedAction = "{$dynaPartName}:show";
-        
+
         $json = $this->convertJsonNodeToString($compiler, $this->getNode("jsonBody"));
         $json = trim($json);
         
@@ -70,7 +70,14 @@ class DynaPartNode extends \Twig_Node
             ->write("), array());");
     }
 
-
+    /**
+     * Convert JsonNode To String
+     *
+     * @param Twig_Compiler $compiler
+     * @param Twig_NodeInterface $jsonNode
+     * @return string
+     *
+     */
     public function convertJsonNodeToString(\Twig_Compiler $compiler, \Twig_NodeInterface $jsonNode)
     {
         $result = "";
@@ -137,8 +144,31 @@ class DynaPartNode extends \Twig_Node
         return $result;
     }
 
+    /**
+     * convert twig node object into string
+     *
+     * @param Twig_Compiler $compiler
+     * @param Twig_NodeInterface $node
+     * @return string expression string
+     *
+     */
     private function getTwigExpressionSource(\Twig_Compiler $compiler, \Twig_NodeInterface $node)
     {
+        // since when strict_variables is set to false, optimizor will kick in
+        // and convert $context["alertDetailDialog"] to $_alertDetailDialog_,
+        // in recordset, this will break javascript body. the following is to
+        // turn off optimizor, get variable from context.
+        if ($node instanceof \Twig_Node_Expression_MethodCall) {
+            $exprNameNode = $node->getNode("node");
+            if ($exprNameNode instanceof \Twig_Node_Expression_TempName) {
+                //convert name node from temp name into name.
+                $exprNameNode = new \Twig_Node_Expression_Name(
+                    $exprNameNode->getAttribute('name'),
+                    $exprNameNode->getLine()
+                );
+                $node->setNode("node", $exprNameNode);
+            }
+        }
         $tempCompiler = new \Twig_Compiler($compiler->getEnvironment());
         $node->compile($tempCompiler);
         return $tempCompiler->getSource();
