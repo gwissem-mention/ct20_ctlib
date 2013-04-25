@@ -154,24 +154,55 @@ class DynaPartNode extends \Twig_Node
      */
     private function getTwigExpressionSource(\Twig_Compiler $compiler, \Twig_NodeInterface $node)
     {
+        $twigEnv = $compiler->getEnvironment();
         // since when strict_variables is set to false, optimizor will kick in
         // and convert $context["alertDetailDialog"] to $_alertDetailDialog_,
         // in recordset, this will break javascript body. the following is to
         // turn off optimizor, get variable from context.
-        if ($node instanceof \Twig_Node_Expression_MethodCall) {
-            $exprNameNode = $node->getNode("node");
-            if ($exprNameNode instanceof \Twig_Node_Expression_TempName) {
-                //convert name node from temp name into name.
-                $exprNameNode = new \Twig_Node_Expression_Name(
-                    $exprNameNode->getAttribute('name'),
-                    $exprNameNode->getLine()
-                );
-                $node->setNode("node", $exprNameNode);
-            }
+        if (! $twigEnv->isStrictVariables()) {
+            $this->stripTempNameNode($node);
         }
-        $tempCompiler = new \Twig_Compiler($compiler->getEnvironment());
+
+        $tempCompiler = new \Twig_Compiler($twigEnv);
         $node->compile($tempCompiler);
         return $tempCompiler->getSource();
+    }
+
+    /**
+     * Strip Twig_Node_Expression_TempName node, make it into
+     * Twig_Node_Expression_Name for all descendents
+     *
+     * @param Twig_NodeInterface $node
+     * @return void
+     *
+     */
+    private function stripTempNameNode(\Twig_NodeInterface &$node)
+    {
+        if ($node instanceof \Twig_Node_Expression_TempName) {
+            $node = new \Twig_Node_Expression_Name(
+                $node->getAttribute('name'),
+                $node->getLine()
+            );
+            return;
+        }
+
+        if ($node->count() == 0) {
+            return;
+        }
+
+        $arrayIterator = $node->getIterator();
+        foreach ($arrayIterator as $childName => $child) {
+            if ($child instanceof \Twig_Node_Expression_TempName) {
+                $child = new \Twig_Node_Expression_Name(
+                    $child->getAttribute('name'),
+                    $child->getLine()
+                );
+                $node->setNode($childName, $child);
+            }
+            else {
+                $this->stripTempNameNode($child);
+            }
+        }
     }
 
 }
