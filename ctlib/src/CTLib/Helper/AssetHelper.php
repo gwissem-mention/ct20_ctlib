@@ -73,8 +73,7 @@ class AssetHelper
 
     public function buildExternalJsLink($url)
     {
-        $url = preg_replace("/^(http:\/\/|https:\/\/)/", "", $url);
-        return $this->buildJsLink($this->request->getScheme()."://".$url);
+        return $this->buildJsLink($url);
     }
 
     public function buildGlobalAssetUrl($path)
