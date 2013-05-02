@@ -51,17 +51,37 @@ class Mutex
      * stall the process until blockingUnlock is called.
      * 
      * @param string $mutexName the name of mutex
+     * @param string $nb non-block option. LOCK_NB, the call will request the lock, if it's locked, the process will not be blocked.
      * @return void
      */
-    public function blockingLock($mutexName)
+    public function blockingLock($mutexName, $nb=null)
     {
         $mutexPath = $this->mutexPath($mutexName, 'blocking');
         $mutexFile = $this->createMutexFile($mutexPath, 'w+');
 
-        if (! flock($mutexFile, \LOCK_EX)) {
-            throw new \Exception('Could not lock mutex file');
+        $lockSuccess = false;
+        
+        if ($nb==null)
+        {
+            if (! flock($mutexFile, \LOCK_EX)) {
+                $lockSuccess = false;
+                throw new \Exception('Could not lock mutex file');
+            }
+            else {
+                $lockSuccess = true;
+            }
+        }
+        else
+        {
+            if (! flock($mutexFile, \LOCK_EX | \LOCK_NB)) {
+                $lockSuccess = false;
+            }
+            else {
+                $lockSuccess = true;
+            }        
         }
         $this->blockingMutexes[$mutexName] = array($mutexFile, $mutexPath);
+        return $lockSuccess;
     }
 
     /**
