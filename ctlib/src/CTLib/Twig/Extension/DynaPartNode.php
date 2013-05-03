@@ -7,12 +7,18 @@ use CTLib\Util\Util,
 
 class DynaPartNode extends \Twig_Node
 {
+    //store temporary context variables
+    //when debug mode is off, twig parser will parse twig variables into
+    //temporary variables, $setTemps is used to capture those.
+    //later all parsed expression for temporary variables will be rendered.
+    protected $setTemps;
 
     public function __construct(\Twig_NodeInterface $jsonBody, $attributes, $lineno, $tag)
     {
         $attributes["id"] = md5($attributes["fileName"] . $attributes["dynaPartName"] . $lineno);
         $notes = array("jsonBody" => $jsonBody);
-
+        $this->setTemps = array();
+        
         parent::__construct($notes, $attributes, $lineno, $tag);
     }
 
@@ -34,6 +40,13 @@ class DynaPartNode extends \Twig_Node
         $json = $this->convertJsonNodeToString($compiler, $this->getNode("jsonBody"));
         $json = trim($json);
         
+        if (!empty($this->setTemps)) {
+            $uniqueSetTemps = array_unique($this->setTemps);
+            foreach($uniqueSetTemps as $temp) {
+                $compiler->write($temp."\n");
+            }
+        }
+
         if (true || empty($json)) {
             // MT + SL + ZK on Mar 21, 2013:
             // Disabling jsonObject caching because it universally caches a
@@ -82,9 +95,12 @@ class DynaPartNode extends \Twig_Node
     {
         $result = "";
 
-        //if ($jsonNode->count() == 0 ) {
-        //    return $result;
-        //}
+        if ($jsonNode instanceof \Twig_Node_SetTemp) {
+            $setTempSource = $this->getTwigExpressionSource($compiler, $jsonNode);
+            //remove debugging line number
+            $this->setTemps[] = preg_replace('/\\s*\\/\\/\\s*line\\s+\\d*[\\r\\n]/', '', $setTempSource);
+            return "";
+        }
 
         if ($jsonNode instanceof \Twig_Node_Expression) {
             return $this->getTwigExpressionSource($compiler, $jsonNode);
@@ -130,9 +146,6 @@ class DynaPartNode extends \Twig_Node
         }
 
         $iterator = $jsonNode->getIterator();
-        //if ($iterator->count() <= 0) {
-        //    throw new \Exception("Not supported Twig Expression");
-        //}
 
         if ($iterator->count() != 0) {
             foreach ($iterator as $key => $node) {
@@ -141,6 +154,7 @@ class DynaPartNode extends \Twig_Node
                     $this->convertJsonNodeToString($compiler, $node);
             }
         }
+
         return $result;
     }
 
@@ -155,54 +169,9 @@ class DynaPartNode extends \Twig_Node
     private function getTwigExpressionSource(\Twig_Compiler $compiler, \Twig_NodeInterface $node)
     {
         $twigEnv = $compiler->getEnvironment();
-        // since when strict_variables is set to false, optimizor will kick in
-        // and convert $context["alertDetailDialog"] to $_alertDetailDialog_,
-        // in recordset, this will break javascript body. the following is to
-        // turn off optimizor, get variable from context.
-        if (! $twigEnv->isStrictVariables()) {
-            $this->stripTempNameNode($node);
-        }
-
         $tempCompiler = new \Twig_Compiler($twigEnv);
         $node->compile($tempCompiler);
         return $tempCompiler->getSource();
-    }
-
-    /**
-     * Strip Twig_Node_Expression_TempName node, make it into
-     * Twig_Node_Expression_Name for all descendents
-     *
-     * @param Twig_NodeInterface $node
-     * @return void
-     *
-     */
-    private function stripTempNameNode(\Twig_NodeInterface &$node)
-    {
-        if ($node instanceof \Twig_Node_Expression_TempName) {
-            $node = new \Twig_Node_Expression_Name(
-                $node->getAttribute('name'),
-                $node->getLine()
-            );
-            return;
-        }
-
-        if ($node->count() == 0) {
-            return;
-        }
-
-        $arrayIterator = $node->getIterator();
-        foreach ($arrayIterator as $childName => $child) {
-            if ($child instanceof \Twig_Node_Expression_TempName) {
-                $child = new \Twig_Node_Expression_Name(
-                    $child->getAttribute('name'),
-                    $child->getLine()
-                );
-                $node->setNode($childName, $child);
-            }
-            else {
-                $this->stripTempNameNode($child);
-            }
-        }
     }
 
 }
