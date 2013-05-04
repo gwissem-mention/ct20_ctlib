@@ -5,6 +5,7 @@ namespace CTLib\Controller;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller,
     CTLib\Component\HttpFoundation\JsonResponse,
     CTLib\Component\HttpFoundation\PdfResponse,
+    CTLib\Component\HttpFoundation\CsvResponse,
     CTLib\Util\Util,
     CTLib\Component\Pdf\HtmlPdf;
 
@@ -556,6 +557,21 @@ abstract class BaseController extends Controller
         $htmlPdf = new HtmlPdf($this->get("kernel"));
 
         return new PdfResponse($htmlPdf->render($html), $fileName, $destination);
+    }
+
+    /**
+     * Renders PDF Response, let browser show it inline or force download
+     *
+     * @param mixed $content content of csv file, can be string or array of array
+     * @param string $fileName downloadable file name
+     * @param string $destination show pdf within the browser or force download
+     * @return PdfResponse 
+     *
+     */   
+    public function renderCsv($content, $fileName="celltrak.csv",
+        $destination=CsvResponse::DESTINATION_ATTACHMENT)
+    {
+        return new CsvResponse($content, $fileName, $destination);
     }
     
     /**

@@ -1,7 +1,8 @@
 <?php
 namespace CTLib\Component\DataProvider;
 
-use CTLib\Util\Arr;
+use CTLib\Util\Arr,
+    CTLib\Component\Doctrine\ORM\QueryBatch;
 
 /**
  * Facilitates processing QueryBuilder results into paginated structured data.
@@ -11,7 +12,14 @@ use CTLib\Util\Arr;
  */
 class DataProvider
 {
-    
+    const REQUEST_TYPE_NOTIFY = "notify";
+    const REQUEST_TYPE_JSON   = "json";
+    const REQUEST_TYPE_CSV    = "csv";
+    const REQUEST_TYPE_PDF    = "pdf";
+
+    const BATCH_RECORD_SIZE = 50;
+
+
     /**
      * @var DataProviderQueryBuilder
      */
@@ -32,16 +40,36 @@ class DataProvider
      */
     protected $defaultFilters;
 
+    /**
+     * @var Router
+     */    
+    protected $router;
+
+    /**
+     * Provide a shared variable for all model callback function
+     * @var mixed 
+     */    
+    protected $rowContext;
+
+    /**
+     * determine if paginator is fetch Joined 
+     * detail see: http://docs.doctrine-project.org/en/latest/tutorials/pagination.html
+
+     * @var boolean
+     */    
+    protected $fetchJoinCollection;
 
     /**
      * @param DataProviderQueryBuilder $queryBuilder
      */
-    public function __construct($queryBuilder)
+    public function __construct($queryBuilder, $fetchJoinCollection = true)
     {
         $this->queryBuilder     = $queryBuilder;
         $this->modelFields      = array();
         $this->filterHandlers   = array();
         $this->defaultFilters   = array();
+        $this->rowContext       = array();
+        $this->fetchJoinCollection = $fetchJoinCollection;
     }
 
     /**
@@ -50,7 +78,7 @@ class DataProvider
      * @param Request $request
      * @return array    array('data' => array, 'total' => int, 'model' => array)
      */
-    public function getData($request, $fetchJoinCollection = true)
+    public function getData($request)
     {
         $queryConfig    = $this->getQueryConfig($request);
         $session        = $request->getSession();
@@ -60,13 +88,24 @@ class DataProvider
             $session->set($cacheId, $queryConfig);
         }
 
-        // fixme: there is no access to post data
-        if ($this->fromPost('notify', $request)) {
-            // Just needed to save the updated query config.
-            return $this->getFormattedData();
-        } else {
-            return $this->run($queryConfig, $fetchJoinCollection);
+        $requestType = $this->fromPost('requestType', $request);
+        if ($requestType == static::REQUEST_TYPE_NOTIFY) {
+            return null;
         }
+
+        switch ($requestType) {
+            case static::REQUEST_TYPE_JSON:
+                $recordProcessor = new JsonRecordProcessor($this->fetchJoinCollection);
+                break;
+            case static::REQUEST_TYPE_CSV:
+                $recordProcessor = new CsvRecordProcessor();
+                break;
+            case static::REQUEST_TYPE_PDF:
+            default:
+                throw new \Exception("The type of request from recordset is not supported");
+        }
+
+        return $this->run($recordProcessor, $queryConfig);
     }
 
     /**
@@ -140,23 +179,28 @@ class DataProvider
     }
 
     /**
-     * Returns data formatted with total results and model.
+     * Get recordset ajax request type. It could be any of 
+     * these: REQUEST_TYPE_NOTIFY, REQUEST_TYPE_JSON,
+     * REQUEST_TYPE_CSV, REQUEST_TYPE_PDF
+     * 
+     * @param Request $request 
+     * @return string
      *
-     * @param array $data
-     * @param integer $total
-     * @param array $model
-     *
-     * @return array
      */
-    protected function getFormattedData($data=null, $total=null, $model=null)
+    public function getRequestType($request)
     {
-        return array(
-            'data'  => $data,
-            'total' => $total,
-            'model' => $model
-        );
+        $requestType = $this->fromPost('requestType', $request);
+        if ($requestType != static::REQUEST_TYPE_NOTIFY
+            && $requestType != static::REQUEST_TYPE_JSON
+            && $requestType != static::REQUEST_TYPE_CSV
+            && $requestType != static::REQUEST_TYPE_PDF
+        ) {
+            throw new \Exception("request type is not valid");
+        }
+        
+        return $requestType;
     }
-
+    
     /**
      * Returns query configuration from Request.
      *
@@ -175,6 +219,14 @@ class DataProvider
                                     'suppressTotal', $request, false);
         $cnf->suppressResults   = $this->fromPost(
                                     'suppressResults', $request, false);
+        list(
+            $requestedFields,
+            $requestedAliases
+        ) = $this->seperateFieldsAndAliases($this->fromPost("fields", $request));
+
+        $cnf->fields   = $requestedFields;
+        $cnf->aliases  = $requestedAliases;
+
         return $cnf;
     }
 
@@ -198,29 +250,34 @@ class DataProvider
      * @param StdClass $queryConfig
      * @return array
      */
-    protected function run($queryConfig, $fetchJoinCollection = true)
+    protected function run(RecordProcessorInterface $recordProcessor, $queryConfig)
     {
+        $model = $this->getModel($queryConfig);
+
         $this->applyFilters($queryConfig);
 
         if ($queryConfig->suppressTotal) {
-            // Request doesn't require total number of results.
             $total = -1;
-        } else {
-            $total = $this->queryBuilder->getResultTotal();
+        }
+        else {
+            $total = $recordProcessor->getTotal($this->queryBuilder);
         }
 
-        if ($total === 0 || $queryConfig->suppressResults) {
+        if ($total === 0) {
             // When no results or request doesn't require them, return just the
             // total results found.
-            return $this->getFormattedData(array(), $total);
+            return $recordProcessor->formatResult($total, $model, array());
         }
 
         $this->applySorts($queryConfig);
-        $this->applyLimit($queryConfig);
 
-        $data   = $this->getQueryResultSet($queryConfig, $fetchJoinCollection);
-        $model  = $this->getModel($queryConfig);
-        return $this->getFormattedData($data, $total, $model);
+        if ($queryConfig->rowsPerPage > 0) {
+            $this->applyLimit($queryConfig);
+        }
+
+        $data = $this->getQueryResultSet($recordProcessor, $queryConfig, $model);
+
+        return $recordProcessor->formatResult($total, $model, $data);
     }
 
     /**
@@ -381,37 +438,99 @@ class DataProvider
 
     /**
      * Execute query and builds processed result set.
+     * There are two ways to iterator records. If rowsPerPage is set,
+     * loop thru using paginated quey result. Otherwise loop thru records
+     * using batch query result to save query time
      *
+     * @param RecordProcessorInterface $recordProcessor record processor
      * @param StdClass $queryConfig
-     *
+     * @param stdClass $model
+     * 
      * @return array    Enumerated array of records (each as their own
      *                  enumerated array of column values).
      */
-    protected function getQueryResultSet($queryConfig, $fetchJoinCollection = true)
+    protected function getQueryResultSet(RecordProcessorInterface $recordProcessor,
+        $queryConfig, $model)
     {
-        $rawResultSet = $this->queryBuilder->getPaginatedResult($fetchJoinCollection);
-
-        if (! $rawResultSet) {
-            return array();
-        }
-
+        $recordProcessor->beforeProcessRecord($model);
         $queryMetaMap = $this->queryBuilder->getQueryMetaMap();
-        $processedResultSet = array();
-        foreach ($rawResultSet as $rawRecord) {
-            $record = $this->processResultRecord(
-                $rawRecord,
-                $queryMetaMap,
-                $queryConfig
-            );
-            // record can be ignored by returning null from
-            // function processResultRecord
-            if (isset($record)) {
-                $processedResultSet[] = $record;
+
+        // loop thru paginated iterator
+        if ($queryConfig->rowsPerPage > 0) {
+            $iterator = $this->queryBuilder
+                ->getPaginatedResult($this->fetchJoinCollection);
+            foreach ($iterator as $rawRecord) {
+                $this->iterateRecord(
+                    $recordProcessor,
+                    $rawRecord,
+                    $queryMetaMap,
+                    $queryConfig,
+                    $model
+                );
             }
         }
-        return $processedResultSet;
+        // loop thru batch result
+        else {
+            $this->queryBuilder
+                ->getEntityManager()
+                ->getConnection()
+                ->getConfiguration()
+                ->setSqlLogger(null);
+
+            $batches = new QueryBatch(
+                $this->queryBuilder,
+                static::BATCH_RECORD_SIZE
+            );
+
+            foreach ($batches as $batch) {
+                foreach ($batch as $rawRecord) {
+                    $this->iterateRecord(
+                        $recordProcessor,
+                        $rawRecord,
+                        $queryMetaMap,
+                        $queryConfig,
+                        $model
+                    );
+                }
+            }
+        }
+
+        return $recordProcessor->getRecordResult($queryConfig);
     }
 
+    /**
+     * Perform iteration on each Record
+     *
+     * @param RecordProcessorInterface $recordProcessor record processor
+     * @param mixed $rawRecord record data retrieved by doctrine
+     * @param QueryMetaMap $queryMetaMap Query meta data
+     * @param stdClass $queryConfig 
+     * @param stdClass $model
+     * @return void
+     *
+     */
+    protected function iterateRecord(RecordProcessorInterface $recordProcessor,
+        $rawRecord, $queryMetaMap, $queryConfig, $model)
+    {
+        // reset row contentx variable for each row.
+        $this->rowContext = array();
+
+        $record = $this->processResultRecord(
+            $rawRecord,
+            $queryMetaMap,
+            $queryConfig,
+            $model
+        );
+
+        // record can be ignored by returning null
+        if (isset($record)) {
+            $recordProcessor->processRecord($record, $model);
+        }
+
+        //clear row context variable for each row.
+        unset($this->rowContext);
+    }
+    
     /**
      * Processes raw result record into one used in response.
      *
@@ -422,7 +541,7 @@ class DataProvider
      * @return array
      */
     protected function processResultRecord($rawRecord, $queryMetaMap,
-        $queryConfig)
+        $queryConfig, $model)
     {
         // Extract two possible components from raw record:
         //  1. $rootDataEntity      Returned if we selected at least one
@@ -434,10 +553,15 @@ class DataProvider
             $individualValues   ) = $this->extractResultRecord($rawRecord);
 
         $processedRecord = array();
-        
-        foreach ($this->modelFields as $field) {
+
+        foreach ($model->fields as $field) {
+            // convert it into query field, which is configured
+            // using addModel function
+            $sourceField = Arr::get($field, $this->modelFields);
+            if (! $sourceField) { continue; }
+            
             $processedRecord[] = $this->getFieldValue(
-                $field,
+                $sourceField,
                 $rootDataEntity,
                 $individualValues,
                 $queryMetaMap
@@ -466,20 +590,44 @@ class DataProvider
     }
 
     /**
-     * Returns model aliases used.
+     * Returns models that are used in query builder and also fitered 
+     * in javascript.
      *
      * @param StdClass $queryConfig
-     * @return array
+     * @return StdClass that contains fields and aliases
      */
     protected function getModel($queryConfig)
     {
-        return array_keys($this->modelFields);
+        $model = new \StdClass;
+        //source fields are ones that are added by AddModelField
+        $sourceFields  = array_keys($this->modelFields);
+
+        // if not configured fields in javascript
+        // return all available fields
+        if (empty($queryConfig->fields)) {
+            $model->fields  = $sourceFields;
+            $model->aliases = $sourceFields;
+            return $model;
+        }
+
+        // if configured fields in javascript
+        // only get fields that are configured in javascript
+        $model->fields  = array();
+        $model->aliases = array();
+        foreach ($queryConfig->fields as $i => $field) {
+            if (in_array($field, $sourceFields)) {
+                $model->fields[]  = $field;
+                $model->aliases[] = $queryConfig->aliases[$i];
+            }
+        }
+
+        return $model;
     }
 
     /**
      * Retrieves value for field.
      *
-     * @param mixed $field                 Field name or callable.
+     * @param string $field query field name or callable.
      * @param Entity $rootDataEntity
      * @param array $individualValues
      * @param QueryMetaMap $queryMetaMap
@@ -491,7 +639,14 @@ class DataProvider
     {
         if (is_callable($field)) {
             // Hand-off to callback to get field value.
-            return call_user_func($field, $rootDataEntity, $individualValues);
+            return call_user_func_array(
+                $field,
+                array(
+                    $rootDataEntity,
+                    $individualValues,
+                    &$this->rowContext
+                )
+            );
         }
 
         if (! strpos($field, '.')) {
@@ -565,6 +720,132 @@ class DataProvider
             }
         }
         return $dataEntity;
+    }
+
+//    /**
+//     * Get non-paginated data, and wrap it around with QueryBatch
+//     *
+//     * @param stdClass $queryConfig
+//     * @param boolean $fetchJoinCollection
+//     * @return QueryBatch
+//     *
+//     */
+//    protected function getFullDataBatch($queryConfig, $fetchJoinCollection = true)
+//    {
+//        $this->applyFilters($queryConfig);
+//        $this->applySorts($queryConfig);
+//
+//        // turn off logging to save memory
+//        $this->queryBuilder
+//            ->getEntityManager()
+//            ->getConnection()
+//            ->getConfiguration()
+//            ->setSqlLogger(null);
+//
+//        $batches = new QueryBatch($this->queryBuilder->getQuery(), 50);
+//        return $batches;
+//    }
+
+    /**
+     * Save result data into temporary file
+     *
+     * @param stdClass $queryConfig
+     * @param boolean $fetchJoinCollection
+     * @return string temp file name
+     *
+     */
+    protected function saveToTempFile($queryConfig, $fetchJoinCollection)
+    {
+        $batches = $this->getFullDataBatch($queryConfig, $fetchJoinCollection);
+        $this->getQueryResultSet(
+            $batches,
+            $queryConfig,
+            $fetchJoinCollection
+        );
+        if ($queryConfig->downloadType == "csv") {
+            return $this->saveBatchToCsv(
+                $batches,
+                $queryConfig,
+                $fetchJoinCollection
+            );
+        }
+        // to be supported
+        elseif ($queryConfig->downloadType == "pdf") {
+            
+        }
+        
+        return null;
+    }
+
+    /**
+     * Save batch data result into CSV file
+     *
+     * @param QueryBatch $batches batch result
+     * @param stdClass $queryConfig container of query configs
+     * @param boolean $fetchJoinCollection
+     * @param Request $request request
+     * @return string return temp file name
+     *
+     */
+    protected function saveBatchToCsv($batches, $queryConfig, $fetchJoinCollection)
+    {
+        $queryMetaMap = $this->queryBuilder->getQueryMetaMap();
+        $tmpFileName  = tempnam(sys_get_temp_dir(), "rst");
+        $tmpHandle    = fopen($tmpFileName, "w");
+        $modelAlias   = $this->getModelAlias($queryConfig);
+
+        fputcsv($tmpHandle, $modelAlias);
+
+        foreach ($batches as $batch) {
+            
+            foreach ($batch as $record) {
+                $record = $this->processResultRecord(
+                    $record,
+                    $queryMetaMap,
+                    $queryConfig
+                );
+
+                // convert array in each record into string
+                $record = array_map(
+                    function ($item) {
+                        if (!is_array($item)) {
+                            return $item;
+                        }
+                        return implode("|", $item);
+                    },
+                    $record
+                );
+                fputcsv($tmpHandle, $record);
+            }
+        }
+
+        fclose($tmpHandle);
+
+        return $tmpFileName;
+    }
+
+    /**
+     * Get requested fields and alias that are configured
+     * in the javascript
+     *
+     * @param Request $request
+     * @return array array of fields and aliases
+     *
+     */
+    protected function seperateFieldsAndAliases($fieldsConfig)
+    {
+        if (empty($fieldsConfig) || !is_array($fieldsConfig)) {
+            return array(null, null);
+        }
+
+        $fields = $aliases = array();
+        
+        foreach ($fieldsConfig as $config) {
+            $fields[] = $config[0];
+            $aliases[] = Arr::get(1, $config, $config[0]);
+        }
+        
+        return array($fields, $aliases);
     }
 
     /**
