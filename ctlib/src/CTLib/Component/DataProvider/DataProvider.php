@@ -88,22 +88,12 @@ class DataProvider
             $session->set($cacheId, $queryConfig);
         }
 
-        $requestType = $this->fromPost('requestType', $request);
+        $requestType = $this->getRequestType($request);
         if ($requestType == static::REQUEST_TYPE_NOTIFY) {
             return null;
         }
 
-        switch ($requestType) {
-            case static::REQUEST_TYPE_JSON:
-                $recordProcessor = new JsonRecordProcessor($this->fetchJoinCollection);
-                break;
-            case static::REQUEST_TYPE_CSV:
-                $recordProcessor = new CsvRecordProcessor();
-                break;
-            case static::REQUEST_TYPE_PDF:
-            default:
-                throw new \Exception("The type of request from recordset is not supported");
-        }
+        $recordProcessor = $this->getRecordProcessor($requestType);
 
         return $this->run($recordProcessor, $queryConfig);
     }
@@ -200,7 +190,32 @@ class DataProvider
         
         return $requestType;
     }
-    
+
+    /**
+     * Get corresponding RecordProcessor by matching request type
+     *
+     * @param string $requestType
+     * @return RecordProcessorInterface
+     *
+     */
+    protected function getRecordProcessor($requestType)
+    {
+        switch ($requestType) {
+            case static::REQUEST_TYPE_JSON:
+                return new JsonRecordProcessor($this->fetchJoinCollection);
+
+            case static::REQUEST_TYPE_CSV:
+                return new CsvRecordProcessor();
+
+            case static::REQUEST_TYPE_PDF:
+
+            default:
+                throw new \Exception("request type is not supported");
+        }
+
+        return null;
+    }
+
     /**
      * Returns query configuration from Request.
      *
