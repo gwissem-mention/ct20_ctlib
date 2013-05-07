@@ -179,6 +179,20 @@ class CTDateTime extends \DateTime
     }
 
     /**
+     * Creates instance from timestamp with milliseconds precision.
+     *
+     * @param integer $milliseconds
+     * @param string $timezone
+     *
+     * @return CTDateTime
+     */
+    public static function fromMilliseconds($milliseconds, $timezone=null)
+    {
+        $timestamp = Util::millisecsToSecs($milliseconds);
+        return self::fromTimestamp($timestamp, $timezone);
+    }
+
+    /**
      * Calculates number of minutes different between two DateTime instances.
      *
      * NOTE: Substracts $datetime1 from $datetime2.
