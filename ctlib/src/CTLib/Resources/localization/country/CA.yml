@@ -1,5 +1,5 @@
 distance:
-    unit: mile                  # could be kilometer or mile 
+    unit: kilometer             # could be kilometer or mile 
 
 datetime:
     firstDayInWeek: "0"         # Set the first day of the week: Sunday is 0, Monday is 1 ...
@@ -27,8 +27,8 @@ address:
         - %city%, %subdivision% %postalCode%
 
 locales:
-    en_US: English
-    es_US: Español
+    en_CA: English
+    fr_CA: Français
 
 map:
-    center: [42.046687, -88.037256]
+    center: [60, -95]

@@ -766,6 +766,22 @@ class LocalizationHelper
     }
 
     /**
+     * Get lat and lng of country's center
+     *
+     * @param string $countryCode If null, will use session's country.
+     * @return array array of (lat, lng)
+     *
+     */
+    public function getMapCenter($countryCode = null)
+    {
+        $center = $this->getCountryConfigValue("map.center", $countryCode);
+        if (empty($center)) {
+            throw new \Exception("map center is not configured in yaml correctly");
+        }
+        return $center;
+    }
+
+    /**
      * format raw address array into single line address based on given format
      *
      * @param string $singleLineAddressFormat format string for single line address
