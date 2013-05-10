@@ -220,7 +220,7 @@ class LocalizationHelper
      * @param mixed   $value
      * @param string  $format    See http://goo.gl/zeaE8.
      * @param string  $locale    If null, will use Session's locale.
-     * @param string  $timezone  See http://php.net/manual/en/timezones.php.
+     * @param mixed   $timezone  See http://php.net/manual/en/timezones.php.
      *                           If null, will use Session's timezone.
      *
      * @return string
@@ -229,7 +229,10 @@ class LocalizationHelper
     public function formatDatetime($value, $format, $locale=null, $timezone=null)
     {
         $locale = $locale ?: $this->getSessionLocale();
-        $timezone = new \DateTimeZone($timezone ?: $this->getSessionTimezone());
+        
+        if (! $timezone instanceof \DateTimeZone) {
+            $timezone = new \DateTimeZone($timezone ?: $this->getSessionTimezone());
+        }
 
         // Only needed for PHP <5.3.4
         if ($value instanceof \DateTime) {

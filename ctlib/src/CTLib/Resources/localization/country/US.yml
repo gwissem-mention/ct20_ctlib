@@ -2,7 +2,7 @@ distance:
     unit: mile                  # could be kilometer or mile 
 
 datetime:
-    firstDayInWeek: "0"         # Set the first day of the week: Sunday is 0, Monday is 1 ...
+    firstDayInWeek: 0         # Set the first day of the week: Sunday is 0, Monday is 1 ...
 
 address:
     separator: ","
