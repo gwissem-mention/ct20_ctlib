@@ -19,7 +19,8 @@ class MapPartController extends DynaPartController
                 "lng" => $mapCenterLng
             ),
             "locale" => $locale,
-            "unit" => $distanceUnit
+            "unit" => $distanceUnit,
+            "country" => $localizer->getSessionCountryCode(),
         ));
 
         $assetLoader
