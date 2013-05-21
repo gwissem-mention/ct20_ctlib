@@ -13,22 +13,6 @@ use Symfony\Component\Translation\MessageSelector,
 class Translator extends \Symfony\Bundle\FrameworkBundle\Translation\Translator
 {
 
-    protected $myFallbackLocale;
-
-    /**
-     * Sets fallback locale.
-     * Needed so we can set our own fallback locale attribute because Symfony's
-     * is private.
-     *
-     * @param string $fallbackLocale
-     * @return void
-     */
-    public function setFallbackLocale($fallbackLocale)
-    {
-        parent::setFallbackLocale($fallbackLocale);
-        $this->myFallbackLocale = $fallbackLocale;
-    }
-
     /**
      * Returns fallback locale.
      *
@@ -36,7 +20,11 @@ class Translator extends \Symfony\Bundle\FrameworkBundle\Translation\Translator
      */
     public function getFallbackLocale()
     {
-        return $this->myFallbackLocale;
+        // MT @ May 21, 2013: Hardcoding to 'en_US' because its purpose in
+        // retrieving string translations in database won't work with Symfony's
+        // fallback locale of 'en'. Currently, cannot switch Symfony's fallback
+        // locale to 'en_US' because it causes problem with framework.
+        return 'en_US';
     }
 
     /**
