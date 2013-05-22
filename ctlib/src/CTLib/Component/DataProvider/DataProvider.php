@@ -267,9 +267,9 @@ class DataProvider
      */
     protected function run(RecordProcessorInterface $recordProcessor, $queryConfig)
     {
-        $model = $this->getModel($queryConfig);
-
         $this->applyFilters($queryConfig);
+
+        $model = $this->getModel($queryConfig);
 
         if ($queryConfig->suppressTotal) {
             $total = -1;
