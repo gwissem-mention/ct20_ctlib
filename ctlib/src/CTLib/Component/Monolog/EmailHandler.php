@@ -154,7 +154,7 @@ class EmailHandler extends \Monolog\Handler\AbstractProcessingHandler
                 // Oldest logged message occurred outside threshold window
                 // so we send normal message and reset log entries.
                 $this->sendStandardMessage($to, $record);
-                $logEntries[] = array($now);
+                $logEntries = array($now);
             }
         }
 
