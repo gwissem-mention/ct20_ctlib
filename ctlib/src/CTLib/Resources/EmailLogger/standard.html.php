@@ -30,6 +30,13 @@
                 border-color:   #b0302d;
             }
 
+            #notice span
+            {
+                display:        block;
+                font-size:      .8em;
+                padding-top:    3px;
+            }
+
             #message
             {
                 background:     #f0f0f0;
@@ -82,6 +89,7 @@
             <?php else: ?>
             Relax. This Error Occurred on <?=ucfirst($record['extra']['environment'])?>.
             <?php endif; ?>
+            <span>Host: <?=$record['__hostname__']?></span>
         </p>
 
         <p id="message">
@@ -90,13 +98,13 @@
         </p>
 
         <ul>
-            <li><span>Site Name</span><?=$record['site']?></li>
+            <li><span>Site Name</span><?=$record['__site__']?></li>
             <li><span>Site ID</span><?=(isset($record['extra']['site_id']) ? $record['extra']['site_id'] : 'N/A')?></li>
             <li><span>App Version</span><?=(isset($record['extra']['app_version']) ? $record['extra']['app_version'] : 'N/A')?></li>
             <li class="spacer"></li>
-            <li><span>Time</span><?=$record['datetime']->format('Y-m-d H:i')?></li>
-            <li><span>Channel</span><?=$record['channel']?></li>
-            <li><span>Thread</span><?=(isset($record['context']['_thread']) ? $record['context']['_thread'] : 'N/A')?></li>
+            <li><span>Log Time</span><?=$record['datetime']->format('Y-m-d H:i')?></li>
+            <li><span>Log Channel</span><?=$record['channel']?></li>
+            <li><span>Log Thread</span><?=(isset($record['context']['_thread']) ? $record['context']['_thread'] : 'N/A')?></li>
         </ul>
     </body>
 </html>

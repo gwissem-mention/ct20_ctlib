@@ -107,62 +107,59 @@ class EmailHandler extends \Monolog\Handler\AbstractProcessingHandler
         }
 
         $logPath        = $this->getLogPath($record);
-        $logFile        = $this->openLogFile($logPath);
-        $allLogEntries  = $this->getLogEntries($logFile, $logPath);
+        $allLogEntries  = $this->getLogEntries($logPath);
         $logKey         = join(",", $to);
         $logEntries     = Arr::get($logKey, $allLogEntries, array());
         $now            = time();
 
         if (isset($record['extra']['site_name'])) {
-            $record['site'] = $record['extra']['site_name'];
+            $record['__site__'] = $record['extra']['site_name'];
         } else {
-            $record['site'] = $record['extra']['brand_id'] . ' Gateway';
+            $record['__site__'] = $record['extra']['brand_id'] . ' Gateway';
         }
+
+        $record['__hostname__'] = gethostname();
 
         // Determine which email to send (if any) based on the number of log
         // entries.
-        switch (count($logEntries)) {
-            case $this->thresholdCount + 1:
-                // Previously reached threshold, sent threshold email and
-                // entered sleep mode. Determine whether we should continue to
-                // sleep or resume emailing.
-                if ($now - end($logEntries) < $this->sleepSeconds) {
-                    // Still within sleep window so continue snoozing.
-                    return;
-                } else {                    
-                    // Exited sleep window. Send standard message and reset
-                    // log entries.
-                    $this->sendStandardMessage($to, $record);
-                    $logEntries = array($now);
-                }
-                break;
+        $logCount = count($logEntries);
 
-            case $this->thresholdCount:
-                // Last message hit threshold count. Determine whether all
-                // entries occurred within threshold window, which would put us
-                // into sleep mode.
-                if ($now - current($logEntries) <= $this->thresholdSeconds) {
-                    // Oldest logged message was within threshold window so we
-                    // need to send threshold message and enter sleep mode.
-                    $this->sendThresholdMessage($to, $record);
-                    $logEntries[] = $now;
-                } else {
-                    // Oldest logged message occurred outside threshold window
-                    // so we send normal message and adjust entries accordingly.
-                    $this->sendStandardMessage($to, $record);
-                    array_shift($logEntries);
-                    $logEntries[] = $now;
-                }
-                break;
+        if ($this->thresholdCount <= 0 || $logCount < $this->thresholdCount) {
+            // Continue sending standard messages.
+            $this->sendStandardMessage($to, $record);
+            $logEntries[] = $now;
+        } elseif (strpos(end($logEntries), 'sleep@') === 0) {
+            // Previously reached threshold and entered sleep mode. See if it's
+            // time to resume emailing.
+            $sleepTime = substr(end($logEntries), 6);
 
-            default:
-                // Continue sending standard messages.
+            if ($now - $sleepTime < $this->sleepSeconds) {
+                // Still within sleep window so continue snoozing.
+                return;
+            } else {
+                // Done napping. Send standard message and reset log entries.
                 $this->sendStandardMessage($to, $record);
-                $logEntries[] = $now;
+                $logEntries = array($now);
+            }
+        } else {
+            // This message meets or exceeds threshold count. Determine whether
+            // all entries occurred within threshold window, which would put us
+            // into sleep mode.
+            if ($now - current($logEntries) <= $this->thresholdSeconds) {
+                // Oldest logged message was within threshold window so we
+                // need to send threshold message and enter sleep mode.
+                $this->sendThresholdMessage($to, $record);
+                $logEntries[] = 'sleep@' . $now;
+            } else {
+                // Oldest logged message occurred outside threshold window
+                // so we send normal message and reset log entries.
+                $this->sendStandardMessage($to, $record);
+                $logEntries[] = array($now);
+            }
         }
 
         $allLogEntries[$logKey] = $logEntries;
-        $this->updateLogFile($logFile, $allLogEntries);
+        $this->updateLogFile($logPath, $allLogEntries);
     }
 
     /**
@@ -203,72 +200,33 @@ class EmailHandler extends \Monolog\Handler\AbstractProcessingHandler
     }
 
     /**
-     * Opens email log file and acquires exclusive lock on it.
-     *
-     * @param string $logPath
-     * @return object|false     Returns FALSE if couldn't open file or couldn't
-     *                          acquire lock.
-     */
-    protected function openLogFile($logPath)
-    {
-        $logFile = @fopen($logPath, 'r+');
-
-        if (! $logFile) {
-            if (@mkdir($this->logDir, 0755, true)) {
-                $logFile = @fopen($logPath, 'r+');
-            }
-        }
-
-        // Attempt to get exclusive lock on file so we don't have multiple
-        // concurrent threads overwriting each other.
-        if (! $logFile || ! flock($logFile, \LOCK_EX)) {
-            return false;
-        }
-        return $logFile;
-    }
-
-    /**
      * Returns email log entries.
      *
-     * @param mixed $logFile
      * @param string $logPath
-     *
      * @return array
      */
-    protected function getLogEntries($logFile, $logPath)
+    protected function getLogEntries($logPath)
     {
-        if ($logFile === false) {
+        $contents = @file_get_contents($logPath);
+
+        if (! $contents) {
             return array();
         }
 
-        $filesize = filesize($logPath);
-
-        if ($filesize === 0) {
-            return array();
-        }
-
-        $contents = fread($logFile, $filesize);
         return json_decode($contents, true) ?: array();
     }
 
     /**
      * Updates and closes email log file.
      *
-     * @param mixed $logFile
+     * @param string $logPath
      * @param array $logEntries
      *
      * @return void
      */
-    protected function updateLogFile($logFile, $logEntries)
+    protected function updateLogFile($logPath, $logEntries)
     {
-        if ($logFile === false) {
-            return;
-        }
-
-        $contents = json_encode($logEntries);
-        fwrite($logFile, $contents);
-        flock($logFile, \LOCK_UN);
-        fclose($logFile);
+        @file_put_contents($logPath, json_encode($logEntries));
     }
 
     /**
@@ -330,7 +288,7 @@ class EmailHandler extends \Monolog\Handler\AbstractProcessingHandler
      */
     protected function formatStandardSubject($record)
     {
-        $subject = "ERROR - {$record['site']}";
+        $subject = "ERROR - {$record['__site__']}";
 
         if ($record['extra']['exec_mode'] == 'prod') {
             $subject = "PRODUCTION - {$subject}";
@@ -346,7 +304,7 @@ class EmailHandler extends \Monolog\Handler\AbstractProcessingHandler
      */
     protected function formatThresholdSubject($record)
     {
-        $subject = "HIGH VOLUME OF ERRORS - {$record['site']}";
+        $subject = "HIGH VOLUME OF ERRORS - {$record['__site__']}";
 
         if ($record['extra']['exec_mode'] == 'prod') {
             $subject = "PRODUCTION - {$subject}";

@@ -30,6 +30,13 @@
                 border-color:   #b0302d;
             }
 
+            #notice span
+            {
+                display:        block;
+                font-size:      .8em;
+                padding-top:    3px;
+            }
+
             #sleep
             {
                 color:          #666666;
@@ -52,6 +59,7 @@
             <?php else: ?>
             Relax. This Occurred on <?=ucfirst($record['extra']['environment'])?>.
             <?php endif; ?>
+            <span>Host: <?=$record['__hostname__']?></span>
         </p>
 
         <p id="message">
