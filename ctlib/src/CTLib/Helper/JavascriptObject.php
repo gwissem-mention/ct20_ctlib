@@ -91,7 +91,7 @@ class JavascriptObject
             && $jsObject->getType() == JavascriptPrimitive::TYPE_STRING
             || is_string($jsObject)
         ) {
-            return '"' . (string)$jsObject . '"';
+            return '"' . addcslashes((string)$jsObject, '"') . '"';
         }
 
         if (is_bool($jsObject)) {
