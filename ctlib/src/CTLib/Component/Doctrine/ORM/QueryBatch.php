@@ -26,6 +26,10 @@ class QueryBatch implements \Iterator
         }
         $this->query->setParameters($query->getParameters());
         $this->query->setMaxResults($this->batchLimit);
+        $this->query->getEntityManager()
+            ->getConnection()
+            ->getConfiguration()
+            ->setSqlLogger(null);
     }
 
     public function current()
