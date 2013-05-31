@@ -48,7 +48,7 @@ class CsvRecordProcessor implements RecordProcessorInterface
     /**
      * {@inheritdoc}
      */
-    public function processRecord($record, $model)
+    public function processRecord($entity, $record, $model)
     {
         // convert array in each record into string
         $record = array_map(
@@ -64,6 +64,9 @@ class CsvRecordProcessor implements RecordProcessorInterface
         fputcsv($this->fileHandle, $record);
 
         unset($record);
+        gc_enable(); // Enable Garbage Collector
+        gc_collect_cycles();
+        gc_disable();
     }
 
     /**

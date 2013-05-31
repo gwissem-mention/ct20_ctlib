@@ -3,16 +3,21 @@ namespace CTLib\Component\Pdf;
 
 /**
  * CellTrak wrapper class to convert Html to PDF
- * using third party solution.
+ * using third party DOMPDF solution.
  *
  */
 class HtmlPdf
 {
-    protected $kernel;
-    
+
+    protected $domPdf = null;
+
     public function __construct($kernel)
     {
-        $this->kernel = $kernel;
+        $rootDir = $kernel->getRootDir();
+        require_once $rootDir . '/../vendor/dompdf/dompdf_config.inc.php';
+        global $_dompdf_warnings, $_dompdf_show_warnings, $_dompdf_debug, $_DOMPDF_DEBUG_TYPES, $memusage;
+        $_dompdf_warnings = array();
+        $this->domPdf = new \DOMPDF;
     }
 
     /**
@@ -23,12 +28,9 @@ class HtmlPdf
      */
     public function render($html)
     {
-        $rootDir = $this->kernel->getRootDir();
-        require_once $rootDir . '/../vendor/dompdf/dompdf_config.inc.php';
-        $pdf = new \DOMPDF;
-        $pdf->load_html($html);
-        $pdf->render();
-        return $pdf->output();
+        $this->domPdf->load_html($html);
+        $this->domPdf->render();
+        return $this->domPdf->output();
     }
 
     /**
@@ -40,5 +42,11 @@ class HtmlPdf
     public function __toString()
     {
         return $this->render();
+    }
+    
+    
+    public function __destruct()
+    {
+        unset($this->domPdf);
     }
 }

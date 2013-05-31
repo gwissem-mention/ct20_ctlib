@@ -34,7 +34,7 @@ interface RecordProcessorInterface
      * @return void 
      *
      */
-    public function processRecord($record, $model);
+    public function processRecord($entity, $record, $model);
     
     /**
      * Get processed result set

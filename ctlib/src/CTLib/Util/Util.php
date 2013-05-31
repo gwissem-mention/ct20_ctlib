@@ -217,4 +217,21 @@ class Util
     {
         return unserialize(serialize($object));
     }
+
+    /**
+     * Save Binary data into Temp file
+     *
+     * @param mixed $binary any binary data
+     * @param string $suffix suffix of temp file
+     * @return string temp file name
+     *
+     */
+    public static function saveBinaryToTemp($binary, $suffix="CTI")
+    {
+        $fileName = tempnam(sys_get_temp_dir(), $suffix);
+
+        file_put_contents($fileName, $binary);
+
+        return $fileName;
+    }
 }

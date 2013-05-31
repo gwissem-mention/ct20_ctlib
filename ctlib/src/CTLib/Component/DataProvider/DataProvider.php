@@ -52,6 +52,12 @@ class DataProvider
     protected $rowContext;
 
     /**
+     * Stores mapping from request type to record processor
+     * @var mixed 
+     */
+    protected $recordProcessorMap;
+
+    /**
      * determine if paginator is fetch Joined 
      * detail see: http://docs.doctrine-project.org/en/latest/tutorials/pagination.html
 
@@ -64,12 +70,17 @@ class DataProvider
      */
     public function __construct($queryBuilder, $fetchJoinCollection = true)
     {
-        $this->queryBuilder     = $queryBuilder;
-        $this->modelFields      = array();
-        $this->filterHandlers   = array();
-        $this->defaultFilters   = array();
-        $this->rowContext       = array();
+        $this->queryBuilder        = $queryBuilder;
+        $this->modelFields         = array();
+        $this->filterHandlers      = array();
+        $this->defaultFilters      = array();
+        $this->rowContext          = array();
         $this->fetchJoinCollection = $fetchJoinCollection;
+        $this->recordProcessorMap  = array(
+            static::REQUEST_TYPE_NOTIFY => null,
+            static::REQUEST_TYPE_JSON   => new JsonRecordProcessor($fetchJoinCollection),
+            static::REQUEST_TYPE_CSV    => new CsvRecordProcessor()
+        );
     }
 
     /**
@@ -89,11 +100,10 @@ class DataProvider
         }
 
         $requestType = $this->getRequestType($request);
-        if ($requestType == static::REQUEST_TYPE_NOTIFY) {
-            return null;
-        }
 
         $recordProcessor = $this->getRecordProcessor($requestType);
+
+        if (!$recordProcessor) { return null; }
 
         return $this->run($recordProcessor, $queryConfig);
     }
@@ -192,6 +202,41 @@ class DataProvider
     }
 
     /**
+     * Register record process based on type
+     *
+     * @param string $requestType 
+     * @param RecordProcessorInterface $recordProcessor 
+     * @return void 
+     *
+     */
+    public function registerRecordProcessor($requestType, RecordProcessorInterface $recordProcessor)
+    {
+        if ($requestType != static::REQUEST_TYPE_NOTIFY
+            && $requestType != static::REQUEST_TYPE_JSON
+            && $requestType != static::REQUEST_TYPE_CSV
+            && $requestType != static::REQUEST_TYPE_PDF
+        ) {
+            throw new \Exception("request type is not valid");
+        }
+
+        $this->recordProcessorMap[$requestType] = $recordProcessor;
+    }
+
+    /**
+     * Register Record Processors
+     *
+     * @param array $map map between types and processors
+     * @return void
+     *
+     */
+    public function registerRecordProcessors(array $map)
+    {
+        foreach ($map as $type => $processor) {
+            $this->registerRecordProcessor($type, $processor);
+        }
+    }
+
+    /**
      * Get corresponding RecordProcessor by matching request type
      *
      * @param string $requestType
@@ -200,20 +245,10 @@ class DataProvider
      */
     protected function getRecordProcessor($requestType)
     {
-        switch ($requestType) {
-            case static::REQUEST_TYPE_JSON:
-                return new JsonRecordProcessor($this->fetchJoinCollection);
-
-            case static::REQUEST_TYPE_CSV:
-                return new CsvRecordProcessor();
-
-            case static::REQUEST_TYPE_PDF:
-
-            default:
-                throw new \Exception("request type is not supported");
-        }
-
-        return null;
+        return Arr::get(
+            $requestType,
+            $this->recordProcessorMap
+        );
     }
 
     /**
@@ -539,7 +574,7 @@ class DataProvider
 
         // record can be ignored by returning null
         if (isset($record)) {
-            $recordProcessor->processRecord($record, $model);
+            $recordProcessor->processRecord($rawRecord, $record, $model);
         }
 
         //clear row context variable for each row.
@@ -735,108 +770,6 @@ class DataProvider
             }
         }
         return $dataEntity;
-    }
-
-//    /**
-//     * Get non-paginated data, and wrap it around with QueryBatch
-//     *
-//     * @param stdClass $queryConfig
-//     * @param boolean $fetchJoinCollection
-//     * @return QueryBatch
-//     *
-//     */
-//    protected function getFullDataBatch($queryConfig, $fetchJoinCollection = true)
-//    {
-//        $this->applyFilters($queryConfig);
-//        $this->applySorts($queryConfig);
-//
-//        // turn off logging to save memory
-//        $this->queryBuilder
-//            ->getEntityManager()
-//            ->getConnection()
-//            ->getConfiguration()
-//            ->setSqlLogger(null);
-//
-//        $batches = new QueryBatch($this->queryBuilder->getQuery(), 50);
-//        return $batches;
-//    }
-
-    /**
-     * Save result data into temporary file
-     *
-     * @param stdClass $queryConfig
-     * @param boolean $fetchJoinCollection
-     * @return string temp file name
-     *
-     */
-    protected function saveToTempFile($queryConfig, $fetchJoinCollection)
-    {
-        $batches = $this->getFullDataBatch($queryConfig, $fetchJoinCollection);
-        $this->getQueryResultSet(
-            $batches,
-            $queryConfig,
-            $fetchJoinCollection
-        );
-        if ($queryConfig->downloadType == "csv") {
-            return $this->saveBatchToCsv(
-                $batches,
-                $queryConfig,
-                $fetchJoinCollection
-            );
-        }
-        // to be supported
-        elseif ($queryConfig->downloadType == "pdf") {
-            
-        }
-        
-        return null;
-    }
-
-    /**
-     * Save batch data result into CSV file
-     *
-     * @param QueryBatch $batches batch result
-     * @param stdClass $queryConfig container of query configs
-     * @param boolean $fetchJoinCollection
-     * @param Request $request request
-     * @return string return temp file name
-     *
-     */
-    protected function saveBatchToCsv($batches, $queryConfig, $fetchJoinCollection)
-    {
-        $queryMetaMap = $this->queryBuilder->getQueryMetaMap();
-        $tmpFileName  = tempnam(sys_get_temp_dir(), "rst");
-        $tmpHandle    = fopen($tmpFileName, "w");
-        $modelAlias   = $this->getModelAlias($queryConfig);
-
-        fputcsv($tmpHandle, $modelAlias);
-
-        foreach ($batches as $batch) {
-            
-            foreach ($batch as $record) {
-                $record = $this->processResultRecord(
-                    $record,
-                    $queryMetaMap,
-                    $queryConfig
-                );
-
-                // convert array in each record into string
-                $record = array_map(
-                    function ($item) {
-                        if (!is_array($item)) {
-                            return $item;
-                        }
-                        return implode("|", $item);
-                    },
-                    $record
-                );
-                fputcsv($tmpHandle, $record);
-            }
-        }
-
-        fclose($tmpHandle);
-
-        return $tmpFileName;
     }
 
     /**

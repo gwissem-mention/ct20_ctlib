@@ -48,7 +48,7 @@ class JsonRecordProcessor implements RecordProcessorInterface
     /**
      * {@inheritdoc}
      */
-    public function processRecord($record, $model)
+    public function processRecord($raw, $record, $model)
     {
         $this->result[] = $record;
     }
