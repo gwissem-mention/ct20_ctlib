@@ -789,8 +789,14 @@ class DataProvider
         $fields = $aliases = array();
         
         foreach ($fieldsConfig as $config) {
-            $fields[] = $config[0];
-            $aliases[] = Arr::get(1, $config, $config[0]);
+            if (is_array($config)) {
+                $fields[] = $config[0];
+                $aliases[] = Arr::get(1, $config, $config[0]);
+            }
+            elseif (is_string($config)) {
+                $fields[] = $config;
+                $aliases[] = $config;
+            }
         }
         
         return array($fields, $aliases);
