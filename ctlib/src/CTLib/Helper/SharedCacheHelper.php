@@ -15,6 +15,8 @@ class SharedCacheHelper
     
     const CONFIG_PARAMETER_KEY_PREFIX = "ctlib.shared_cache.";
 
+    const MAX_TTL_SECONDS   = 2592000; // 30 days
+
 
     protected $isExplicitlyEnabled;
     protected $servers;
@@ -147,6 +149,10 @@ class SharedCacheHelper
         if (! $this->isEnabled()) { return; }
         
         $ttlSeconds = $ttl * 60;
+        // Ensure that we didn't exceed max ttl allowed. Using invalid ttl will
+        // prevent value from saving to cache.
+        $ttlSeconds = min($ttlSeconds, self::MAX_TTL_SECONDS);
+
         try {
             $this
                 ->cache()
@@ -208,10 +214,72 @@ class SharedCacheHelper
         if (! $this->isEnabled()) { return; }
 
         try {
-            $this->cache()->delete($this->formatQualifiedCacheKey($key));    
+            $this
+                ->cache()
+                ->set($this->formatQualifiedCacheKey($key), '', 0, -1);
         } catch (\Exception $e) {
             $this->logWarning((string) $e);
         }
+    }
+
+    /**
+     * Empties cache.
+     *
+     * @param string $prefix    If passed, will only flush items with keys that
+     *                          start with prefix. If null, will flush all items.
+     * @return integer|null     If $prefix passed, will return number of flushed
+     *                          items. Otherwise returns void.
+     */
+    public function flush($prefix=null)
+    {
+        if (! $this->isEnabled()) {
+            return $prefix ? 0 : null;
+        }
+
+        if (! $prefix) {
+            $this->cache()->flush();
+            return null;
+        }
+
+        $numDeleted = 0;
+        foreach ($this->getKeys($prefix) as $key) {
+            $this->delete($key);
+            $numDeleted += 1;
+        }
+        return $numDeleted;
+    }
+
+    /**
+     * Returns keys for all cached items.
+     *
+     * @param string $prefix    If passed, will only return keys that start with
+     *                          prefix. If null, returns all keys.
+     * @return array
+     */
+    public function getKeys($prefix=null)
+    {
+        if (! $this->isEnabled()) { return array(); }
+        
+        $keys = array();
+
+        foreach ($this->cache()->getExtendedStats('slabs') as $server => $slabs) {
+            foreach ($slabs as $slabId => $slab) {
+                if (is_int($slabId)) {
+                    $slabDetails = $this
+                                    ->cache()
+                                    ->getExtendedStats('cachedump', $slabId);
+                    foreach ($slabDetails as $server => $items) {
+                        if (! is_array($items)) { continue; }
+                        foreach ($items as $key => $value) {
+                            if (! $prefix || strpos($key, $prefix) === 0) {
+                                $keys[] = $key;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return $keys;
     }
 
     /**
