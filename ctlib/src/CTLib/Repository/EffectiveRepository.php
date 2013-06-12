@@ -167,8 +167,7 @@ class EffectiveRepository extends BaseRepository
      */
     public function existsEffective(array $criteria, $effectiveTime=null)
     {
-        $result = $this->findByEffective($criteria, $effectiveTime, null, 1);
-        return $result ? true : false;
+        return $this->countEffective($criteria, $effectiveTime) > 0;
     }
 
     /**

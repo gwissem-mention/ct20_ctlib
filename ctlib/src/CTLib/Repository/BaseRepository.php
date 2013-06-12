@@ -137,9 +137,8 @@ class BaseRepository extends \Doctrine\ORM\EntityRepository
      * @return boolean
      */
     public function exists(array $criteria)
-    {
-        $result = $this->findBy($criteria, null, 1);
-        return $result ? true : false;
+    {   
+        return $this->count($criteria) > 0;
     }
 
     /**
