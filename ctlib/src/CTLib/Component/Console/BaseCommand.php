@@ -300,13 +300,12 @@ abstract class BaseCommand extends ContainerAwareCommand
     {
         return $this->dialog()->askAndValidate(
             $output,
-            "\n\n<question>{$question} (y/n)</question> ",
+            "\n\n<question>{$question} (Y/n)</question> ",
             function($r) {
-                $r = strtolower($r);
-                if ($r != 'y' && $r != 'n') {
-                    throw new \Exception("Response must be y/n");
+                if ($r !== 'Y' && $r !== 'n') {
+                    throw new \Exception("Response must be Y/n");
                 }
-                return $r == 'y' ? true : false;
+                return $r === 'Y' ? true : false;
             }
         );
     }
