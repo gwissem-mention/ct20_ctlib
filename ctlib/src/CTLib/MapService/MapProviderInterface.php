@@ -7,11 +7,21 @@ interface MapProviderInterface
     /**
      * Get Javascript API Library Url
      *
+     * @param string $country country code
      * @return string javascript url
      *
      */
-    public static function getJavascriptApiUrl();
+    public function getJavascriptApiUrl($country = null);
 
+    /**
+     * Get Javascript MapPlugin Name
+     *
+     * @param string $country country code
+     * @return string
+     *
+     */
+    public function getJavascriptMapPlugin($country = null);
+    
     /**
      * Geocode address
      *
@@ -41,7 +51,8 @@ interface MapProviderInterface
      * Batch geocode addresses
      *
      * @param array $streets all streets in an array
-     * @return array array of returned geocodes, each one follows the format of geocode function
+     * @return array array of returned geocodes, each one follows 
+     * the format of geocode function
      *
      */    
     public function geocodeBatch(array $addresses, $country = null);
@@ -60,7 +71,8 @@ interface MapProviderInterface
      * Batch reverse geocode latitude and longitude
      *
      * @param array $latLngs array of array(lat, lng)
-     * @return array array of returned reverse geocode, each one follows the format of reverseGeocode function
+     * @return array array of returned reverse geocode, each one 
+     * follows the format of reverseGeocode function
      *
      */
     public function reverseGeocodeBatch(array $latLngs, $country = null);
@@ -88,7 +100,8 @@ interface MapProviderInterface
      *                      startLng =>
      *
      */
-    public function route($fromLatitude, $fromLongitude, $toLatitude, $toLongitude, array $options, $country = null);
+    public function route($fromLatitude, $fromLongitude, 
+        $toLatitude, $toLongitude, array $options, $country = null);
 
     /**
      * Calculates estimated time and distance for route between two points.
@@ -114,5 +127,5 @@ interface MapProviderInterface
      * @return array array of allowed quality codes
      *
      */
-    public function getAllowedAddressQualityCodes($country = null); 
+    public function getAllowedQualityCodes($country = null); 
 }

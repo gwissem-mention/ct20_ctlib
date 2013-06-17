@@ -23,9 +23,10 @@ class MapPartController extends DynaPartController
             "country" => $localizer->getSessionCountryCode(),
         ));
 
+        $mapService = $this->get("map_service");
         $assetLoader
-            ->addExternalJs("https://www.mapquestapi.com/sdk/js/v7.0.s/mqa.toolkit.js?key=Gmjtd%7Clu6zn1ua2d%2C7s%3Do5-l07g0")
-            ->addAppJs("maps.plugin.js")
+            ->addExternalJs($mapService->getJavascriptApiUrl())
+            ->addAppJs($mapService->getJavascriptMapPlugin())
             ->addAppCss("mapsPois.css")
             ->addInlineJs('$("#'.$domId.'").maps('.$json.');');
         $jsHelper

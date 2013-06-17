@@ -181,6 +181,42 @@ class Arr
     }
 
     /**
+     * Test if key exist in associative array that maps to key chain.
+     *
+     * The key chain is a string of delimited keys use by method to recursively
+     * extract value from the passed nested associative array. For example:
+     *
+     *  $search = array('first' => array('second' => array('third' => 'Hi!')));
+     *  $keyChain = 'first.second.third';
+     *  $value = findInArrayByKeyChain($search, $keyChain); // returns 'Hi!'
+     *
+     * @param array $search
+     * @param string|array $keyChain    Either '.' deimited string or enumerated
+     *                                  array of keys.
+     * @param mixed $default
+     *
+     * @return boolean  Returns true if found, false not found
+     */
+    public static function existByKeyChain(array $search, $keyChain)
+    {
+        if (! is_string($keyChain) && ! is_array($keyChain)) {
+            throw new \Exception('$keyChain must be string or array');
+        }
+
+        if (is_string($keyChain)) {
+            $keyChain = explode('.', $keyChain);
+        }
+
+        // Reduce $search by iterating through $keyChain tokens.
+        // If token not found, stop iterating and return $default.
+        foreach ($keyChain as $keyToken) {
+            if (! array_key_exists($keyToken, $search)) { return false; }
+            $search = $search[$keyToken];
+        }
+        return true;
+    }
+
+    /**
      * Indicates whether $a is an associative array.
      *
      * Method checks that (1) $a is an array and (2) it has at least 1 string

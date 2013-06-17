@@ -71,14 +71,17 @@ class LocalizationHelper
      */
     protected function getConfigValue($configType, $configCode, $configKey)
     {
+        $configs = $this->loadConfig($configType, $configCode);
+        
+        if (! Arr::existByKeyChain($configs, $configKey)) {
+            throw new \Exception("Invalid config key: $configKey");
+        }
+
         $configValue = Arr::findByKeyChain(
-            $this->loadConfig($configType, $configCode),
+            $configs,
             $configKey
         );
 
-        if (is_null($configValue)) {
-            throw new \Exception("Invalid config key: $configKey");
-        }
         return $configValue;
     }
 

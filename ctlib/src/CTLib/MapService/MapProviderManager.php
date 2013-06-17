@@ -18,7 +18,7 @@ class MapProviderManager implements MapProviderInterface
     {
         $this->container = $container;
         $this->siteConfig = $siteConfig;
-        $this->countryInSiteConfig = "US";//Fixme: $siteConfig->get("geo.country_code");
+        $this->countryInSiteConfig = $siteConfig->get("geo.country_code");
 
         $mapProviderConfig = $container->getParameter('ctlib.map_service.providers');
         if (!$mapProviderConfig) {
@@ -47,11 +47,13 @@ class MapProviderManager implements MapProviderInterface
                 throw new \Exception("Config Country has to be an array");
             }
 
-            if (!isset($config["allowedAddressQualityCodes"]) || !is_array($config["allowedAddressQualityCodes"])) {
+            if (!isset($config["allowedQualityCodes"])
+                || !is_array($config["allowedQualityCodes"])
+            ) {
                 throw new \Exception("Allowed Qualitied codes are invalid");
             }
 
-            $mapProvider = new $config["class"]($config["allowedAddressQualityCodes"]);
+            $mapProvider = new $config["class"]($config["allowedQualityCodes"]);
 
             if (!$mapProvider instanceof MapProviderAbstract) {
                 throw new \Exception("{$config["class"]} has to be extended from MapProviderAbstract");
@@ -76,6 +78,10 @@ class MapProviderManager implements MapProviderInterface
      */
     protected function getMapProviderByCountry($country)
     {
+        if ($country === null) {
+            $country = $this->countryInSiteConfig;
+        }
+        
         //find the country key in array of providersByCountry, 
         //if not found, find provider by key of *
         //if not found, throw exception
@@ -92,39 +98,53 @@ class MapProviderManager implements MapProviderInterface
         throw \Exception("Can not find map provider for country {$country}");
     }
 
-    public static function getJavascriptApiUrl() {}
+    /**
+     * {@inheritdoc}
+     */    
+    public function getJavascriptApiUrl($country = null)
+    {
+        return $this
+            ->getMapProviderByCountry($country)
+            ->getJavascriptApiUrl($country);
+    }
 
+    /**
+     * {@inheritdoc}
+     */    
+    public function getJavascriptMapPlugin($country = null)
+    {
+        return $this
+            ->getMapProviderByCountry($country)
+            ->getJavascriptMapPlugin($country);
+    }
+    
+    /**
+     * {@inheritdoc}
+     */    
     public function geocode($address, $country = null)
     {
-        if ($country === null) {
-            $country = $this->countryInSiteConfig;
-        }
-
         return $this
             ->getMapProviderByCountry($country)
             ->geocode(
                 array(
-                    "street"      => $address["street"],
-                    "city"        => $address["city"],
-                    "subdivision" => $address["subdivision"],
-                    "postalCode"  => $address["postalCode"],
+                    "street"      => Arr::mustGet("street", $address),
+                    "city"        => Arr::mustGet("city", $address),
+                    "subdivision" => Arr::get("subdivision", $address),
+                    "postalCode"  => Arr::mustGet("postalCode", $address),
                     "country"     => $country
                 ),
                 $country
             );
     }
 
+    /**
+     * {@inheritdoc}
+     */    
     public function geocodeBatch(array $addresses, $country = null)
     {
-        //if country is not given in the parameter, use country code 
-        //configed in the site config
-        if ($country === null) {
-            $country = $this->countryInSiteConfig;
-        }
-
         if (!$addresses) { return null; }
 
-        //clean up the 
+        //clean up the addresses
         $addresses = array_map(
             function($address) use ($country) {
                 return array(
@@ -143,40 +163,31 @@ class MapProviderManager implements MapProviderInterface
             ->geocodeBatch($addresses, $country);
     }
 
+    /**
+     * {@inheritdoc}
+     */    
     public function reverseGeocode($latitude, $longitude, $country = null)
     {
-        //if country is not given in the parameter, use country code 
-        //configed in the site config
-        if ($country === null) {
-            $country = $this->countryInSiteConfig;
-        }
-
         return $this
             ->getMapProviderByCountry($country)
             ->reverseGeocode($latitude, $longitude, $country);
     }
 
+    /**
+     * {@inheritdoc}
+     */    
     public function reverseGeocodeBatch(array $latLngs, $country = null)
     {
-        //if country is not given in the parameter, use country code 
-        //configed in the site config
-        if ($country === null) {
-            $country = $this->countryInSiteConfig;
-        }
-
         return $this
             ->getMapProviderByCountry($country)
             ->reverseGeocodeBatch($latLngs, $country);
     }
 
+    /**
+     * {@inheritdoc}
+     */    
     public function route($fromLatitude, $fromLongitude, $toLatitude, $toLongitude, array $options, $country = null)
     {
-        //if country is not given in the parameter, use country code 
-        //configed in the site config
-        if ($country === null) {
-            $country = $this->countryInSiteConfig;
-        }
-
         return $this
             ->getMapProviderByCountry($country)
             ->route($fromLatitude, $fromLongitude, $toLatitude, $toLongitude, $options, $country);
@@ -199,8 +210,6 @@ class MapProviderManager implements MapProviderInterface
     public function routeTimeAndDistance($fromLatitude, $fromLongitude,
         $toLatitude, $toLongitude, array $options=array(), $country=null)
     {
-        $country = $country ?: $this->countryInSiteConfig;
-
         return $this
                 ->getMapProviderByCountry($country)
                 ->routeTimeAndDistance(
@@ -212,16 +221,10 @@ class MapProviderManager implements MapProviderInterface
                     $country);
     }
 
-    public function getAllowedAddressQualityCodes($country = null)
+    public function getAllowedQualityCodes($country = null)
     {
-        //if country is not given in the parameter, use country code 
-        //configed in the site config
-        if ($country === null) {
-            $country = $this->countryInSiteConfig;
-        }
-
         return $this
             ->getMapProviderByCountry($country)
-            ->getAllowedAddressQualityCodes();
+            ->getAllowedQualityCodes();
     }
 }

@@ -10,19 +10,19 @@ abstract class MapProviderAbstract implements MapProviderInterface
     const CONNECTION_TIMEOUT = 5;
     const REQUEST_TIMEOUT = 10;
 
-    protected $allowedAddressQualityCodes = array();
+    protected $allowedQualityCodes = array();
 
-    public function __construct($allowedAddressQualityCodes)
+    public function __construct($allowedQualityCodes)
     {
-        $this->allowedAddressQualityCodes = $allowedAddressQualityCodes;
+        $this->allowedQualityCodes = $allowedQualityCodes;
     }
 
     /**
      * {@inheritdoc}
      */
-    public function getAllowedAddressQualityCodes($country = null)
+    public function getAllowedQualityCodes($country = null)
     {
-        return $this->allowedAddressQualityCodes;
+        return $this->allowedQualityCodes;
     }
 
     /**
@@ -51,7 +51,7 @@ abstract class MapProviderAbstract implements MapProviderInterface
     public function geocode($address, $country = null)
     {
         if (is_array($address)) {
-            Arr::mustHave($address, "street", "city", "subdivision", "postalCode");
+            Arr::mustHave($address, "street", "city", "postalCode");
         }
         elseif (!is_string($address) || empty($address)) {
             throw new \Exception("address parameter is invalid");
@@ -63,7 +63,11 @@ abstract class MapProviderAbstract implements MapProviderInterface
         $response = $curl->exec();
 
         $geocodeResult = $this->geocodeProcessResult($response);
-        $geocodeResult["isValidated"] = in_array($geocodeResult["qualityCode"], $this->allowedAddressQualityCodes);
+        $geocodeResult["isValidated"] 
+            = in_array(
+                $geocodeResult["qualityCode"],
+                $this->allowedQualityCodes
+            );
         
         return $geocodeResult;
     }
@@ -103,7 +107,11 @@ abstract class MapProviderAbstract implements MapProviderInterface
         $geocodeResults = $this->geocodeBatchProcessResult($response);
 
         foreach ($geocodeResults as &$geocodeResult){
-            $geocodeResult["isValidated"] = in_array($geocodeResult["qualityCode"], $this->allowedAddressQualityCodes);
+            $geocodeResult["isValidated"]
+                = in_array(
+                    $geocodeResult["qualityCode"], 
+                    $this->allowedQualityCodes
+                );
         }
 
         return $geocodeResults;
@@ -140,8 +148,15 @@ abstract class MapProviderAbstract implements MapProviderInterface
         $this->reverseGeocodeBuildRequest($curl, $latitude, $longitude, $country);
         
         $response = $curl->exec();
+        $responseResult = $this->reverseGeocodeProcessResult($response);
+        
+        $responseResult["isValidated"] 
+            = in_array(
+                $responseResult["qualityCode"],
+                $this->allowedQualityCodes
+            );
 
-        return $this->reverseGeocodeProcessResult($response);
+        return $responseResult;
     }
 
 
@@ -247,7 +262,13 @@ abstract class MapProviderAbstract implements MapProviderInterface
         $response = $curl->exec();
         return $this->routeTimeAndDistanceProcessResult($response);
     }
-    
+
+    /**
+     * Create a curl object to use
+     *
+     * @return CTCurl
+     *
+     */
     protected function createMapServiceRequest()
     {
         $curl = new CTCurl();

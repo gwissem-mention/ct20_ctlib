@@ -10,12 +10,25 @@ class MapQuest extends MapProviderAbstract
 {
     const BATCH_GEOCODE_LIMIT = 100;
 
-    public static function getJavascriptApiUrl()
+    /**
+     * {@inheritdoc}
+     */
+    public function getJavascriptApiUrl($country = null)
     {
         return "https://www.mapquestapi.com/sdk/js/v7.0.s/mqa.toolkit.js?key=Gmjtd%7Clu6zn1ua2d%2C7s%3Do5-l07g0";
     }
 
-
+    /**
+     * {@inheritdoc}
+     */
+    public function getJavascriptMapPlugin($country = null)
+    {
+        return "mapquest.maps.plugin.js";
+    }
+    
+    /**
+     * {@inheritdoc}
+     */
     protected function geocodeBuildRequest($request, $address, $country = null)
     {
         $request->url = "https://www.mapquestapi.com/geocoding/v1/address?key=Gmjtd%7Clu6zn1ua2d%2C7s%3Do5-l07g0";
@@ -27,14 +40,18 @@ class MapQuest extends MapProviderAbstract
         }
     }
 
-
+    /**
+     * {@inheritdoc}
+     */
     protected function geocodeProcessResult($result)
     {
         $decodedResult = json_decode($result, true);
         return $this->buildAddressFromMapQuestResult($decodedResult, "results.0.locations.0");
     }
 
-    
+    /**
+     * {@inheritdoc}
+     */
     protected function geocodeBatchBuildRequest($request, $addresses, $country = null)
     {
         $request->IsBatch = true;
@@ -54,7 +71,9 @@ class MapQuest extends MapProviderAbstract
         $request->data = $data;
     }
 
-
+    /**
+     * {@inheritdoc}
+     */
     protected function geocodeBatchProcessResult($result)
     {
         if (empty($result) || !is_array($result)) {
@@ -76,7 +95,9 @@ class MapQuest extends MapProviderAbstract
         return $combinedResult;
     }
 
-
+    /**
+     * {@inheritdoc}
+     */
     protected function reverseGeocodeBuildRequest($request, $latitude, $longitude, $country = null)
     {
         $request->url = "https://www.mapquestapi.com/geocoding/v1/reverse?key=Gmjtd%7Clu6zn1ua2d%2C7s%3Do5-l07g0";
@@ -86,26 +107,42 @@ class MapQuest extends MapProviderAbstract
         );
     }
 
-
+    /**
+     * {@inheritdoc}
+     */
     protected function reverseGeocodeProcessResult($result)
     {
         $decodedResult = json_decode($result, true);
-        return $this->buildAddressFromMapQuestResult($decodedResult, "results.0.locations.0");
+        $address = $this->buildAddressFromMapQuestResult($decodedResult, "results.0.locations.0");
+
+        // if country is canada, do another geocode to correct 
+        // postalCode for 3-character postal code
+        if ($address["country"] == "CA") {
+            $address = $this->geocode($address, $address["country"]);
+        }
+        
+        return $address;
     }
 
-
+    /**
+     * {@inheritdoc}
+     */
     protected function reverseGeocodeBatchBuildRequest($request, array $latLngs, $country = null)
     {
         return false;
     }
     
-
+    /**
+     * {@inheritdoc}
+     */
     protected function reverseGeocodeBatchProcessResult($result)
     {
         return false;
     }
 
-
+    /**
+     * {@inheritdoc}
+     */
     public function reverseGeocodeBatch(array $latLngs, $country = null)
     {
         $result = array();
@@ -115,7 +152,9 @@ class MapQuest extends MapProviderAbstract
         return $result;
     }
 
-
+    /**
+     * {@inheritdoc}
+     */
     protected function routeBuildRequest($request, $fromLatitude, $fromLongitude, $toLatitude, $toLongitude, $options, $country = null)
     {
         $request->url = "https://www.mapquestapi.com/directions/v1/alternateroutes?key=Gmjtd%7Clu6zn1ua2d%2C7s%3Do5-l07g0";
@@ -180,6 +219,9 @@ class MapQuest extends MapProviderAbstract
         return $routes[0];
     }
 
+    /**
+     * {@inheritdoc}
+     */
     protected function routeProcessResult($result)
     {
         $route = $this->extractShortestRoute($result, 'distance');
@@ -200,12 +242,12 @@ class MapQuest extends MapProviderAbstract
         foreach ($maneuvers as $maneuver) {
             $routeResult["directions"][] = array(
                 "narrative" => Arr::get("narrative", $maneuver),
-                "iconUrl" => Arr::get("iconUrl", $maneuver),
-                "distance" => Arr::get("distance", $maneuver),
-                "time" => Arr::get("time", $maneuver),
-                "mapUrl" => Arr::get("mapUrl", $maneuver),
-                "startLat" => Arr::get("startPoint.lat", $maneuver),
-                "startLng" => Arr::get("startPoint.lng", $maneuver)
+                "iconUrl"   => Arr::get("iconUrl", $maneuver),
+                "distance"  => Arr::get("distance", $maneuver),
+                "time"      => Arr::get("time", $maneuver),
+                "mapUrl"    => Arr::get("mapUrl", $maneuver),
+                "startLat"  => Arr::get("startPoint.lat", $maneuver),
+                "startLng"  => Arr::get("startPoint.lng", $maneuver)
             );
         }
         return $routeResult;
@@ -220,6 +262,14 @@ class MapQuest extends MapProviderAbstract
         return array(Arr::get("time", $route), Arr::get("distance", $route));
     }
 
+    /**
+     * Build Address array From MapQuest Result
+     *
+     * @param array $result response result from mapquest
+     * @param string $keyChain key change to get from result
+     * @return array address array
+     *
+     */
     protected function buildAddressFromMapQuestResult($result, $keyChain)
     {
         $mapquestResult = Arr::findByKeyChain($result, $keyChain);
@@ -252,13 +302,19 @@ class MapQuest extends MapProviderAbstract
         );
     }
 
-
+    /**
+     * Build Address Request array sending to mapquest
+     *
+     * @param array $address that contains This is a description
+     * @return mixed This is the return value description
+     *
+     */
     protected function buildAddressRequestData($address)
     {
         $params = array(
             "street"     => Arr::mustGet("street", $address),
             "adminArea5" => Arr::mustGet("city", $address),
-            "adminArea3" => Arr::mustGet("subdivision", $address),
+            "adminArea3" => Arr::get("subdivision", $address),
             "postalCode" => Arr::mustGet("postalCode", $address),
         );
         $country = Arr::get("country", $address);
