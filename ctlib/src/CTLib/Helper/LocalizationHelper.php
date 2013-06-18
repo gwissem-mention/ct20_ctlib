@@ -788,6 +788,22 @@ class LocalizationHelper
     }
 
     /**
+     * Get zoom level for country's center
+     *
+     * @param string $countryCode If null, will use session's country.
+     * @return float
+     *
+     */
+    public function getMapZoom($countryCode = null)
+    {
+        $zoom = $this->getCountryConfigValue("map.zoom", $countryCode);
+        if (!isset($zoom)) {
+            throw new \Exception("map zoom is not configured in yaml correctly");
+        }
+        return floatval($zoom);
+    }
+
+    /**
      * format raw address array into single line address based on given format
      *
      * @param string $singleLineAddressFormat format string for single line address

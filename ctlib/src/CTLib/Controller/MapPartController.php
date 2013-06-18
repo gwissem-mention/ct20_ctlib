@@ -18,6 +18,7 @@ class MapPartController extends DynaPartController
                 "lat" => $mapCenterLat,
                 "lng" => $mapCenterLng
             ),
+            "zoom" => $localizer->getMapZoom(),
             "locale" => $locale,
             "unit" => $distanceUnit,
             "country" => $localizer->getSessionCountryCode(),

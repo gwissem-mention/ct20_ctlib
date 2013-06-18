@@ -30,3 +30,4 @@ locales:
 
 map:
     center: [54, -2]
+    zoom: 5

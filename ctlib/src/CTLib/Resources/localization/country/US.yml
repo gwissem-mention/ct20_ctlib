@@ -32,3 +32,4 @@ locales:
 
 map:
     center: [42.046687, -88.037256]
+    zoom: 4

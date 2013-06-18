@@ -50,7 +50,7 @@ class MapProviderManager implements MapProviderInterface
             if (!isset($config["allowedQualityCodes"])
                 || !is_array($config["allowedQualityCodes"])
             ) {
-                throw new \Exception("Allowed Qualitied codes are invalid");
+                throw new \Exception("Allowed Quality codes are invalid");
             }
 
             $mapProvider = new $config["class"]($config["allowedQualityCodes"]);
@@ -103,6 +103,9 @@ class MapProviderManager implements MapProviderInterface
      */    
     public function getJavascriptApiUrl($country = null)
     {
+        if ($country === null) {
+            $country = $this->countryInSiteConfig;
+        }
         return $this
             ->getMapProviderByCountry($country)
             ->getJavascriptApiUrl($country);
@@ -113,6 +116,9 @@ class MapProviderManager implements MapProviderInterface
      */    
     public function getJavascriptMapPlugin($country = null)
     {
+        if ($country === null) {
+            $country = $this->countryInSiteConfig;
+        }
         return $this
             ->getMapProviderByCountry($country)
             ->getJavascriptMapPlugin($country);
@@ -123,6 +129,9 @@ class MapProviderManager implements MapProviderInterface
      */    
     public function geocode($address, $country = null)
     {
+        if ($country === null) {
+            $country = $this->countryInSiteConfig;
+        }
         return $this
             ->getMapProviderByCountry($country)
             ->geocode(
@@ -143,6 +152,9 @@ class MapProviderManager implements MapProviderInterface
     public function geocodeBatch(array $addresses, $country = null)
     {
         if (!$addresses) { return null; }
+        if ($country === null) {
+            $country = $this->countryInSiteConfig;
+        }
 
         //clean up the addresses
         $addresses = array_map(
@@ -168,6 +180,9 @@ class MapProviderManager implements MapProviderInterface
      */    
     public function reverseGeocode($latitude, $longitude, $country = null)
     {
+        if ($country === null) {
+            $country = $this->countryInSiteConfig;
+        }
         return $this
             ->getMapProviderByCountry($country)
             ->reverseGeocode($latitude, $longitude, $country);
@@ -178,6 +193,9 @@ class MapProviderManager implements MapProviderInterface
      */    
     public function reverseGeocodeBatch(array $latLngs, $country = null)
     {
+        if ($country === null) {
+            $country = $this->countryInSiteConfig;
+        }
         return $this
             ->getMapProviderByCountry($country)
             ->reverseGeocodeBatch($latLngs, $country);
@@ -188,6 +206,9 @@ class MapProviderManager implements MapProviderInterface
      */    
     public function route($fromLatitude, $fromLongitude, $toLatitude, $toLongitude, array $options, $country = null)
     {
+        if ($country === null) {
+            $country = $this->countryInSiteConfig;
+        }
         return $this
             ->getMapProviderByCountry($country)
             ->route($fromLatitude, $fromLongitude, $toLatitude, $toLongitude, $options, $country);

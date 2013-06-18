@@ -32,3 +32,4 @@ locales:
 
 map:
     center: [60, -95]
+    zoom: 4
