@@ -113,7 +113,10 @@ class AssetHelper
 
     public function getAppAssetDir()
     {
-        if (! $this->runtime) { return '/bundles/hq/'; }
+        if (!$this->runtime) 
+			return '/bundles/hq/';
+		if ($this->runtime->getUserAppVersion()=='hctp') 
+			return '/bundles/'.$this->runtime->getAppAssetDir(); 
         return '/bundles/ctapp/' . $this->runtime->getAppAssetDir();
     }
 
