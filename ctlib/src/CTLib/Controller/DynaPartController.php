@@ -93,7 +93,9 @@ abstract class DynaPartController extends BaseController
     {
         if (empty($routeName)) return $json;
 
-        $routeUrl = $this->getRoute($routeName)->getPattern();
+        $routeUrl = $this
+                    ->get('route_inspector')
+                    ->getPattern($routeName);
         $extra = array(
             $this->getDynaPartSourceOptionName() => $routeUrl
         );
@@ -222,7 +224,9 @@ abstract class DynaPartController extends BaseController
         if ($currentRouteName == $lastVisitedRouteName) { return true; }
 
         // Storage is valid if previous page's parent is this page.
-        $parentRouteName = $this->getRouteOption($lastVisitedRouteName, 'parent');
+        $parentRouteName = $this
+                            ->get('route_inspector')
+                            ->getOption($lastVisitedRouteName, 'parent');
         if ($currentRouteName == $parentRouteName) { return true; }
 
         return false;

@@ -652,24 +652,6 @@ abstract class BaseController extends Controller
     }
 
     /**
-     * Shortcut to retrieving route object from router in service container.
-     *
-     * @param string $routeName
-     *
-     * @return Route
-     * @throws Exception    If route not found.
-     */
-    protected function getRoute($routeName)
-    {
-        $route = $this->get('router')->getRouteCollection()->get($routeName);
-
-        if (! $route) {
-            throw new \Exception("Invalid route name: $routeName.");
-        }
-        return $route;
-    }
-
-    /**
      * Returns option for route.
      *
      * @param string $routeName
@@ -679,7 +661,7 @@ abstract class BaseController extends Controller
      */
     protected function getRouteOption($routeName, $option)
     {
-        return $this->getRoute($routeName)->getOption($option);
+        return $this->get('route_inspector')->getOption($routeName, $option);
     }
 
     /**
@@ -692,9 +674,7 @@ abstract class BaseController extends Controller
      */
     protected function getRouteParams($routeName)
     {
-        $pattern = $this->getRoute($routeName)->getPattern();
-        $matchCount = preg_match_all('/{([a-z_0-9]+)}/i', $pattern, $matches);
-        return $matchCount ? $matches[1] : array();
+        return $this->get('route_inspector')->getParameters($routeName);
     }
 
 

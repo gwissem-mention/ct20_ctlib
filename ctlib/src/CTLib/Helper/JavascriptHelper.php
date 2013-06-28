@@ -5,15 +5,15 @@ namespace CTLib\Helper;
 class JavascriptHelper
 {
     protected $translator;
-    protected $router;
+    protected $routeInspector;
     protected $translations;
     protected $values;
     protected $routes;
 
-    public function __construct($translator, $router, $authorization=null)
+    public function __construct($translator, $routeInspector, $authorization=null)
     {
         $this->translator       = $translator;
-        $this->router           = $router;
+        $this->routeInspector   = $routeInspector;
         $this->authorization    = $authorization;
         $this->translations     = array();
         $this->values           = array();
@@ -155,7 +155,9 @@ class JavascriptHelper
                 throw new \Exception("Route already set for routeName: $routeName");
             }
 
-            $this->routes[$routeName] = $this->getRouteUrl($routeName);
+            $this->routes[$routeName] = $this
+                                        ->routeInspector
+                                        ->getPattern($routeName);
         }
         return $this;
     }
@@ -286,24 +288,6 @@ class JavascriptHelper
     public function getRoutes()
     {
         return $this->routes;
-    }
-
-    /**
-     * get Route Url from route name
-     *
-     * @param string $routeName route name
-     * @return string route url
-     *
-     */
-    public function getRouteUrl($routeName)
-    {
-        $route = $this->router->getRouteCollection()->get($routeName);
-
-        if (! $route) {
-            throw new \Exception("Invalid routeName: $routeName");
-        }
-
-        return $route->getPattern();
     }
     
     /**

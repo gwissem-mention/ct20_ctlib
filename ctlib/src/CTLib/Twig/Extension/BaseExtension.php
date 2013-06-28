@@ -11,16 +11,18 @@ class BaseExtension extends \Twig_Extension
     protected $assetHelper;
     protected $localizer;
     protected $jsHelper;
+    protected $routeInspector;
     protected $brandName;
     protected $controller;
 
     public function __construct($assetHelper, $localizer, $jsHelper,
-        $brandName=null)
+        $routeInspector, $brandName=null)
     {
-        $this->assetHelper  = $assetHelper;
-        $this->localizer    = $localizer;
-        $this->jsHelper     = $jsHelper;
-        $this->brandName    = $brandName;
+        $this->assetHelper      = $assetHelper;
+        $this->localizer        = $localizer;
+        $this->jsHelper         = $jsHelper;
+        $this->routeInspector   = $routeInspector;
+        $this->brandName        = $brandName;
     }
 
     /**
@@ -448,7 +450,7 @@ class BaseExtension extends \Twig_Extension
      */
     public function routeUrl($routeName)
     {
-        return $this->jsHelper->getRouteUrl($routeName);
+        return $this->routeInspector->getPattern($routeName);
     }
     
     /**
