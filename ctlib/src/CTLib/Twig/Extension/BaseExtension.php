@@ -14,15 +14,17 @@ class BaseExtension extends \Twig_Extension
     protected $routeInspector;
     protected $brandName;
     protected $controller;
+    protected $lazyLoader;
 
     public function __construct($assetHelper, $localizer, $jsHelper,
-        $routeInspector, $brandName=null)
+        $routeInspector, $brandName=null, $lazyLoader=null)
     {
         $this->assetHelper      = $assetHelper;
         $this->localizer        = $localizer;
         $this->jsHelper         = $jsHelper;
         $this->routeInspector   = $routeInspector;
         $this->brandName        = $brandName;
+        $this->lazyLoader       = $lazyLoader;
     }
 
     /**
@@ -46,7 +48,8 @@ class BaseExtension extends \Twig_Extension
             'jsRoutes'       => new \Twig_Function_Method($this, 'jsRoutes'),
             'jsPermissions'  => new \Twig_Function_Method($this, 'jsPermissions'),
             'brandName'      => new \Twig_Function_Method($this, 'brandName'),
-            'routeUrl'       => new \Twig_Function_Method($this, 'routeUrl')
+            'routeUrl'       => new \Twig_Function_Method($this, 'routeUrl'),
+            'lazyJs'         => new \Twig_Function_Method($this, 'lazyJs')
         );
     }
 
@@ -241,6 +244,17 @@ class BaseExtension extends \Twig_Extension
     public function brandName()
     {
         return $this->brandName;
+    }
+
+    /**
+     * Returns lazy-loaded Javascript content.
+     *
+     * @return string
+     */
+    public function lazyJs()
+    {
+        if (! $this->lazyLoader) { return ''; }
+        return $this->lazyLoader->getJavascript();    
     }
 
     /**

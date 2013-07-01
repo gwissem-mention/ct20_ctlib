@@ -24,6 +24,7 @@ class TwigLazyLoadListener
      */
     protected $loadCollection;
 
+
     public function __construct($assetHelper)
     {
         $this->assetHelper = $assetHelper;
@@ -43,16 +44,22 @@ class TwigLazyLoadListener
     {
         if (HttpKernelInterface::MASTER_REQUEST !== $event->getRequestType()
             || $event->getRequest()->isXmlHttpRequest()
-            || $this->isLoadCollectionEmpty()) {
+            || ! $this->loadCollection['cssSrc']) {
             // Nothing to do.
             return;
         }
 
-        // Inject lazy loaded components into response content.
-        $content = $event->getResponse()->getContent();
-        $content = $this->injectJavascript($content);
-        $content = $this->injectCss($content);
-        $event->getResponse()->setContent($content);
+        // Inject lazy CSS into response.
+        $content    = $event->getResponse()->getContent();
+        $position   = mb_strpos($content, '<head>');
+        $position   += 6; // length of <head>
+
+        if ($position) {
+            $content = mb_substr($content, 0, $position)
+                     . "\n" . join("\n", $this->loadCollection['cssSrc']) . "\n"
+                     . mb_substr($content, $position);
+            $event->getResponse()->setContent($content);
+        }
     }
 
     /**
@@ -149,128 +156,15 @@ class TwigLazyLoadListener
     }
 
     /**
-     * Indicates whether any lazy load component has been added.
+     * Returns lazy-loaded Javascript content.
      *
-     * @return boolean
-     */
-    protected function isLoadCollectionEmpty()
-    {
-        return ! $this->loadCollection['jsInline']
-            && ! $this->loadCollection['jsSrc']
-            && ! $this->loadCollection['cssSrc'];
-    }
-
-    /**
-     * Injects lazy-loaded Javascript code into response.
-     *
-     * @param string $content   Response content.
      * @return string
      */
-    protected function injectJavascript($content)
+    public function getJavascript()
     {
-        if (! $this->loadCollection['jsSrc']
-            && ! $this->loadCollection['jsInline']) {
-            return $content;
-        }
-
-        $this->removeDuplicateJavascriptSrc($content);
-
-        // Compile Javascript code and inject it.
-        $js = join("\n", $this->loadCollection['jsSrc']);
-
-        if ($this->loadCollection['jsInline']) {
-            $js .= "\n<script type='text/javascript'>"
-                . join("\n\n", $this->loadCollection['jsInline'])
+        return join("\n", $this->loadCollection['jsSrc'])
+                . "\n<script type='text/javascript'>"
+                . "\n" . join("\n\n", $this->loadCollection['jsInline'])
                 . "</script>";
-        }
-
-        return $this->injectContent(
-            $content, 
-            '<script id="jsLazyLoadPlaceholder"></script>',
-            $js,
-            true
-        );
-    }
-
-    /**
-     * Injects lazy-loaded CSS code into response.
-     *
-     * @param string $content   Response content.
-     * @return string
-     */
-    protected function injectCss($content)
-    {
-        if (! $this->loadCollection['cssSrc']) { return $content; }
-
-        // Compile CSS code and inject it.
-        $css = join("\n", $this->loadCollection['cssSrc']);
-        return $this->injectContent($content, '</head>', $css);
-    }
-
-    /**
-     * Injects HTML code into response content.
-     *
-     * @param string $content   Response content.
-     * @param int $position     Start position for injection.
-     * @param string $injection HTML to inject.
-     *
-     * @return string
-     */
-    protected function injectContent($content, $placeholderTag, $injection, $isPlacehostReplaced = false)
-    {
-        $placeholderTag = trim($placeholderTag);
-        $injection = trim($injection);
-
-        if (!$placeholderTag || !$injection) { return; }
-
-        $position = $this->getTagPosition($content, $placeholderTag);
-
-        if ($position === false) {
-            throw new \Exception("Page must have {$placeholderTag} tag.");
-        }
-
-        return mb_substr($content, 0, $position)
-            . "\n" . $injection . "\n"
-            . mb_substr($content, $position + ($isPlacehostReplaced ? strlen($placeholderTag) : 0) );
-    }
-
-    /**
-     * Returns position of HTML tag in response content.
-     *
-     * @param string $content   Response content.
-     * @param string $tag       HTML tag to find.
-     *
-     * @return mixed            Return int or FALSE if $tag not found.
-     */
-    protected function getTagPosition($content, $tag)
-    {
-        return mb_strripos($content, $tag);
-    }
-
-    /**
-     * Remove duplicated javascript src loading from loadCollection['jsSrc']
-     *
-     * @param string $content page content
-     * @return void
-     *
-     */
-    protected function removeDuplicateJavascriptSrc($content)
-    {
-        $pos = mb_strripos($content, "router.js");
-        $content = mb_substr($content, $pos);
-
-        $isMatched = preg_match_all(
-            "/<script.*src=['\"]\/?(.*\/)*([\w.]*)?.*['\"]\s*>/i",
-            $content,
-            $match
-        );
-        
-        if (!$isMatched) return;
-
-        foreach ($this->loadCollection['jsSrc'] as $name => $jsSrc) {
-            if (in_array($name, $match[2])) {
-                unset($this->loadCollection['jsSrc'][$name]);
-            }
-        }
     }
 }
