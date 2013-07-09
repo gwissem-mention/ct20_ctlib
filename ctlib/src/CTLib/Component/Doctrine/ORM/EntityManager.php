@@ -153,12 +153,12 @@ class EntityManager extends \Doctrine\ORM\EntityManager
             $getter = "get{$fieldName}";
             $value  = $entity->{$getter}();
 
-            if (! is_null($value)) {
-                $values[$columnName] = $value;
-            } elseif ($fieldName == 'addedOn'
-                        || $fieldName == 'modifiedOn'
-                        || $fieldName == 'effectiveTime') {
+            if ($fieldName == 'addedOn'
+                || $fieldName == 'modifiedOn'
+                || $fieldName == 'effectiveTime') {
                 $values[$columnName] = time();
+            } elseif (! is_null($value)) {
+                $values[$columnName] = $value;
             } else;
         }
 
