@@ -133,6 +133,86 @@ class EntityManager extends \Doctrine\ORM\EntityManager
     }
 
     /**
+     * Inserts an entity directly into the database.
+     *
+     * Mike T. @ 7/9/2013: This method should be considered experimental only.
+     *
+     * NOTE: This method does not use Doctrine's UnitOfWork nor does it make
+     *       the entity managed by the EntityManager.
+     *
+     * @param Entity $entity
+     * @return void
+     */
+    public function insert($entity)
+    {
+        $meta   = $this->getEntityMetaHelper()->getMetadata($entity);
+        $fields = $meta->fieldNames;
+        $values = array();
+
+        foreach ($fields as $columnName => $fieldName) {
+            $getter = "get{$fieldName}";
+            $value  = $entity->{$getter}();
+
+            if (! is_null($value)) {
+                $values[$columnName] = $value;
+            } elseif ($fieldName == 'addedOn'
+                        || $fieldName == 'modifiedOn'
+                        || $fieldName == 'effectiveTime') {
+                $values[$columnName] = time();
+            } else;
+        }
+
+        $this
+            ->getConnection()
+            ->insert($meta->getTableName(), $values);
+
+        if ($meta->isIdGeneratorIdentity() || $meta->isIdGeneratorSequence()) {
+            $idFieldName    = current($meta->getIdentifier());
+            $setter         = "set{$idFieldName}";
+            $entity->{$setter}($this->getConnection()->lastInsertId());
+        }
+    }
+
+    /**
+     * Updates entity's database record.
+     *
+     * Mike T. @ 7/9/2013: This method should be considered experimental only.
+     *
+     * NOTE: This method does not use Doctrine's UnitOfWork nor does it make
+     *       the entity managed by the EntityManager.
+     *
+     * @param Entity $entity
+     * @return void
+     */
+    public function update($entity)
+    {
+        $meta   = $this->getEntityMetaHelper()->getMetadata($entity);
+        $fields = $meta->fieldNames;
+        $values = array();
+        $id     = $this->getEntityId($entity);
+        $useId  = array();
+
+        foreach ($fields as $columnName => $fieldName) {
+            if (isset($id[$fieldName])) {
+                $useId[$columnName] = $id[$fieldName];
+                continue;
+            }
+
+            if ($fieldName == 'modifiedOn') {
+                $value = time();
+            } else {
+                $getter = "get{$fieldName}";
+                $value  = $entity->{$getter}();
+            }
+            $values[$columnName] = $value;
+        }
+
+        $this
+            ->getConnection()
+            ->update($meta->getTableName(), $values, $useId);
+    }
+
+    /**
      * Returns entity's id fields with their values.
      *
      * @param Entity $entity
