@@ -21,7 +21,7 @@ class JsonResponse extends \Symfony\Component\HttpFoundation\Response
      * @param mixed   $content
      * @param integer $httpResponseCode
      */
-    public function __construct($content, $httpResponseCode=200)
+    public function __construct($content, $httpResponseCode=200, $headers=array())
     {
         if (! is_string($content)) {
             if (is_object($content) && method_exists($content, 'toJson')) {
@@ -34,7 +34,7 @@ class JsonResponse extends \Symfony\Component\HttpFoundation\Response
         parent::__construct(
             $content,
             $httpResponseCode,
-            array('Content-type' => 'application/json')
+            $headers + array('Content-type' => 'application/json')
         );
     }
 
