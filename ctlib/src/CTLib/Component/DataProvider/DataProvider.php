@@ -76,11 +76,7 @@ class DataProvider
         $this->defaultFilters      = array();
         $this->rowContext          = array();
         $this->fetchJoinCollection = $fetchJoinCollection;
-        $this->recordProcessorMap  = array(
-            static::REQUEST_TYPE_NOTIFY => null,
-            static::REQUEST_TYPE_JSON   => new JsonRecordProcessor($fetchJoinCollection),
-            static::REQUEST_TYPE_CSV    => new CsvRecordProcessor()
-        );
+        $this->recordProcessorMap  = array();
     }
 
     /**
@@ -245,6 +241,20 @@ class DataProvider
      */
     protected function getRecordProcessor($requestType)
     {
+        if (!array_key_exists(static::REQUEST_TYPE_NOTIFY, $this->recordProcessorMap)) {
+            $this->recordProcessorMap[static::REQUEST_TYPE_NOTIFY] = null;
+        }
+
+        if (!array_key_exists(static::REQUEST_TYPE_JSON, $this->recordProcessorMap)) {
+            $this->recordProcessorMap[static::REQUEST_TYPE_JSON] 
+                = new JsonRecordProcessor($this->fetchJoinCollection);
+        }
+
+        if (!array_key_exists(static::REQUEST_TYPE_CSV, $this->recordProcessorMap)) {
+            $this->recordProcessorMap[static::REQUEST_TYPE_CSV] 
+                = new CsvRecordProcessor($this->get("kernel"));
+        }
+
         return Arr::get(
             $requestType,
             $this->recordProcessorMap
