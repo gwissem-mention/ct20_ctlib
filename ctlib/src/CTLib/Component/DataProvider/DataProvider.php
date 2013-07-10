@@ -241,18 +241,18 @@ class DataProvider
      */
     protected function getRecordProcessor($requestType)
     {
-        if (!array_key_exists(static::REQUEST_TYPE_NOTIFY, $this->recordProcessorMap)) {
-            $this->recordProcessorMap[static::REQUEST_TYPE_NOTIFY] = null;
-        }
-
-        if (!array_key_exists(static::REQUEST_TYPE_JSON, $this->recordProcessorMap)) {
-            $this->recordProcessorMap[static::REQUEST_TYPE_JSON] 
-                = new JsonRecordProcessor($this->fetchJoinCollection);
-        }
-
-        if (!array_key_exists(static::REQUEST_TYPE_CSV, $this->recordProcessorMap)) {
-            $this->recordProcessorMap[static::REQUEST_TYPE_CSV] 
-                = new CsvRecordProcessor($this->get("kernel"));
+        if (!array_key_exists($requestType, $this->recordProcessorMap)) {
+            switch ($requestType) {
+                case static::REQUEST_TYPE_NOTIFY:
+                    $this->recordProcessorMap[static::REQUEST_TYPE_NOTIFY] = null;
+                    break;
+                case static::REQUEST_TYPE_JSON:
+                    $this->recordProcessorMap[static::REQUEST_TYPE_JSON]
+                        = new JsonRecordProcessor($this->fetchJoinCollection);
+                    break;
+                default:
+                    $this->recordProcessorMap[$requestType] = null;
+            }
         }
 
         return Arr::get(
