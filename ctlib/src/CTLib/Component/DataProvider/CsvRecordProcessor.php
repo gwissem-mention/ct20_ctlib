@@ -6,11 +6,8 @@ namespace CTLib\Component\DataProvider;
  *
  * @author Shuang Liu <sliu@celltrak.com>
  */
-class CsvRecordProcessor implements RecordProcessorInterface
+class CsvRecordProcessor extends DownloadRecordProcessor
 {
-    const DOWNLOAD_DIR = "download";
-    const DELETE_THRESHOLD_SECOND = 3600;
-
     /**
      * store csv file handler
      * @var mixed 
@@ -24,34 +21,11 @@ class CsvRecordProcessor implements RecordProcessorInterface
     protected $fileName;
 
     /**
-     * kernel
-     * @var AppKernel 
-     */
-    protected $kernel;
-    
-    
-    public function __construct($kernel)
-    {
-        $this->kernel = $kernel;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getTotal($queryBuilder)
-    {
-        return -1;
-    }
-    
-    /**
      * {@inheritdoc}
      */
     public function beforeProcessRecord($model)
     {
-        $cacheDir = $this->kernel->getCacheDir();
-        
-        $this->removeOutdatedFiles();
-        $this->fileName   = $this->createTempFileName();
+        $this->fileName   = $this->createTempFileName("rst");
         $this->fileHandle = fopen($this->fileName, "w");
 
         if (!$this->fileHandle) {
@@ -81,9 +55,8 @@ class CsvRecordProcessor implements RecordProcessorInterface
         fputcsv($this->fileHandle, $record);
 
         unset($record);
-        gc_enable(); // Enable Garbage Collector
-        gc_collect_cycles();
-        gc_disable();
+
+        $this->recycleMemoryGarbage();
     }
 
     /**
@@ -103,39 +76,4 @@ class CsvRecordProcessor implements RecordProcessorInterface
         return $this->fileName;
     }
 
-    /**
-     * create Temp File
-     *
-     * @return string the name of created temporary file
-     *
-     */
-    protected function createTempFileName()
-    {
-        $tempDir = $this->kernel->getCacheDir() . "/" . static::DOWNLOAD_DIR;
-        if (!is_dir($tempDir)) {
-            @mkdir($tempDir);
-        }
-        return tempnam($tempDir, "rst");
-    }
-
-    /**
-     * Remove files that are older than the threshold
-     *
-     * @return void
-     *
-     */    
-    protected function removeOutdatedFiles()
-    {
-        $tempDir = $this->kernel->getCacheDir() . "/" . static::DOWNLOAD_DIR;
-
-        $files = scandir($tempDir);
-        foreach($files as $file) {
-            $filePath = $tempDir . "/" . $file;
-            if(is_file($filePath)
-                && time() - filemtime($filePath) >= static::DELETE_THRESHOLD_SECOND
-            ) {
-                @unlink($filePath);
-            }
-        }
-    }
 }
