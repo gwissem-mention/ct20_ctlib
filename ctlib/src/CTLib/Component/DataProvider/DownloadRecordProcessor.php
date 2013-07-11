@@ -32,27 +32,6 @@ abstract class DownloadRecordProcessor implements RecordProcessorInterface
     }
 
     /**
-     * {@inheritdoc}
-     */
-    abstract public function beforeProcessRecord($model);
-
-    /**
-     * {@inheritdoc}
-     */
-    abstract public function processRecord($entity, $record, $model);
-
-    /**
-     * {@inheritdoc}
-     */
-    abstract public function getRecordResult($queryConfig);
-
-    /**
-     * {@inheritdoc}
-     */
-    abstract public function formatResult($total, $model, $data);
-
-    
-    /**
      * create Temp File
      *
      * @return string the name of created temporary file
