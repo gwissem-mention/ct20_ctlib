@@ -145,7 +145,15 @@ class EntityManager extends \Doctrine\ORM\EntityManager
      */
     public function insert($entity)
     {
-        $meta   = $this->getEntityMetaHelper()->getMetadata($entity);
+        $meta = $this->getEntityMetaHelper()->getMetadata($entity);
+
+        if (isset($meta->lifecycleCallbacks)
+            && isset($meta->lifecycleCallbacks['prePersist'])) {
+            foreach ($meta->lifecycleCallbacks['prePersist'] as $method) {
+                $entity->{$method}();
+            }
+        }
+
         $fields = $meta->fieldNames;
         $values = array();
 
