@@ -415,10 +415,10 @@ class DataProvider
     protected function applyFieldFilter($fieldName, $value, $operator)
     {
         if (is_array($value)) {
-            if ($operator != 'eq' && $operator != 'in') {
+            if ($operator != 'eq' && $operator != 'in' && $operator != "notIn") {
                 throw new \Exception("Array value only supports 'eq' or 'in' operator.");
             }
-            $operator = 'in';
+            $operator = $operator ?: 'in';
         }
 
         $param = str_replace(".", "", $fieldName);
@@ -426,6 +426,7 @@ class DataProvider
 
         switch ($operator) {
             case 'eq':  // Equals.
+            case 'neq':  // Equals.
             case 'lt':  // Less than.
             case 'lte': // Less than or equal to.
             case 'gt':  // Greater than.
@@ -437,6 +438,9 @@ class DataProvider
                 break;
             case 'in':
                 $expr = $this->queryBuilder->expr()->in($fieldName, $paramInQuery);
+                break;
+            case 'notIn':
+                $expr = $this->queryBuilder->expr()->notIn($fieldName, $paramInQuery);
                 break;
             case 'like%':
             case '%like':
