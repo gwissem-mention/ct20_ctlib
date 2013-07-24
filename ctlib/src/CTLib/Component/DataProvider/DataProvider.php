@@ -415,14 +415,15 @@ class DataProvider
     protected function applyFieldFilter($fieldName, $value, $operator)
     {
         if (is_array($value)) {
-            if ($operator != 'eq' && $operator != 'in' && $operator != "notIn") {
+            if (! in_array($operator, array('eq', 'in', "notIn"))) {
                 throw new \Exception("Array value only supports 'eq' or 'in' operator.");
             }
-            $operator = $operator ?: 'in';
+            if ($operator == 'eq') { $operator = 'in'; }
         }
 
         $param = str_replace(".", "", $fieldName);
         $paramInQuery = ":{$param}";
+        $expr = $this->queryBuilder->expr();
 
         switch ($operator) {
             case 'eq':  // Equals.
@@ -431,28 +432,28 @@ class DataProvider
             case 'lte': // Less than or equal to.
             case 'gt':  // Greater than.
             case 'gte': // Greater than or equal to.
-                $expr = $this->queryBuilder->expr()->$operator(
+                $expr = $expr->$operator(
                     $fieldName,
                     $paramInQuery
                 );
                 break;
             case 'in':
-                $expr = $this->queryBuilder->expr()->in($fieldName, $paramInQuery);
+                $expr = $expr->in($fieldName, $paramInQuery);
                 break;
             case 'notIn':
-                $expr = $this->queryBuilder->expr()->notIn($fieldName, $paramInQuery);
+                $expr = $expr->notIn($fieldName, $paramInQuery);
                 break;
             case 'like%':
             case '%like':
             case '%like%':
-                $expr = $this->queryBuilder->expr()->like($fieldName, $paramInQuery);
+                $expr = $expr->like($fieldName, $paramInQuery);
                 $value = str_replace("like", $value, $operator);
                 break;
             case 'null':
-                $expr = $this->queryBuilder->expr()->isNull($fieldName);
+                $expr = $expr->isNull($fieldName);
                 break;
             case 'notnull':
-                $expr = $this->queryBuilder->expr()->isNotNull($fieldName);
+                $expr = $expr->isNotNull($fieldName);
                 break;
             default:
                 throw new \Exception("Invalid operator: $operator.");
