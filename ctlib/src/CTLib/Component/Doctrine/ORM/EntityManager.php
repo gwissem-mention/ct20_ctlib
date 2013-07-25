@@ -164,7 +164,14 @@ class EntityManager extends \Doctrine\ORM\EntityManager
             if ($fieldName == 'addedOn'
                 || $fieldName == 'modifiedOn'
                 || $fieldName == 'effectiveTime') {
-                $values[$columnName] = time();
+                if (! is_null($value) )
+                {
+                    $values[$columnName] = $value;
+                }
+                else
+                {
+                    $values[$columnName] = time();
+                }
             } elseif (! is_null($value)) {
                 $values[$columnName] = $value;
             } else;
