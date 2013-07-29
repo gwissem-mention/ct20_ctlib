@@ -173,6 +173,10 @@ class EntityManager extends \Doctrine\ORM\EntityManager
                 default:
                     $getter = "get{$fieldName}";
                     $value  = $entity->{$getter}();
+
+                    if (is_object($value)) {
+                        throw new \Exception("Cannot insert object value set for " . get_class($entity) . ".{$fieldName}");
+                    }
                     break;
             }
 
@@ -222,6 +226,10 @@ class EntityManager extends \Doctrine\ORM\EntityManager
             } else {
                 $getter = "get{$fieldName}";
                 $value  = $entity->{$getter}();
+
+                if (is_object($value)) {
+                    throw new \Exception("Cannot update object value set for " . get_class($entity) . ".{$fieldName}");
+                }
             }
             $values[$columnName] = $value;
         }
