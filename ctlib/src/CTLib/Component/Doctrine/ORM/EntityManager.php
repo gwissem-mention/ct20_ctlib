@@ -158,23 +158,27 @@ class EntityManager extends \Doctrine\ORM\EntityManager
         $values = array();
 
         foreach ($fields as $columnName => $fieldName) {
-            $getter = "get{$fieldName}";
-            $value  = $entity->{$getter}();
+            switch ($fieldName) {
+                case 'addedOn':
+                case 'modifiedOn':
+                    $value = time();
+                    break;
+                case 'effectiveTime':
+                    if ($entity->hasExplicitEffectiveTime()) {
+                        $value = $entity->getEffectiveTime();
+                    } else {
+                        $value = time();
+                    }
+                    break;
+                default:
+                    $getter = "get{$fieldName}";
+                    $value  = $entity->{$getter}();
+                    break;
+            }
 
-            if ($fieldName == 'addedOn'
-                || $fieldName == 'modifiedOn'
-                || $fieldName == 'effectiveTime') {
-                if (! is_null($value) )
-                {
-                    $values[$columnName] = $value;
-                }
-                else
-                {
-                    $values[$columnName] = time();
-                }
-            } elseif (! is_null($value)) {
+            if (! is_null($value)) {
                 $values[$columnName] = $value;
-            } else;
+            }
         }
 
         $this

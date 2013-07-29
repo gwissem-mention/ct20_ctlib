@@ -4,6 +4,8 @@ namespace CTLib\Entity;
 abstract class EffectiveEntity extends BaseEntity
 {
     
+    protected $hasExplicitEffectiveTime = false;
+
     
     /**
      * Sets Doctrine-used effectiveTime field as well as custom effectiveTime
@@ -13,7 +15,8 @@ abstract class EffectiveEntity extends BaseEntity
      */
     public final function setEffectiveTime($effectiveTime)
     {
-        $this->effectiveTime	= $effectiveTime;
+        $this->effectiveTime            = $effectiveTime;
+        $this->hasExplicitEffectiveTime = true;
     }
 
     /**
@@ -24,6 +27,16 @@ abstract class EffectiveEntity extends BaseEntity
     public function getEffectiveTime()
     {
         return $this->effectiveTime;
+    }
+
+    /**
+     * Indicates whether entity has had its effectiveTime explicitly set.
+     *
+     * @return boolean
+     */
+    public function hasExplicitEffectiveTime()
+    {
+        return $this->hasExplicitEffectiveTime;
     }
         
     /**
