@@ -145,65 +145,51 @@ class EntityManager extends \Doctrine\ORM\EntityManager
      */
     public function insert($entity)
     {
-    	try
-    	{
-	        $meta = $this->getEntityMetaHelper()->getMetadata($entity);
-	
-	        if (isset($meta->lifecycleCallbacks)
-	            && isset($meta->lifecycleCallbacks['prePersist'])) {
-	            foreach ($meta->lifecycleCallbacks['prePersist'] as $method) {
-	                $entity->{$method}();
-	            }
-	        }
-	
-	        $fields = $meta->fieldNames;
-	        $values = array();
-	
-	        foreach ($fields as $columnName => $fieldName) {
-	            switch ($fieldName) {
-	                case 'addedOn':
-	                case 'modifiedOn':
-	                    $value = time();
-	                    break;
-	                case 'effectiveTime':
-	                    if ($entity->hasExplicitEffectiveTime()) {
-	                        $value = $entity->getEffectiveTime();
-	                    } else {
-	                        $value = time();
-	                    }
-	                    break;
-	                default:
-	                    $getter = "get{$fieldName}";
-	                    $value  = $entity->{$getter}();
-	
-/*
-	                    if (is_object($value)) {
-	                        throw new \Exception("Cannot insert object value set for " . get_class($entity) . ".{$fieldName}");
-	                    }
-*/
-	                    break;
-	            }
-	
-	            if (! is_null($value)) {
-	                $values[$columnName] = $value;
-	            }
-	        }
-	
-	        $this
-	            ->getConnection()
-	            ->insert($meta->getTableName(), $values);
-	
-	        if ($meta->isIdGeneratorIdentity() || $meta->isIdGeneratorSequence()) {
-	            $idFieldName    = current($meta->getIdentifier());
-	            $setter         = "set{$idFieldName}";
-	            $entity->{$setter}($this->getConnection()->lastInsertId());
-	        }
+    	$meta = $this->getEntityMetaHelper()->getMetadata($entity);
+
+        if (isset($meta->lifecycleCallbacks)
+            && isset($meta->lifecycleCallbacks['prePersist'])) {
+            foreach ($meta->lifecycleCallbacks['prePersist'] as $method) {
+                $entity->{$method}();
+            }
         }
-        catch (\Exception $e)
-        {
-        	throw new \Exception("Cannot insert for " . get_class($entity) . $e->getMessage());       
+
+        $fields = $meta->fieldNames;
+        $values = array();
+
+        foreach ($fields as $columnName => $fieldName) {
+            switch ($fieldName) {
+                case 'addedOn':
+                case 'modifiedOn':
+                    $value = time();
+                    break;
+                case 'effectiveTime':
+                    if ($entity->hasExplicitEffectiveTime()) {
+                        $value = $entity->getEffectiveTime();
+                    } else {
+                        $value = time();
+                    }
+                    break;
+                default:
+                    $getter = "get{$fieldName}";
+                    $value  = $entity->{$getter}();
+                    break;
+            }
+
+            if (! is_null($value)) {
+                $values[$columnName] = $value;
+            }
         }
-        
+
+        $this
+            ->getConnection()
+            ->insert($meta->getTableName(), $values);
+
+        if ($meta->isIdGeneratorIdentity() || $meta->isIdGeneratorSequence()) {
+            $idFieldName    = current($meta->getIdentifier());
+            $setter         = "set{$idFieldName}";
+            $entity->{$setter}($this->getConnection()->lastInsertId());
+        }
     }
 
     /**
@@ -219,43 +205,30 @@ class EntityManager extends \Doctrine\ORM\EntityManager
      */
     public function update($entity)
     {
-    	try
-    	{
-	        $meta   = $this->getEntityMetaHelper()->getMetadata($entity);
-	        $fields = $meta->fieldNames;
-	        $values = array();
-	        $id     = $this->getEntityId($entity);
-	        $useId  = array();
-	
-	        foreach ($fields as $columnName => $fieldName) {
-	            if (isset($id[$fieldName])) {
-	                $useId[$columnName] = $id[$fieldName];
-	                continue;
-	            }
-	
-	            if ($fieldName == 'modifiedOn') {
-	                $value = time();
-	            } else {
-	                $getter = "get{$fieldName}";
-	                $value  = $entity->{$getter}();
-	
-	/*
-	                if (is_object($value)) {
-	                    throw new \Exception("Cannot update object value set for " . get_class($entity) . ".{$fieldName}");
-	                }
-	*/
-	            }
-	            $values[$columnName] = $value;
-	        }
-	
-	        $this
-	            ->getConnection()
-	            ->update($meta->getTableName(), $values, $useId);
+	    $meta   = $this->getEntityMetaHelper()->getMetadata($entity);
+        $fields = $meta->fieldNames;
+        $values = array();
+        $id     = $this->getEntityId($entity);
+        $useId  = array();
+
+        foreach ($fields as $columnName => $fieldName) {
+            if (isset($id[$fieldName])) {
+                $useId[$columnName] = $id[$fieldName];
+                continue;
+            }
+
+            if ($fieldName == 'modifiedOn') {
+                $value = time();
+            } else {
+                $getter = "get{$fieldName}";
+                $value  = $entity->{$getter}();
+            }
+            $values[$columnName] = $value;
         }
-        catch (\Exception $e)
-        {
-        	throw new \Exception("Cannot update for " . get_class($entity) . $e->getMessage());
-        }
+
+        $this
+            ->getConnection()
+            ->update($meta->getTableName(), $values, $useId);
     }
 
     /**
