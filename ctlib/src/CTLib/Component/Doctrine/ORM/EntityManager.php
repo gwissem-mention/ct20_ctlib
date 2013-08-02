@@ -188,7 +188,7 @@ class EntityManager extends \Doctrine\ORM\EntityManager
         if ($meta->isIdGeneratorIdentity() || $meta->isIdGeneratorSequence()) {
             $idFieldName    = current($meta->getIdentifier());
             $setter         = "set{$idFieldName}";
-            $entity->{$setter}($this->getConnection()->lastInsertId());
+            $entity->{$setter}((int) $this->getConnection()->lastInsertId());
         }
     }
 
