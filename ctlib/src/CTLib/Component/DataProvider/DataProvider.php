@@ -212,7 +212,10 @@ class DataProvider
             && $requestType != static::REQUEST_TYPE_CSV
             && $requestType != static::REQUEST_TYPE_PDF
         ) {
-            throw new \Exception("request type is not valid");
+            throw new \Exception(
+                "The request type " . $requestType . " is invalid. " . 
+                empty($this->recordProcessorMap) ? "" : serialize($this->recordProcessorMap)
+            );
         }
 
         $this->recordProcessorMap[$requestType] = $recordProcessor;
