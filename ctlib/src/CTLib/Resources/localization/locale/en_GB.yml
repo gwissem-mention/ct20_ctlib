@@ -10,9 +10,9 @@ datetime:
         shortDate: dd/M/yyyy
         casualDate: d MMM
 
-        longTime: h:mm a
-        shortTime: h:mm a
-        casualTime: h:mm a
+        longTime: HH:mm a
+        shortTime: HH:mm a
+        casualTime: HH:mm a
 
         longTimezone: zzzz
         shortTimezone: z
