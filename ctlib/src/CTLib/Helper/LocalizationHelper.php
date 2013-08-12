@@ -804,6 +804,44 @@ class LocalizationHelper
     }
 
     /**
+     * Convert datepickerFormat configed into PHP datetime format
+     *
+     * @param string $locale 
+     * @return string PHP datetime format
+     *
+     */
+    public function getDatepickerPhpFormat($locale = null)
+    {
+        $datepickerFormat = $this->getLocaleConfigValue("dateinput.datepickerFormat", $locale);
+        switch ($datepickerFormat) {
+            case "mm/dd/yy":
+                return "m/d/Y";
+            case "dd/mm/yy":
+                return "d/m/Y";
+            default:
+                return $datepickerFormat;
+        }
+    }
+
+    /**
+     * Convert timepicker format into PHP datatime format
+     * 
+     * @param string locale
+     * @return string PHP datetime format
+     * 
+     */
+    public function getTimepickerFormat($locale = null)
+    {
+        $timepickerFormat = $this->getLocaleConfigValue("dateinput.timepickerFormat");
+        switch ($timepickerFormat) {
+            case "h:mm TT":
+                return "h:i T";
+            default:
+                return $timepickerFormat;
+        }
+    }
+
+    /**
      * format raw address array into single line address based on given format
      *
      * @param string $singleLineAddressFormat format string for single line address

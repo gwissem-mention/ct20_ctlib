@@ -36,14 +36,21 @@ class DateRangeFilter implements DataProviderFilter
     protected $fieldType;
 
     /**
+     * @var string
+     */
+    protected $dateFormat;
+    
+    
+    /**
      * @param string $dateField
      * @param string $timezone
      */
-    public function __construct($dateField, $timezone, $filedType=DateRangeFilter::TYPE_DATETIME)
+    public function __construct($dateField, $timezone, $dateFormat, $filedType=DateRangeFilter::TYPE_DATETIME)
     {
         $this->dateField    = $dateField;
         $this->timezone     = $timezone;
         $this->fieldType    = $filedType;
+        $this->dateFormat   = $dateFormat;
     }
 
     /**
@@ -83,13 +90,10 @@ class DateRangeFilter implements DataProviderFilter
                 break;
 
             case self::SPECIFY:
-                $dateFrom = Arr::get('dateFrom', $value);
-                $dateTo   = Arr::get('dateTo', $value);
-                if (empty($dateFrom) || empty($dateTo)) {
-                    break;
-                }
-                $dateFromDateTime = new \DateTime($dateFrom["value"], $this->timezone);
-                $dateToDateTime   = new \DateTime($dateTo["value"], $this->timezone);
+                list($dateFromDateTime, $dateToDateTime) = $this->formatDateFromTo(
+                    Arr::findByKeyChain($value, "dateFrom.value"),
+                    Arr::findByKeyChain($value, "dateTo.value")
+                );
                 
                 // Use the passed range from and to dates.
                 $qbr->andWhere("{$this->dateField} BETWEEN :from AND :to")
@@ -102,6 +106,40 @@ class DateRangeFilter implements DataProviderFilter
         }
     }
 
+    /**
+     * Format DateFromTo
+     *
+     * @param mixed $dateFrom This is a description
+     * @param mixed $dateTo This is a description
+     * @return mixed This is the return value description
+     *
+     */
+    protected function formatDateFromTo($dateFrom, $dateTo)
+    {
+        if (empty($dateFrom) || empty($dateTo)) {
+            return null;
+        }
+
+        $dateFromDateTime = \DateTime::createFromFormat(
+            $this->dateFormat,
+            $dateFrom,
+            $this->timezone
+        );
+        $dateFromDateTime->setTime(0, 0);
+
+        $dateToDateTime = \DateTime::createFromFormat(
+            $this->dateFormat,
+            $dateTo,
+            $this->timezone
+        );
+        $dateToDateTime->setTime(23, 59, 59);
+
+        return array(
+            $dateFromDateTime,
+            $dateToDateTime
+        );
+    }
+    
     /**
      * Format DateTime By Type
      *
