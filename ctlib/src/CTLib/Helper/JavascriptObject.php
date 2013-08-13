@@ -150,8 +150,8 @@ class JavascriptObject
         }
         else {
             $this->jsObject = (object)array_merge(
-                get_object_vars($thisJsObject),
-                get_object_vars($object)
+                (array)$thisJsObject,
+                (array)$object
             );
         }
         
