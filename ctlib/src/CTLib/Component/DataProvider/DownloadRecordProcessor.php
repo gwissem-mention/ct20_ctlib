@@ -58,7 +58,9 @@ abstract class DownloadRecordProcessor implements RecordProcessorInterface
      */    
     private function removeOutdatedFiles($tempDir)
     {
-        $files = scandir($tempDir);
+        $files = @scandir($tempDir);
+        if (!$files) { return; }
+
         foreach($files as $file) {
             $filePath = $tempDir . "/" . $file;
             if(is_file($filePath)
@@ -81,4 +83,9 @@ abstract class DownloadRecordProcessor implements RecordProcessorInterface
         gc_collect_cycles();
         gc_disable();
     }
+
+    /**
+     * {@inheritdoc}
+     */
+    abstract public function getDataResponse($data);
 }

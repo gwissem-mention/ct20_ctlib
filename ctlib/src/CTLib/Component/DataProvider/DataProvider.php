@@ -2,6 +2,7 @@
 namespace CTLib\Component\DataProvider;
 
 use CTLib\Util\Arr,
+    Symfony\Component\HttpFoundation\Response,
     CTLib\Component\Doctrine\ORM\QueryBatch;
 
 /**
@@ -89,7 +90,7 @@ class DataProvider
     {
         $queryConfig    = $this->getQueryConfig($request);
         $session        = $request->getSession();
-        $cacheId        = $this->fromPost('cacheId', $request); 
+        $cacheId        = $request->get('cacheId'); 
 
         if ($session && $cacheId) {
             $session->set($cacheId, $queryConfig);
@@ -102,6 +103,23 @@ class DataProvider
         if (!$recordProcessor) { return null; }
 
         return $this->run($recordProcessor, $queryConfig);
+    }
+
+    /**
+     * Returns Response that contains result data
+     *
+     * @param Request $request
+     * @return Response
+     *
+     */
+    public function getDataResponse($request)
+    {
+        $requestType = $this->getRequestType($request);
+        $recordProcessor = $this->getRecordProcessor($requestType);
+        if (!$recordProcessor) {
+            return new Response;
+        }
+        return $recordProcessor->getDataResponse($this->getData($request));
     }
 
     /**
@@ -185,7 +203,7 @@ class DataProvider
      */
     public function getRequestType($request)
     {
-        $requestType = $this->fromPost('requestType', $request);
+        $requestType = $request->get("requestType");
         if ($requestType != static::REQUEST_TYPE_NOTIFY
             && $requestType != static::REQUEST_TYPE_JSON
             && $requestType != static::REQUEST_TYPE_CSV
@@ -273,38 +291,22 @@ class DataProvider
     protected function getQueryConfig($request)
     {
         $cnf = new \StdClass;
-        $cnf->rowsPerPage       = $this->fromPost('rowsPerPage', $request, -1);
-        $cnf->currentPage       = $this->fromPost('currentPage', $request, 1);
-        $cnf->cachePages        = $this->fromPost('cachedPage', $request, 0);
-        $cnf->filters           = $this->fromPost('filters', $request, array());
-        $cnf->sorts             = $this->fromPost('sorts', $request, array());
-        $cnf->suppressTotal     = $this->fromPost(
-                                    'suppressTotal', $request, false);
-        $cnf->suppressResults   = $this->fromPost(
-                                    'suppressResults', $request, false);
+        $cnf->rowsPerPage       = $request->get('rowsPerPage', -1);
+        $cnf->currentPage       = $request->get('currentPage', 1);
+        $cnf->cachePages        = $request->get('cachedPage', 0);
+        $cnf->filters           = $request->get('filters', array());
+        $cnf->sorts             = $request->get('sorts', array());
+        $cnf->suppressTotal     = $request->get('suppressTotal', false);
+        $cnf->suppressResults   = $request->get('suppressResults', false);
         list(
             $requestedFields,
             $requestedAliases
-        ) = $this->seperateFieldsAndAliases($this->fromPost("fields", $request));
+        ) = $this->seperateFieldsAndAliases($request->get("fields"));
 
         $cnf->fields   = $requestedFields;
         $cnf->aliases  = $requestedAliases;
 
         return $cnf;
-    }
-
-    /**
-     * Returns value from POST.
-     *
-     * @param string $key
-     * @param Request $request
-     * @param mixed $default        Returned if $key not found in POST.
-     *
-     * @return mixed
-     */
-    protected function fromPost($key, $request, $default=null)
-    {
-        return $request->request->get($key) ?: $default;
     }
 
     /**

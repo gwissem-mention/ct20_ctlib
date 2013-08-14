@@ -1,6 +1,8 @@
 <?php
 namespace CTLib\Component\DataProvider;
 
+use CTLib\Component\HttpFoundation\CsvFileResponse;
+
 /**
  * class to output downloadable csv file for data provider
  *
@@ -76,4 +78,16 @@ class CsvRecordProcessor extends DownloadRecordProcessor
         return $this->fileName;
     }
 
+    /**
+     * {@inheritdoc}
+     */
+    public function getDataResponse($data)
+    {
+        $request = $this->kernel->getContainer()->get("request");
+        return new CsvFileResponse(
+            $request,
+            $this->fileName,
+            "celltrak" . date("YmdHis") . ".csv"
+        );
+    }
 }

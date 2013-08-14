@@ -1,6 +1,8 @@
 <?php
 namespace CTLib\Component\DataProvider;
 
+use CTLib\Component\HttpFoundation\JsonResponse;
+
 /**
  * class to output paginated json data for data provider
  *
@@ -73,4 +75,11 @@ class JsonRecordProcessor implements RecordProcessorInterface
         );
     }
 
+    /**
+     * {@inheritdoc}
+     */
+    public function getDataResponse($data)
+    {
+        return new JsonResponse($data);
+    }
 }

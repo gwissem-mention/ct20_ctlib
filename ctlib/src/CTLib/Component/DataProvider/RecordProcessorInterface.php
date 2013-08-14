@@ -55,4 +55,13 @@ interface RecordProcessorInterface
      *
      */
     public function formatResult($total, $model, $data);
+
+    /**
+     * Determine what Response to use
+     *
+     * @param mixed $data 
+     * @return Response HTTP Response
+     *
+     */
+    public function getDataResponse($data);
 }
