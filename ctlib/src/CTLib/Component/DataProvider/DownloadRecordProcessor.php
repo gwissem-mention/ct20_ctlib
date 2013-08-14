@@ -83,9 +83,4 @@ abstract class DownloadRecordProcessor implements RecordProcessorInterface
         gc_collect_cycles();
         gc_disable();
     }
-
-    /**
-     * {@inheritdoc}
-     */
-    abstract public function getDataResponse($data);
 }
