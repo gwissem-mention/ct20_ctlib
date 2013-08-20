@@ -832,4 +832,20 @@ class DataProvider
     {
         return $this->queryBuilder;
     }
+
+    /**
+     * This method is deprecated from 2.7
+     * Returns value from POST.
+     *
+     * @param string $key
+     * @param Request $request
+     * @param mixed $default        Returned if $key not found in POST.
+     *
+     * @return mixed
+     */
+    protected function fromPost($key, $request, $default=null)
+    {
+        return $request->request->get($key) ?: $default;
+    }
+
 }
