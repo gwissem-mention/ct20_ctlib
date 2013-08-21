@@ -1,0 +1,44 @@
+{
+  "name": "celltrak/ctlib",
+  "type": "library",
+  "license": "proprietary",
+  "description": "This is the CellTrak independent code. Code that doesn't need to reside in a single bundle.",
+  "homepage": "https://hydra.ns.us.ctidata.net/svn/ct20_ctlib/",
+
+  "authors": [
+    {
+      "name": "Mike Turoff",
+      "email": "mturoff@celltrak.com"
+    },
+    {
+      "name": "Shuang Liu",
+      "email": "sliu@celltrak.com"
+    },
+    {
+      "name": "Kevin Gustavson",
+      "email": "kgustavson@celltrak.com"
+    },
+    {
+      "name": "Li Gao",
+      "email": "lgao@celltrak.com"
+    },
+    {
+      "name": "Zubin Khavarian",
+      "email": "zkhavarian@celltrak.com"
+    },
+    {
+      "name": "David McLean",
+      "email": "dmclean@celltrak.com"
+    }
+  ],
+
+  "autoload": {
+    "psr-0": {
+      "CTLib": "ctlib/src/",
+      "CTLib\\Tests": "ctlib/tests/"
+    }
+  },
+
+  "require": { }
+
+}
