@@ -824,6 +824,26 @@ class LocalizationHelper
     }
 
     /**
+     * Convert timepickerFormat configed into PHP datetime format
+     *
+     * @param string $locale 
+     * @return string PHP datetime format
+     *
+     */
+    public function getTimepickerPhpFormat($locale = null)
+    {
+        $timepickerFormat = $this->getLocaleConfigValue("dateinput.timepickerFormat", $locale);
+        switch ($timepickerFormat) {
+            case "hh:mm":
+                return "G:i";
+            case "h:mm TT":
+                return "g:i A";
+            default:
+                return $timepickerFormat;
+        }
+    }
+
+    /**
      * Convert timepicker format into PHP datatime format
      * 
      * @param string locale
