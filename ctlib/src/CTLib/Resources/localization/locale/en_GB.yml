@@ -10,9 +10,9 @@ datetime:
         shortDate: dd/M/yyyy
         casualDate: d MMM
 
-        longTime: HH:mm a
-        shortTime: HH:mm a
-        casualTime: HH:mm a
+        longTime: HH:mm
+        shortTime: HH:mm
+        casualTime: HH:mm
 
         longTimezone: zzzz
         shortTimezone: z
@@ -21,7 +21,7 @@ datetime:
 dateinput:
     entryFormat: DD/MM/YYYY
     datepickerFormat: dd/mm/yy
-    timepickerFormat: h:mm TT
+    timepickerFormat: hh:mm
 
 number:
     currency: GBP
