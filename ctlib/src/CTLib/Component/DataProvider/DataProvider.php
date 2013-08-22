@@ -209,7 +209,7 @@ class DataProvider
             && $requestType != static::REQUEST_TYPE_CSV
             && $requestType != static::REQUEST_TYPE_PDF
         ) {
-            throw new \Exception("request type is not valid");
+            throw new \Exception("request type {$requestType} is not valid");
         }
         
         return $requestType;
