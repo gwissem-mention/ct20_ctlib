@@ -13,6 +13,12 @@ use CTLib\Component\Monolog\Logger,
  */
 class TabDelimitedHandler extends \Monolog\Handler\AbstractProcessingHandler
 {
+
+    const BUFFER_LIMIT      = 100;
+    const VALUE_DELIM       = "\t";
+    const LINE_DELIM        = "\n---\n";
+
+
     /**
      * @var string
      */
@@ -27,6 +33,11 @@ class TabDelimitedHandler extends \Monolog\Handler\AbstractProcessingHandler
      * @var object
      */
     protected $logFile;
+
+    /**
+     * @var array
+     */
+    protected $buffer;
 
     
     /**
@@ -55,6 +66,16 @@ class TabDelimitedHandler extends \Monolog\Handler\AbstractProcessingHandler
         } else {
             $this->logDir = $kernel->getLogDir();
         }
+
+        $this->buffer = array();
+    }
+
+    /**
+     * Flushes any remaining lines in buffer.
+     */
+    public function __destruct()
+    {
+        $this->flushBuffer();
     }
 
     /**
@@ -65,20 +86,6 @@ class TabDelimitedHandler extends \Monolog\Handler\AbstractProcessingHandler
      */
     protected function write(array $record)
     {
-        if ($this->logFile === false) {
-            // Already tried to open log file but couldn't.
-            return;
-        }
-
-        if (! $this->logFile) {
-            $this->logFile = $this->initialize();
-
-            if ($this->logFile === false) {
-                // Couldn't open log file.
-                return;
-            }
-        }
-
         $file = Arr::findByKeyChain($record, 'extra.file');
         $file = str_replace($this->pathPrefix, '', $file);
 
@@ -103,10 +110,51 @@ class TabDelimitedHandler extends \Monolog\Handler\AbstractProcessingHandler
             Arr::findByKeyChain($record, 'extra.app_modules')
         );
 
-        $contents = join("\t", $values);
-        $contents .= "\n";
+        $this->buffer[] = $values;
 
+        if (count($this->buffer) >= self::BUFFER_LIMIT) {
+            $this->flushBuffer();
+        }
+    }
+
+    /**
+     * Flushes lines in buffer to file.
+     *
+     * @return void
+     */
+    private function flushBuffer()
+    {
+        if (! $this->buffer) {
+            // Nothing in buffer to flush.
+            return;
+        }
+
+        if ($this->logFile === false) {
+            // Already tried to open log file but couldn't. Just truncate buffer.
+            $this->buffer = array();
+            return;
+        }
+
+        if (! $this->logFile) {
+            $this->logFile = $this->initialize();
+
+            if ($this->logFile === false) {
+                // Couldn't open log file.
+                $this->buffer = array();
+                return;
+            }
+        }
+
+        $contents = array_reduce(
+                        $this->buffer,
+                        function($contents, $lineValues) {
+                            $contents .= join(self::VALUE_DELIM, $lineValues)
+                                       . self::LINE_DELIM;
+                            return $contents;
+                        },
+                        '');
         fwrite($this->logFile, $contents);
+        $this->buffer = array();
     }
 
     /**
@@ -116,7 +164,7 @@ class TabDelimitedHandler extends \Monolog\Handler\AbstractProcessingHandler
      */
     private function initialize()
     {
-        $filename = strtolower(date('d-M-Y') . '-log-' . gethostname());
+        $filename = 'log.' . strtolower(date('d-M-Y') . '-' . gethostname());
         $filepath = $this->logDir . '/' . $filename;
         return fopen($filepath, 'a');
     }
