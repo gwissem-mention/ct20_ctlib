@@ -209,7 +209,10 @@ class DataProvider
             && $requestType != static::REQUEST_TYPE_CSV
             && $requestType != static::REQUEST_TYPE_PDF
         ) {
-            throw new \Exception("request type {$requestType} is not valid");
+            // MT @ 9/23/13; Default to JSON even though $requestType should
+            // match one of the valid types. Sometimes the front-end doesn't
+            // properly send so defaulting to JSON is very much a band-aid.
+            $requestType = static::REQUEST_TYPE_JSON;
         }
         
         return $requestType;
