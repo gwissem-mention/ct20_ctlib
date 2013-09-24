@@ -80,7 +80,12 @@ class ExceptionListener
             $msg = WebServiceReponseMessage::createForWebServiceException(
                 $exception
             );
-            $event->setResponse(new JsonResponse($msg));
+            
+            $response = new JsonResponse(
+                            $msg,
+                            200,
+                            array('X-Status-Code' => 200));
+            $event->setResponse($response);
             $event->stopPropagation();
 
         } elseif ($this->debug) {
