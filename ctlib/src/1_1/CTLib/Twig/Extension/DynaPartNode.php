@@ -18,7 +18,7 @@ class DynaPartNode extends \Twig_Node
         $attributes["id"] = md5($attributes["fileName"] . $attributes["dynaPartName"] . $lineno);
         $notes = array("jsonBody" => $jsonBody);
         $this->setTemps = array();
-        
+
         parent::__construct($notes, $attributes, $lineno, $tag);
     }
 
@@ -39,7 +39,7 @@ class DynaPartNode extends \Twig_Node
 
         $json = $this->convertJsonNodeToString($compiler, $this->getNode("jsonBody"));
         $json = trim($json);
-        
+
         if (!empty($this->setTemps)) {
             $uniqueSetTemps = array_unique($this->setTemps);
             foreach($uniqueSetTemps as $temp) {
@@ -131,7 +131,7 @@ class DynaPartNode extends \Twig_Node
 
             if ($jsonNode->hasNode('else') && null !== $jsonNode->getNode('else')) {
                 $elseBody = $this->convertJsonNodeToString($compiler, $jsonNode->getNode('else'));
-                $result .= 
+                $result .=
                     ") : (\n" .
                     $elseBody .
                     ")\n";
@@ -149,8 +149,8 @@ class DynaPartNode extends \Twig_Node
 
         if ($iterator->count() != 0) {
             foreach ($iterator as $key => $node) {
-                $result .= 
-                    (empty($result)?"":' . ') . 
+                $result .=
+                    (empty($result)?"":' . ') .
                     $this->convertJsonNodeToString($compiler, $node);
             }
         }

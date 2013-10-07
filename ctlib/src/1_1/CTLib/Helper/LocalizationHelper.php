@@ -31,6 +31,12 @@ class LocalizationHelper
     protected $session;
 
     /**
+     *
+     * @var type
+     */
+    protected $container;
+
+    /**
      * Stores loaded localization array
      *
      * @var array
@@ -49,13 +55,15 @@ class LocalizationHelper
      *
      * @param Cache      $cache
      * @param Translator $translator
+     * @param $container
      * @param Session    $session
      */
-    public function __construct($cache, $translator, $session=null)
+    public function __construct($cache, $translator, $container, $session=null)
     {
-        $this->cache    = $cache;
-        $this->session  = $session;
-        $this->configs  = array();
+        $this->cache        = $cache;
+        $this->container    = $container;
+        $this->session      = $session;
+        $this->configs      = array();
         $this->translator   = $translator;
     }
 
@@ -72,7 +80,7 @@ class LocalizationHelper
     protected function getConfigValue($configType, $configCode, $configKey)
     {
         $configs = $this->loadConfig($configType, $configCode);
-        
+
         if (! Arr::existByKeyChain($configs, $configKey)) {
             throw new \Exception("Invalid config key: $configKey");
         }
@@ -143,13 +151,13 @@ class LocalizationHelper
      */
     protected function getSessionLocale()
     {
-        if (! $this->session) {
+        if (! $this->container->get('request')) {
             throw new \Exception('Session not set.');
         }
-        if (! $this->session->getLocale()) {
+        if (! $this->container->get('request')->getLocale()) {
             throw new \Exception('locale not set in Session.');
         }
-        return $this->session->getLocale();
+        return $this->container->get('request')->getLocale();
     }
 
     /**
@@ -232,7 +240,7 @@ class LocalizationHelper
     public function formatDatetime($value, $format, $locale=null, $timezone=null)
     {
         $locale = $locale ?: $this->getSessionLocale();
-        
+
         if (! $timezone instanceof \DateTimeZone) {
             $timezone = new \DateTimeZone($timezone ?: $this->getSessionTimezone());
         }
@@ -806,7 +814,7 @@ class LocalizationHelper
     /**
      * Convert datepickerFormat configed into PHP datetime format
      *
-     * @param string $locale 
+     * @param string $locale
      * @return string PHP datetime format
      *
      */
@@ -826,7 +834,7 @@ class LocalizationHelper
     /**
      * Convert timepickerFormat configed into PHP datetime format
      *
-     * @param string $locale 
+     * @param string $locale
      * @return string PHP datetime format
      *
      */
@@ -845,10 +853,10 @@ class LocalizationHelper
 
     /**
      * Convert timepicker format into PHP datatime format
-     * 
+     *
      * @param string locale
      * @return string PHP datetime format
-     * 
+     *
      */
     public function getTimepickerFormat($locale = null)
     {

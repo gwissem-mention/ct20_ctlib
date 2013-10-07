@@ -80,7 +80,7 @@ class ExceptionListener
             $msg = WebServiceReponseMessage::createForWebServiceException(
                 $exception
             );
-            
+
             $response = new JsonResponse(
                             $msg,
                             200,

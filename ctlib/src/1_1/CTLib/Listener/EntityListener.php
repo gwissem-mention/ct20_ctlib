@@ -1,7 +1,7 @@
 <?php
 namespace CTLib\Listener;
 
-use Symfony\Component\HttpFoundation\Session,
+use Symfony\Component\HttpFoundation\Session\Session,
     Symfony\Component\EventDispatcher\EventDispatcher,
     Symfony\Component\Security\Core\Exception\AccessDeniedException,
     Doctrine\ORM\Event;
@@ -104,7 +104,7 @@ class EntityListener
 
                 // Check to see if effectiveTime has been explicitly set.
                 $changeSet = $unitOfWork->getEntityChangeSet($entity);
-                
+
                 if (! isset($changeSet['effectiveTime'])) {
                     // effectiveTime was not set by developer. Need to use
                     // either current time or (current effectiveTime + 1) if the
@@ -151,8 +151,8 @@ class EntityListener
                     $unitOfWork->recomputeSingleEntityChangeSet(
                         $entityManager->getClassMetadata(get_class($entity)),
                         $entity
-                    );  
-                }                
+                    );
+                }
             }
         }
     }

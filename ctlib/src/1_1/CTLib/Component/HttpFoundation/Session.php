@@ -8,7 +8,7 @@ use CTLib\Util\Arr;
  *
  * @author Mike Turoff <mturoff@celltrak.com>
  */
-class Session extends \Symfony\Component\HttpFoundation\Session
+class Session extends \Symfony\Component\HttpFoundation\Session\Session
 {
 
     const DYNAPART_PRESET_KEY = 'dynapartPreSetParameters';   

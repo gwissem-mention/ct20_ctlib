@@ -9,7 +9,7 @@ class MapPartController extends DynaPartController
     {
         //put in the map center
         $localizer    = $this->get("localizer");
-        $locale       = $this->session()->getLocale();
+        $locale       = $this->request()->getLocale();
         $distanceUnit = $localizer->getCountryDistanceUnit();
         list($mapCenterLat, $mapCenterLng) = $localizer->getMapCenter();
 
