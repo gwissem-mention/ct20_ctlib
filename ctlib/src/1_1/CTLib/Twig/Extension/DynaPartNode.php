@@ -73,14 +73,15 @@ class DynaPartNode extends \Twig_Node
                 ->write('}'."\n");
         }
         $compiler
-            ->write('echo $this->env->getExtension("actions")->renderAction("'.$qualifiedAction.'", ')
+            ->write('$uriObj = new \Symfony\Component\HttpKernel\Controller\ControllerReference("' . $qualifiedAction . '", ')
             ->raw("array(")
             ->raw('"id" => ')->repr($this->getAttribute("id"))->raw(', ')
             ->raw('"routeName" => ')->repr($this->getAttribute("routeName"))->raw(', ')
             ->raw('"domAttributes" => ')->repr($this->getAttribute("domAttributes"))->raw(', ')
             ->raw('"json" => $jsonObject')->raw(',')
             ->raw('"_frontendRoute" => $this->env->getExtension("dynapart")->getRequest()->attributes->get("_route")')
-            ->write("), array());");
+            ->write("), array());")
+            ->write('echo $this->env->getExtension("actions")->renderUri($uriObj);');
     }
 
     /**
