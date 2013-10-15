@@ -1,0 +1,34 @@
+distance:
+    unit: mile                  # could be kilometer or mile
+
+datetime:
+    firstDayInWeek: 0         # Set the first day of the week: Sunday is 0, Monday is 1 ...
+
+address:
+    separator: ","
+    abbreviated: %city%, %subdivision%
+    shortSingleLine: %street1%, %street2%, %city%, %subdivision% %postalCode%
+    longSingleLine: %street1%, %street2%, %street3%, %city%, %subdivision% %postalCode%, %countryCode%
+    shortMultipleLine:
+        - %street1%
+        - %street2%
+        - %city%, %subdivision% %postalCode%
+    longMultipleLine:
+        - %street1%
+        - %street2%
+        - %street3%
+        - %city%, %subdivision% %postalCode%
+        - %countryCode%
+    shortMultipleWithName:
+        - %name% (%clientKey%)
+        - %street1%
+        - %street2%
+        - %city%, %subdivision% %postalCode%
+
+locales:
+    en_US: English
+    es_US: Español
+
+map:
+    center: [42.046687, -88.037256]
+    zoom: 4
