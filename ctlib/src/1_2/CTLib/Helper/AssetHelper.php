@@ -120,13 +120,13 @@ class AssetHelper
         return '/bundles/ctapp/' . $this->runtime->getAppAssetDir();
     }
 
-    protected function getBrandAssetDir()
+	public function getBrandAssetDir()
     {
         if (! $this->runtime) { return '/bundles/hq/'; }
         return '/bundles/ctgateway/' . $this->runtime->getBrandAssetDir();
     }
 
-    protected function getGatewayAssetDir()
+	public function getGatewayAssetDir()
     {
         return $this->getBrandAssetDir();
     }
