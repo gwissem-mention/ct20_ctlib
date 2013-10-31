@@ -42,7 +42,8 @@ class BaseExtension extends \Twig_Extension
             'brandJs'        => new \Twig_Function_Method($this, 'brandJs'),
             'gatewayJs'      => new \Twig_Function_Method($this, 'brandJs'),
             'appAsset'       => new \Twig_Function_Method($this, 'appAsset'),
-            'pageDOMId'      => new \Twig_Function_Method($this, 'pageDOMId'),
+			'brandAsset'     => new \Twig_Function_Method($this, 'brandAsset'),
+			'pageDOMId'      => new \Twig_Function_Method($this, 'pageDOMId'),
             'jsTranslations' => new \Twig_Function_Method($this, 'jsTranslations'),
             'jsValues'       => new \Twig_Function_Method($this, 'jsValues'),
             'jsRoutes'       => new \Twig_Function_Method($this, 'jsRoutes'),
@@ -184,7 +185,18 @@ class BaseExtension extends \Twig_Extension
         return $this->assetHelper->getAppAssetDir() . $path;
     }
 
-    /**
+	/**
+	 * Creates full path for assets
+	 *
+	 * @param string $path
+	 * @return string
+	 */
+	public function brandAsset($path)
+	{
+		return $this->assetHelper->getBrandAssetDir() . $path;
+	}
+	
+	/**
      * Formats the ID attribute for the body tag based on the controller
      * and action.
      *
