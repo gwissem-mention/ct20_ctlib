@@ -116,7 +116,7 @@ class AssetHelper
         if (!$this->runtime) 
 			return '/bundles/hq/';
 		if ($this->runtime->getProductId()=='HCTP') 
-			return '/bundles/'.$this->runtime->getAppAssetDir(); 
+			return '/bundles/hctp/'.$this->runtime->getAppAssetDir(); 
         return '/bundles/ctapp/' . $this->runtime->getAppAssetDir();
     }
 
