@@ -142,7 +142,7 @@ class BinaryFileResponse extends Response
     /**
      * {@inheritdoc}
      */
-    public function prepare()
+    public function prepare(Request $request = null)
     {
         $request = $this->request;
         

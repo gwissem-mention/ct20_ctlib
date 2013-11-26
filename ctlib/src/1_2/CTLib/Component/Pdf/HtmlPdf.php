@@ -10,14 +10,19 @@ class HtmlPdf
 {
 
     protected $domPdf = null;
+    protected $html2Pdf = null;
 
-    public function __construct($kernel)
+    public function __construct($kernel, $orientation = 'P')
     {
         $rootDir = $kernel->getRootDir();
+        require_once $rootDir . '/../vendor/html2pdf/html2pdf.php';
+        $this->html2Pdf = new \HTML2PDF($orientation, 'A4', 'en');
+/*
         require_once $rootDir . '/../vendor/dompdf/dompdf_config.inc.php';
         global $_dompdf_warnings, $_dompdf_show_warnings, $_dompdf_debug, $_DOMPDF_DEBUG_TYPES, $memusage;
         $_dompdf_warnings = array();
         $this->domPdf = new \DOMPDF;
+*/
     }
 
     /**
@@ -28,9 +33,14 @@ class HtmlPdf
      */
     public function render($html)
     {
+        $this->html2Pdf->writeHTML($html);
+        return $this->html2Pdf->Output('', 'S');
+
+        /*
         $this->domPdf->load_html($html);
         $this->domPdf->render();
         return $this->domPdf->output();
+        */
     }
 
     /**
