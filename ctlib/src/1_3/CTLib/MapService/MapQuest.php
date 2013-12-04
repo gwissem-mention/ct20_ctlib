@@ -312,10 +312,10 @@ class MapQuest extends MapProviderAbstract
     protected function buildAddressRequestData($address)
     {
         $params = array(
-            "street"     => Arr::mustGet("street", $address),
-            "adminArea5" => Arr::mustGet("city", $address),
+            "street"     => Arr::get("street", $address),
+            "adminArea5" => Arr::get("city", $address),
             "adminArea3" => Arr::get("subdivision", $address),
-            "postalCode" => Arr::mustGet("postalCode", $address),
+            "postalCode" => Arr::get("postalCode", $address),
         );
         $country = Arr::get("country", $address);
         if ($country) { $params["adminArea1"] = $country; }
