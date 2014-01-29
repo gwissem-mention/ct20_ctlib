@@ -103,15 +103,18 @@ class LocalizationHelper
      */
     protected function loadConfig($configType, $configCode)
     {
-        if (! isset($this->configs[$configType][$configCode])) {
-            $cacheKey = $configType . "Config." . $configCode;
+        if(!isset($this->configs[$configType][$configCode])) {
+			if(!$this->session->has('appVersion')) 
+				throw new \Exception("'appVersion' not set in Session.");
+			$appVersion = $this->session->get('appVersion');
+
+            $cacheKey = $configType . "Config.$appVersion." . $configCode;
             $config = $this->cache->get($cacheKey);
 
-            if (! $config) {
+            if(!$config) {
                 $config = $this->fetchConfig($configType, $configCode);
                 $this->cache->set($cacheKey, $config);
             }
-
             $this->configs[$configType] = array($configCode => $config);
         }
         return $this->configs[$configType][$configCode];

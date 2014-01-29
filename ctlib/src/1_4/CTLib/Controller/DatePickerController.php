@@ -34,7 +34,7 @@ class DatePickerController extends DynaPartController
             "monthNames"      => $localizer->getLocaleConfigValue("datetime.monthNames"),
             "monthNamesShort" => $localizer->getLocaleConfigValue("datetime.monthNamesShort"),
             "firstDay"        => $localizer->getCountryConfigValue("datetime.firstDayInWeek"),
-            "dateFormat"      => $localizer->getLocaleConfigValue("dateinput.datepickerFormat")
+            "dateFormat"      => $localizer->getLocaleConfigValue("dateinput.dateFormat")
         ));
 
         $assetLoader

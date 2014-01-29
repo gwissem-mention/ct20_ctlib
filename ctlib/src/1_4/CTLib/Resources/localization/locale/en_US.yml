@@ -21,6 +21,7 @@ datetime:
 dateinput:
     entryFormat: MM/DD/YYYY
     datepickerFormat: m/d/Y
+    dateFormat: mm/dd/yy
     timepickerFormat: h:mm TT
 
 number:
