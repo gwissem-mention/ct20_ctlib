@@ -22,7 +22,8 @@ dateinput:
     entryFormat: DD/MM/YYYY
     datepickerFormat: d/m/Y
     dateFormat: dd/mm/yy
-    timepickerFormat: hh:mm
+    timepickerFormat: G:i
+    timeFormat: hh:mm
 
 number:
     currency: GBP

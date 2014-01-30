@@ -22,7 +22,8 @@ dateinput:
     entryFormat: MM/DD/YYYY
     datepickerFormat: m/d/Y
     dateFormat: mm/dd/yy
-    timepickerFormat: h:mm TT
+    timepickerFormat: g:i A
+    timeFormat: h:mm TT
 
 number:
     currency: USD

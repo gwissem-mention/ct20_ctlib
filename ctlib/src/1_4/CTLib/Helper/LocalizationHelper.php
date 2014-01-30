@@ -835,15 +835,7 @@ class LocalizationHelper
      */
     public function getTimepickerPhpFormat($locale = null)
     {
-        $timepickerFormat = $this->getLocaleConfigValue("dateinput.timepickerFormat", $locale);
-        switch ($timepickerFormat) {
-            case "hh:mm":
-                return "G:i";
-            case "h:mm TT":
-                return "g:i A";
-            default:
-                return $timepickerFormat;
-        }
+		return $this->getLocaleConfigValue("dateinput.timepickerFormat", $locale);
     }
 
     /**
@@ -855,11 +847,13 @@ class LocalizationHelper
      */
     public function getTimepickerFormat($locale = null)
     {
-        $timepickerFormat = $this->getLocaleConfigValue("dateinput.timepickerFormat");
+        $timepickerFormat = $this->getLocaleConfigValue("dateinput.timeFormat");
         switch ($timepickerFormat) {
             case "h:mm TT":
                 return "h:i T";
-            default:
+			case "hh:mm":
+				return "G:i";
+			default:
                 return $timepickerFormat;
         }
     }

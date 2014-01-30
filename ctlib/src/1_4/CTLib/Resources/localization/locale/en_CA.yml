@@ -22,7 +22,8 @@ dateinput:
     entryFormat: YYYY-MM-DD
     datepickerFormat: Y-m-d
     dateFormat: yy-mm-dd
-    timepickerFormat: h:mm TT
+    timepickerFormat: g:i A
+    timeFormat: h:mm TT
 
 number:
     currency: CAD

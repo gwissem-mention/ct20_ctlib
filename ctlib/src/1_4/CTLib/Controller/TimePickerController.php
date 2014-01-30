@@ -26,7 +26,7 @@ class TimePickerController extends DynaPartController
 
         $json->merge(array(
             "ampmNames" => $localizer->getLocaleConfigValue("datetime.ampmNames"),
-            "format"    => $localizer->getLocaleConfigValue("dateinput.timepickerFormat")
+            "format"    => $localizer->getLocaleConfigValue("dateinput.timeFormat")
         ));
         //load needed css and javascript lib and script
         $assetLoader
