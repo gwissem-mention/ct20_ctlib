@@ -4,6 +4,7 @@ namespace CTLib\Helper;
 
 use Symfony\Component\HttpFoundation\Session,
     Symfony\Component\Yaml\Yaml,
+    CTLib\CTLib,
     CTLib\Util\Util,
     CTLib\Util\Arr;
 
