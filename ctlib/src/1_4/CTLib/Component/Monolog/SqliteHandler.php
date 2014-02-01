@@ -104,8 +104,10 @@ class SqliteHandler extends \Monolog\Handler\AbstractProcessingHandler
      */
     private function initialize()
     {
+        $logPath = $this->getLogPath();
+
         try {
-            $this->pdo = new \PDO($this->getConnectionString());
+            $this->pdo = new \PDO($this->getConnectionString($logPath));
             $this->pdo->exec($this->getSchemaSql());
             $this->pdo->exec("PRAGMA synchronous = 0;");
             $this->statement = $this->pdo->prepare($this->getInsertStatement());
@@ -113,7 +115,14 @@ class SqliteHandler extends \Monolog\Handler\AbstractProcessingHandler
             $this->useFailover = true;
             $this->bubble = true;
         }
+        chmod($logPath, 0660);
         $this->initialized = true;
+    }
+
+    protected function getLogPath()
+    {
+        $filename = strtolower(date('d-M-Y')) . '-log.sqlite';
+        return "{$this->logDir}/{$filename}";
     }
 
     /**
@@ -121,10 +130,9 @@ class SqliteHandler extends \Monolog\Handler\AbstractProcessingHandler
      *
      * @return string
      */
-    protected function getConnectionString()
+    protected function getConnectionString($path)
     {
-        $filename = strtolower(date('d-M-Y')) . '-log.sqlite';
-        return "sqlite:{$this->logDir}/{$filename}";
+        return "sqlite:{$path}";
     }
 
     /**

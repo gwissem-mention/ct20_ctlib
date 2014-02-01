@@ -30,11 +30,6 @@ class TabDelimitedHandler extends \Monolog\Handler\AbstractProcessingHandler
     protected $logDir;
 
     /**
-     * @var object
-     */
-    protected $logFile;
-
-    /**
      * @var array
      */
     protected $buffer;
@@ -56,8 +51,7 @@ class TabDelimitedHandler extends \Monolog\Handler\AbstractProcessingHandler
         
         // Remove /app from end of root directory path. We'll use this to strip
         // away redundant root path from log messages.
-        $this->pathPrefix   = substr($kernel->getRootDir(), 0, -3);
-        $this->logFile      = null;
+        $this->pathPrefix = substr($kernel->getRootDir(), 0, -3);
 
         if ($kernel->getContainer()->hasParameter('tab_delimited_log_path')) {
             $this->logDir = $kernel
@@ -112,7 +106,8 @@ class TabDelimitedHandler extends \Monolog\Handler\AbstractProcessingHandler
 
         $this->buffer[] = $values;
 
-        if (count($this->buffer) >= self::BUFFER_LIMIT) {
+        if ($record['level'] >= Logger::INFO
+            || count($this->buffer) >= self::BUFFER_LIMIT) {
             $this->flushBuffer();
         }
     }
@@ -129,23 +124,8 @@ class TabDelimitedHandler extends \Monolog\Handler\AbstractProcessingHandler
             return;
         }
 
-        if ($this->logFile === false) {
-            // Already tried to open log file but couldn't. Just truncate buffer.
-            $this->buffer = array();
-            return;
-        }
-
-        if (! $this->logFile) {
-            $this->logFile = $this->initialize();
-
-            if ($this->logFile === false) {
-                // Couldn't open log file.
-                $this->buffer = array();
-                return;
-            }
-        }
-
-        $contents = array_reduce(
+        $logPath    = $this->getLogPath(); 
+        $contents   = array_reduce(
                         $this->buffer,
                         function($contents, $lineValues) {
                             $contents .= join(self::VALUE_DELIM, $lineValues)
@@ -153,20 +133,20 @@ class TabDelimitedHandler extends \Monolog\Handler\AbstractProcessingHandler
                             return $contents;
                         },
                         '');
-        fwrite($this->logFile, $contents);
+        @file_put_contents($logPath, $contents, \FILE_APPEND);
+        chmod($logPath, 0660);
         $this->buffer = array();
     }
 
     /**
-     * Initializes connection to SQLite database.
+     * Returns path to log file.
      *
-     * @return void
+     * @return string
      */
-    private function initialize()
+    private function getLogPath()
     {
         $filename = 'log.' . strtolower(date('d-M-Y') . '-' . gethostname());
-        $filepath = $this->logDir . '/' . $filename;
-        return fopen($filepath, 'a');
+        return $this->logDir . '/' . $filename;
     }
 
 }
