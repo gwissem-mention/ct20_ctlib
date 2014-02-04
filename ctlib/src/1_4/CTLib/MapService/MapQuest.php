@@ -10,6 +10,9 @@ class MapQuest extends MapProviderAbstract
 {
     const BATCH_GEOCODE_LIMIT = 100;
 
+    const MILES         = 'm';
+    const KILOMETERS    = 'k';
+
     /**
      * {@inheritdoc}
      */
@@ -157,13 +160,26 @@ class MapQuest extends MapProviderAbstract
      */
     protected function routeBuildRequest($request, $fromLatitude, $fromLongitude, $toLatitude, $toLongitude, $options, $country = null)
     {
+        // MT @ Feb 4: Putting in quick fix for Canadian mileage calculation
+        // (need to force mapquest to use kilometers). Need to clean this up
+        // by making use of country's config file (US.yml) to specify unit.
+        switch ($country) {
+            case 'CA':
+                $unit = self::KILOMETERS;
+                break;
+            default:
+                // Includes US + GB (yes; GB is on miles).
+                $unit = self::MILES;
+        }
+
         $request->url = "https://www.mapquestapi.com/directions/v1/alternateroutes?key=Gmjtd%7Clu6zn1ua2d%2C7s%3Do5-l07g0";
         $request->data = 
             array_merge(
                 array(
                     "from" => $fromLatitude . "," . $fromLongitude,
                     "to" => $toLatitude . "," . $toLongitude,
-                    "maxRoutes" => 3
+                    "maxRoutes" => 3,
+                    'unit' => $unit
                 ),
                 $options
             );
