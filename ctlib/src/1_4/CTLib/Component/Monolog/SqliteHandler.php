@@ -111,11 +111,11 @@ class SqliteHandler extends \Monolog\Handler\AbstractProcessingHandler
             $this->pdo->exec($this->getSchemaSql());
             $this->pdo->exec("PRAGMA synchronous = 0;");
             $this->statement = $this->pdo->prepare($this->getInsertStatement());
+            chmod($logPath, 0660);
         } catch (\PdoException $e) {
             $this->useFailover = true;
             $this->bubble = true;
         }
-        chmod($logPath, 0660);
         $this->initialized = true;
     }
 
