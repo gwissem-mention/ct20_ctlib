@@ -611,11 +611,14 @@ abstract class BaseController extends Controller
         //_frontendRoute for real front end route.
         //_frontendRoute is the variable that has been injected by
         //dynapart twig template
-        $route = $this->request()->attributes->get('_route');
-        if ($route !== "_internal") {
+         //$route = $this->request()->attributes->get('_route');
+        $route = $this->request()->get('_route');
+
+        if ($route && $route !== "_internal") {
             return $route;
         }
-        return $this->request()->attributes->get('_frontendRoute');
+
+        return $this->request()->get('_frontendRoute');
     }
 
     /**
