@@ -1,8 +1,7 @@
 <?php
 namespace CTLib\Repository;
 
-use Doctrine\DBAL\LockMode,
-    Doctrine\ORM\NoResultException,
+use Doctrine\ORM\NoResultException,
     Doctrine\ORM\NonUniqueResultException,
     CTLib\Component\Doctrine\ORM\DetachedEntityIterator,
     CTLib\Util\Arr;
@@ -20,74 +19,18 @@ class BaseRepository extends \Doctrine\ORM\EntityRepository
      *
      * @param array $id             Pass as array($idFieldName => $value).
      *                              If only 1 ID field, you can just send $value.
-     * @return Entity 
+     *
+     * @return Entity|null 
+     * @throws NonUniqueResultException
      */
     public function find($id)
     {
-        $idFieldNames = $this->getEntityManager()
-                            ->getEntityMetaHelper()
-                            ->getIdentifierFieldNames($this->entityName());
+        $idFieldNames = $this
+                        ->getEntityManager()
+                        ->getEntityMetaHelper()
+                        ->getIdentifierFieldNames($this->entityName());
         $criteria = $this->coalesceKeyValues($idFieldNames, $id);
         return $this->findUniqueBy($criteria);
-    }
-
-    public function _find($id)
-    {
-        $idFieldNames = $this->getEntityManager()
-                            ->getEntityMetaHelper()
-                            ->getIdentifierFieldNames($this->entityName());
-        $criteria = $this->coalesceKeyValues($idFieldNames, $id);
-        return $this->_findUniqueBy($criteria);
-    }
-
-    public function _findUniqueBy($criteria)
-    {
-        $results = $this->_findBy($criteria, null, 2);
-
-        switch (count($results)) {
-            case 0:
-                return null;
-            case 1:
-                return $results[0];
-            default:
-                throw new NonUniqueResultException;
-        }
-    }
-
-    public function _findBy(array $criteria, array $orderBy=null,
-        $limit=null, $offset=null)
-    {
-        $fieldNames = $this
-                        ->getEntityManager()
-                        ->getEntityMetaHelper()
-                        ->getFieldNames($this->entityName());
-
-        $qbr = $this->createFilteredQueryBuilder($criteria);
-
-        $select = array_map(function($f) { return "e.{$f}"; }, $fieldNames);
-        $qbr->select(join(', ', $select));
-
-        if ($orderBy) {
-            foreach ($orderBy as $fieldName => $dir) {
-                $qbr->addOrderBy("e.{$fieldName}", $dir);
-            }    
-        }
-
-        if ($limit) {
-            $qbr->setMaxResults($limit);
-        }
-
-        if ($offset) {
-            $qbr->setFirstResult($offset);
-        }
-
-        $className = $this
-                        ->getEntityManager()
-                        ->getEntityMetaHelper()
-                        ->getClassName($this->entityName());
-
-        $results = $qbr->getQuery()->getResult();
-        return new DetachedEntityIterator($results, $className);
     }
 
     /**
@@ -96,11 +39,51 @@ class BaseRepository extends \Doctrine\ORM\EntityRepository
      * @param array $id             Pass as array($idFieldName => $value).
      *                              If only 1 ID field, you can just send $value.
      * @return Entity
+     *
      * @throws NoResultException
+     * @throws NonUniqueResultException
      */
     public function mustFind($id)
     {
         $result = $this->find($id);
+        if (! $result) { throw new NoResultException; }
+        return $result;
+    }
+
+    /**
+     * Functions like #find except that returned entity is not managed by the
+     * EntityManager.
+     *
+     * @param array $id             Pass as array($idFieldName => $value).
+     *                              If only 1 ID field, you can just send $value.
+     *
+     * @return Entity|null
+     * @throws NonUniqueResultException
+     */
+    public function _find($id)
+    {
+        $idFieldNames = $this
+                        ->getEntityManager()
+                        ->getEntityMetaHelper()
+                        ->getIdentifierFieldNames($this->entityName());
+        $criteria = $this->coalesceKeyValues($idFieldNames, $id);
+        return $this->_findUniqueBy($criteria);
+    }
+
+    /**
+     * Functions like #mustFind except that returned entity is not managed by
+     * the EntityManager.
+     *
+     * @param array $id             Pass as array($idFieldName => $value).
+     *                              If only 1 ID field, you can just send $value.
+     * @return Entity
+     *
+     * @throws NoResultException
+     * @throws NonUniqueResultException
+     */
+    public function _mustFind($id)
+    {
+        $result = $this->_find($id);
         if (! $result) { throw new NoResultException; }
         return $result;
     }
@@ -119,6 +102,31 @@ class BaseRepository extends \Doctrine\ORM\EntityRepository
     }
 
     /**
+     * Functions like #findAll except that entities returned are not managed by
+     * the EntityManager.
+     *
+     * @return DetachedEntityIterator
+     */
+    public function _findAll()
+    {
+        return $this->_findBy(array());
+    }
+
+    /**
+     * Functions like #mustFindAll except that entities returned are not managed
+     * by the Entitymaanger.
+     *
+     * @return DetachedEntityIterator
+     * @throws NoResultException
+     */
+    public function _mustFindAll()
+    {
+        $result = $this->_findAll();
+        if (! $result) { throw new NoResultException; }
+        return $result;
+    }
+
+    /**
      * Functions like standard findBy but throws exception if no results found.
      *
      * @param array $criteria       array($entityFieldName => $value)
@@ -129,11 +137,84 @@ class BaseRepository extends \Doctrine\ORM\EntityRepository
      * @return ArrayCollection
      * @throws NoResultException
      */
-    public function mustFindBy(array $criteria, array $orderBy=null, $limit=null, $offset=null)
+    public function mustFindBy(
+                        array $criteria,
+                        array $orderBy=null,
+                        $limit=null,
+                        $offset=null)
     {
-        $result = $this->findBy($criteria, $orderBy, $limit, $offset);
-        if (! $result) { throw new NoResultException; }
-        return $result;
+        $results = $this->findBy($criteria, $orderBy, $limit, $offset);
+        if (! $results) { throw new NoResultException; }
+        return $results;
+    }
+
+    /**
+     * Functions like #findBy except that entities returned are not managed by
+     * the EntityManager.
+     *
+     * @param array $criteria       array($entityFieldName => $value)
+     * @param array $orderBy        array($entityFieldName => $sortDirection)
+     * @param int $limit            Max results to return.
+     * @param int $offset           First result position to return.
+     *
+     * @return DetachedEntityIterator
+     */
+    public function _findBy(
+                        array $criteria,
+                        array $orderBy=null,
+                        $limit=null,
+                        $offset=null)
+    {
+        $qbr = $this
+                ->createFilteredQueryBuilder($criteria)
+                ->select($this->getSelectFieldsDql());
+
+        if ($orderBy) {
+            foreach ($orderBy as $fieldName => $dir) {
+                $qbr->addOrderBy("e.{$fieldName}", $dir);
+            }    
+        }
+
+        if ($limit) {
+            $qbr->setMaxResults($limit);
+        }
+
+        if ($offset) {
+            $qbr->setFirstResult($offset);
+        }
+
+        $results = $qbr->getQuery()->getResult();
+
+        if (! $results) { return array(); }
+
+        $entityMetadata = $this
+                            ->getEntityManager()
+                            ->getEntityMetaHelper()
+                            ->getMetadata($this->entityName());
+        return new DetachedEntityIterator($results, $entityMetadata);
+    }
+
+    /**
+     * Functions like #mustFindBy except that entities returned are not managed
+     * by the EntityManager.
+     *
+     * @param array $criteria       array($entityFieldName => $value)
+     * @param array $orderBy        array($entityFieldName => $sortDirection)
+     * @param int $limit            Max results to return.
+     * @param int $offset           First result position to return.
+     *
+     * @return DetachedEntityIterator
+     * @throws NoResultException
+     */
+    public function _mustFindBy(
+                        array $criteria,
+                        array $orderBy=null,
+                        $limit=null,
+                        $offset=null)
+    {
+        $results = $this->_findBy($criteria, $orderBy, $limit, $offset);
+        if (! $results) { throw new NoResultException; }
+        return $results;
     }
 
     /**
@@ -191,6 +272,47 @@ class BaseRepository extends \Doctrine\ORM\EntityRepository
     }
 
     /**
+     * Functions like #findUniqueBy except that entity returned is not managed
+     * by the EntityManager.
+     *
+     * @param array $criteria       array($entityFieldName => $value)
+     *
+     * @return Entity|null
+     * @throws NonUniqueResultException
+     */
+    public function _findUniqueBy($criteria)
+    {
+        $results = $this->_findBy($criteria, null, 2);
+
+        switch (count($results)) {
+            case 0:
+                return null;
+            case 1:
+                return $results[0];
+            default:
+                throw new NonUniqueResultException;
+        }
+    }
+
+    /**
+     * Functions like #mustFindUniqueBy except that entity returned is not
+     * managed by the EntityManager.
+     *
+     * @param array $criteria       array($entityFieldName => $value)
+     *
+     * @return Entity
+     *
+     * @throws NoResultException
+     * @throws NonUniqueResultException
+     */
+    public function _mustFindUniqueBy(array $criteria)
+    {
+        $result = $this->_findUniqueBy($criteria);
+        if (! $result) { throw new NoResultException; }
+        return $result;
+    }
+
+    /**
      * Checks to see if any record matches $criteria.
      *
      * @param array $criteria       array($entityFieldName => $value)
@@ -223,9 +345,11 @@ class BaseRepository extends \Doctrine\ORM\EntityRepository
      */
     public function count(array $criteria)
     {
-        return (int) $this->createFilteredQueryBuilder($criteria)
-                    ->select(array('count(e)'))
-                    ->getQuery()->getSingleScalarResult();
+        return (int) $this
+                        ->createFilteredQueryBuilder($criteria)
+                        ->select(array('count(e)'))
+                        ->getQuery()
+                        ->getSingleScalarResult();
     }
 
     /**
@@ -233,8 +357,12 @@ class BaseRepository extends \Doctrine\ORM\EntityRepository
      *
      *  - mustFindOneBy{FieldName}($value)
      *  - mustFindBy{FieldName}($value)
+     *  - _findBy{FieldName}($value)
+     *  - _mustFindBy{FieldName}($value)
      *  - findUniqueBy{FieldName}($value)
+     *  - _findUniqueBy{FieldName}($value)
      *  - mustFindUniqueBy{FieldName}($value)
+     *  - _mustFindUniqueBy{FieldName}($value)
      */
     public function __call($methodName, $args)
     {
@@ -262,6 +390,30 @@ class BaseRepository extends \Doctrine\ORM\EntityRepository
             $value      = Arr::mustGet(0, $args);
             return $this->mustFindUniqueBy(array($fieldName => $value));
             
+        } elseif (strpos($methodName, '_findBy') === 0) {
+            // Handle _mustFindBy{FieldName}.
+            $fieldName  = lcfirst(substr($methodName, 7));
+            $value      = Arr::mustGet(0, $args);
+            return $this->_mustFindBy(array($fieldName => $value));
+
+        } elseif (strpos($methodName, '_mustFindBy') === 0) {
+            // Handle _mustFindBy{FieldName}.
+            $fieldName  = lcfirst(substr($methodName, 11));
+            $value      = Arr::mustGet(0, $args);
+            return $this->_mustFindBy(array($fieldName => $value));
+
+        } elseif (strpos($methodName, '_findUniqueBy') === 0) {
+            // Handle _findUniqueBy{FieldName}.
+            $fieldName  = lcfirst(substr($methodName, 13));
+            $value      = Arr::mustGet(0, $args);
+            return $this->_findUniqueBy(array($fieldName => $value));
+
+        } elseif (strpos($methodName, '_mustFindUniqueBy') === 0) {
+            // Handle _mustFindUniqueBy{FieldName}.
+            $fieldName  = lcfirst(substr($methodName, 17));
+            $value      = Arr::mustGet(0, $args);
+            return $this->_mustFindUniqueBy(array($fieldName => $value));
+            
         } else {
             return parent::__call($methodName, $args);
         }
@@ -275,9 +427,11 @@ class BaseRepository extends \Doctrine\ORM\EntityRepository
      */
     public function createDataProviderQueryBuilder($alias)
     {
-        return $this->_em->createDataProviderQueryBuilder()
-            ->select($alias)
-            ->from($this->_entityName, $alias);
+        return $this
+                ->_em
+                ->createDataProviderQueryBuilder()
+                ->select($alias)
+                ->from($this->_entityName, $alias);
     }
 
     /**
@@ -349,6 +503,21 @@ class BaseRepository extends \Doctrine\ORM\EntityRepository
     protected function entityName()
     {
         return $this->getClassMetadata()->name;
+    }
+
+    /**
+     * Returns entity's fields formatted as a DQL select string.
+     *
+     * @return string
+     */
+    protected function getSelectFieldsDql()
+    {
+        $fieldNames = $this
+                        ->getEntityManager()
+                        ->getEntityMetaHelper()
+                        ->getFieldNames($this->entityName());
+        $select = array_map(function($f) { return "e.{$f}"; }, $fieldNames);
+        return join(', ', $select);
     }
     
 }

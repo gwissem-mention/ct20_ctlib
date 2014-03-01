@@ -2,6 +2,8 @@
 namespace CTLib\Repository;
 
 use Doctrine\ORM\NoResultException,
+    Doctrine\ORM\NonUniqueResultException,
+    CTLib\Component\Doctrine\ORM\DetachedEntityIterator,
     CTLib\Util\Arr;
 
 
@@ -15,42 +17,26 @@ class EffectiveRepository extends BaseRepository
      *                              If only 1 ID field, you can just send $value.
      * @param int $effectiveTime    If null, will use current time.
      *
-     * @return mixed        Either found entity instance or null.
+     * @return Entity|null
+     *
      * @throws Exception    If $id is defined incorrectly for primary key.
+     * @throws NonUniqueResultException
      */
     public function findEffective($id, $effectiveTime=null)
     {
-        // Ensure that passed $id matches logical (non-effective) ID fields
-        // for this entity.
-        $idFieldNames = $this->getEntityManager()
-                            ->getEntityMetaHelper()
-                            ->getLogicalIdentifierFieldNames($this->entityName());
-        $criteria = $this->coalesceKeyValues($idFieldNames, $id);
-
-        if ($effectiveTime) {
-            if (! is_int($effectiveTime) || $effectiveTime < 0) {
-                throw new \Exception('$effectiveTime must be an unsigned integer');
-            }
-        } else {
-            $effectiveTime = time();
-        }
-
-        // Since we're looking for exactly 1 record based on logical primary
-        // key, we can use the efficient SELECT ... ORDER BY effective_time DESC
-        // query rather than the typical effective subquery.
-        // Ensure that ID critiera doesn't support array values b/c we must be
-        // looking for only 1 matching logical primary key.
-        $qb = $this->createQueryBuilder('e');
-        foreach ($criteria AS $idFieldName => $value) {
-            $qb->andWhere("e.{$idFieldName} = :{$idFieldName}")
-                ->setParameter($idFieldName, $value);
-        }
-        $qb->andWhere("e.effectiveTime <= {$effectiveTime}")
-            ->addOrderBy('e.effectiveTime', 'DESC')
-            ->setMaxResults(1);
-        $result = $qb->getQuery()
+        $results = $this
+                    ->createLogicalIdEffectiveQueryBuilder($id, $effectiveTime)
+                    ->getQuery()
                     ->getResult();
-        return $result ? current($result) : null;
+
+        switch (count($results)) {
+            case 0:
+                return null;
+            case 1:
+                return current($results);
+            default:
+                throw new NonUniqueResultException;
+        }
     }
 
     /**
@@ -63,11 +49,72 @@ class EffectiveRepository extends BaseRepository
      * @param int $effectiveTime    If null, will use current time.
      *
      * @return Entity       Found entity instance.
+     *
+     * @throws Exception    If $id is defined incorrectly for primary key.
+     * @throws NonUniqueResultException
      * @throws NoResultException
      */
     public function mustFindEffective($id, $effectiveTime=null)
     {
         $result = $this->findEffective($id, $effectiveTime);
+        if (! $result) { throw new NoResultException; }
+        return $result;
+    }
+
+    /**
+     * Functions like #findEffective except that entity returned is not managed
+     * by the EntityManager.
+     *
+     * @param array $id             Pass as array($idFieldName => $value).
+     *                              If only 1 ID field, you can just send $value.
+     * @param int $effectiveTime    If null, will use current time.
+     *
+     * @return Entity|null
+     *
+     * @throws Exception    If $id is defined incorrectly for primary key.
+     * @throws NonUniqueResultException
+     */
+    public function _findEffective($id, $effectiveTime=null)
+    {
+        $results = $this
+                    ->createLogicalIdEffectiveQueryBuilder($id, $effectiveTime)
+                    ->select($this->getSelectFieldsDql())
+                    ->getQuery()
+                    ->getResult();
+
+        switch (count($results)) {
+            case 0:
+                return null;
+            case 1:
+                $entityMetadata = $this
+                                    ->getEntityManager()
+                                    ->getEntityMetaHelper()
+                                    ->getMetadata($this->entityName());
+                $results = new DetachedEntityIterator($results, $entityMetadata);
+                return $results[0];
+            default:
+                throw new NonUniqueResultException;
+        }
+    }
+
+    /**
+     * Functions like #mustFindEffective except that entity returned is not
+     * managed by the EntityManager.
+     *
+     * @param array $id     Pass as array($idFieldName => $value).
+     *                      If only 1 ID attribute, you can just send the
+     *                      filterValue (no array).
+     * @param int $effectiveTime    If null, will use current time.
+     *
+     * @return Entity       Found entity instance.
+     *
+     * @throws Exception    If $id is defined incorrectly for primary key.
+     * @throws NonUniqueResultException
+     * @throws NoResultException
+     */
+    public function _mustFindEffective($id, $effectiveTime=null)
+    {
+        $result = $this->_findEffective($id, $effectiveTime);
         if (! $result) { throw new NoResultException; }
         return $result;
     }
@@ -99,6 +146,34 @@ class EffectiveRepository extends BaseRepository
     }
 
     /**
+     * Functions like #findAllEffective except that entities returned are not
+     * managed by the EntityManager.
+     *
+     * @param int $effectiveTime    If null, will use current time.
+     * @return DetachedEntityIterator
+     */
+    public function _findAllEffective($effectiveTime=null)
+    {
+        return $this->_findByEffective(array(), $effectiveTime);
+    }
+
+    /**
+     * Functions like #mustFindAllEffective except that entities returned are
+     * not managed by the EntityManager.
+     *
+     * @param int $effectiveTime    If null, will use current time.
+     *
+     * @return DetachedEntityIterator
+     * @throws NoResultException
+     */
+    public function _mustFindAllEffective($effectiveTime=null)
+    {
+        $result = $this->_findAllEffective($effectiveTime);
+        if (! $result) { throw new NoResultException; }
+        return $result;
+    }
+
+    /**
      * Find multiple effective records filtered by $criteria.
      *
      * @param array $criteria       array($entityFieldName => $value)
@@ -109,26 +184,31 @@ class EffectiveRepository extends BaseRepository
      *
      * @return ArrayCollection
      */
-    public function findByEffective(array $criteria, $effectiveTime=null, array $orderBy=null, $limit=null, $offset=null)
+    public function findByEffective(
+                        array $criteria,
+                        $effectiveTime=null,
+                        array $orderBy=null,
+                        $limit=null,
+                        $offset=null)
     {
-        $qb = $this->createFilteredEffectiveQueryBuilder(
-                $criteria,
-                $effectiveTime
-        );
+        $qbr = $this
+                ->createFilteredEffectiveQueryBuilder($criteria, $effectiveTime);
 
         if ($orderBy) {
             foreach ($orderBy as $fieldName => $direction) {
-                $qb->orderBy($fieldName, $direction);
+                $qbr->orderBy("e.{$fieldName}", $direction);
             }
         }
+
         if ($limit) {
-            $qb->setMaxResults($limit);
+            $qbr->setMaxResults($limit);
         }
+
         if ($offset) {
-            $qb->setFirstResult($offset);
+            $qbr->setFirstResult($offset);
         }
-        return $qb->getQuery()
-                    ->getResult();
+
+        return $qbr->getQuery()->getResult();
     }
 
     /**
@@ -144,17 +224,101 @@ class EffectiveRepository extends BaseRepository
      * @return ArrayCollection
      * @throws NoResultException
      */
-    public function mustFindByEffective(array $criteria, $effectiveTime=null, array $orderBy=null, $limit=null, $offset=null)
+    public function mustFindByEffective(
+                        array $criteria,
+                        $effectiveTime=null,
+                        array $orderBy=null,
+                        $limit=null,
+                        $offset=null)
     {
-        $result = $this->findByEffective(
-            $criteria,
-            $effectiveTime,
-            $orderBy,
-            $limit,
-            $offset
-        );
-        if (! $result) { throw new NoResultException; }
-        return $result;
+        $results = $this
+                    ->findByEffective(
+                        $criteria,
+                        $effectiveTime,
+                        $orderBy,
+                        $limit,
+                        $offset);
+        if (! $results) { throw new NoResultException; }
+        return $results;
+    }
+
+    /**
+     * Functions like #findByEffective except that entities returned are not
+     * managed by the EntityManager.
+     *
+     * @param array $criteria       array($entityFieldName => $value)
+     * @param int $effectiveTime    If null, will use current time.
+     * @param array $orderBy        array($entityFieldName => $sortDirection)
+     * @param int $limit            Max results to return.
+     * @param int $offset           First result position to return.
+     *
+     * @return DetachedEntityIterator
+     */
+    public function _findByEffective(
+                        array $criteria,
+                        $effectiveTime=null,
+                        array $orderBy=null,
+                        $limit=null,
+                        $offset=null)
+    {
+        $qbr = $this
+                ->createFilteredEffectiveQueryBuilder($criteria, $effectiveTime)
+                ->select($this->getSelectFieldsDql());
+
+        if ($orderBy) {
+            foreach ($orderBy as $fieldName => $dir) {
+                $qbr->addOrderBy("e.{$fieldName}", $dir);
+            }    
+        }
+
+        if ($limit) {
+            $qbr->setMaxResults($limit);
+        }
+
+        if ($offset) {
+            $qbr->setFirstResult($offset);
+        }
+
+        $results = $qbr->getQuery()->getResult();
+
+        if (! $results) { return array(); }
+
+        $entityMetadata = $this
+                            ->getEntityManager()
+                            ->getEntityMetaHelper()
+                            ->getMetadata($this->entityName());
+        return new DetachedEntityIterator($results, $entityMetadata);
+    }
+
+    /**
+     * Functions like #mustFindByEffective except that entities returned are not
+     * managed by the EntityManager.
+     *
+     * @param array $criteria       array($entityFieldName => $value)
+     * @param int $effectiveTime    If null, will use current time.
+     * @param array $orderBy        array($entityFieldName => $sortDirection)
+     * @param int $limit            Max results to return.
+     * @param int $offset           First result position to return.
+     *
+     * @return DetachedEntityIterator
+     * @throws NoResultException
+     */
+    public function _mustFindByEffective(
+                        array $criteria,
+                        $effectiveTime=null,
+                        array $orderBy=null,
+                        $limit=null,
+                        $offset=null)
+    {
+        $results = $this
+                    ->_findByEffective(
+                        $criteria,
+                        $effectiveTime,
+                        $orderBy,
+                        $limit,
+                        $offset);
+        if (! $results) { throw new NoResultException; }
+        return $results;
     }
 
     /**
@@ -198,11 +362,13 @@ class EffectiveRepository extends BaseRepository
      */
     public function countEffective(array $criteria, $effectiveTime=null)
     {
-        return (int) $this->createFilteredEffectiveQueryBuilder(
-                        $criteria,
-                        $effectiveTime)
-                    ->select(array('count(e)'))
-                    ->getQuery()->getSingleScalarResult();
+        return (int) $this
+                        ->createFilteredEffectiveQueryBuilder(
+                            $criteria,
+                            $effectiveTime)
+                        ->select(array('count(e)'))
+                        ->getQuery()
+                        ->getSingleScalarResult();
     }
 
     /**
@@ -210,23 +376,33 @@ class EffectiveRepository extends BaseRepository
      *
      *  - findBy{FieldName}Effective($value, $effectiveTime=null)
      *  - mustFindBy{FieldName}Effective($value, $effectiveTime=null)
+     *  - _findBy{FieldName}Effective($value, $effectiveTime=null)
+     *  - _mustFindBy{FieldName}Effective($value, $effectiveTime=null)
      */
     public function __call($methodName, $args)
     {
-        $pattern = '/^(must)?(?:f|F)indBy([A-Z][A-Za-z]+)Effective$/';
+        $pattern = '/^(_)?(must)?(?:f|F)indBy([A-Z][A-Za-z]+)Effective$/';
 
         if (preg_match($pattern, $methodName, $matches)) {
-            $mustFind       = $matches[1] != '';
-            $fieldName      = lcfirst($matches[2]);
+            $useDetached    = $matches[1] != '';
+            $mustFind       = $matches[2] != '';
+            $fieldName      = lcfirst($matches[3]);
             $value          = Arr::mustGet(0, $args);
+            $criteria       = array($fieldName => $value);
             $effectiveTime  = Arr::get(1, $args);
             
-            $result = $this->findByEffective(
-                array($fieldName => $value),
-                $effectiveTime
-            );
-            if ($mustFind && ! $result) { throw new NoResultException; }
-            return $result;
+            if (! $useDetached && ! $mustFind) {
+                $findMethod = 'findByEffective';
+            } elseif (! $useDetached && $mustFind) {
+                $findMethod = 'mustFindByEffective';
+            } elseif ($useDetached && ! $mustFind) {
+                $findMethod = '_findByEffective';
+            } else {
+                $findMethod = '_mustFindByEffective';
+            }
+
+            return $this->{$findMethod}($criteria, $effectiveTime);
+
         } else {
             parent::__call($methodName, $args);
         }
@@ -240,11 +416,57 @@ class EffectiveRepository extends BaseRepository
      *
      * @return QueryBuilder
      */
-    protected function createFilteredEffectiveQueryBuilder(array $criteria, $effectiveTime=null)
+    protected function createFilteredEffectiveQueryBuilder(
+                        array $criteria,
+                        $effectiveTime=null)
     {
-        return $this->createFilteredQueryBuilder($criteria)
-                    ->andEffectiveWhere('e', $effectiveTime);
+        return $this
+                ->createFilteredQueryBuilder($criteria)
+                ->andEffectiveWhere('e', $effectiveTime);
     }
-    
+
+    /**
+     * Creates QueryBuilder filtered to look for one effective record based on
+     * entity's logical primary key.
+     *
+     * @param array $id             Pass as array($idFieldName => $value).
+     *                              If only 1 ID field, you can just send $value.
+     * @param int $effectiveTime    If null, will use current time.
+     *
+     * @return QueryBuilder
+     * @throws Exception    If $id is defined incorrectly for primary key. 
+     */
+    protected function createLogicalIdEffectiveQueryBuilder(
+                        $id,
+                        $effectiveTime=null)
+    {
+        // Ensure that passed $id matches logical (non-effective) ID fields
+        // for this entity.
+        $idFieldNames = $this
+                            ->getEntityManager()
+                            ->getEntityMetaHelper()
+                            ->getLogicalIdentifierFieldNames($this->entityName());
+        $criteria = $this->coalesceKeyValues($idFieldNames, $id);
+
+        if ($effectiveTime) {
+            if (! is_int($effectiveTime) || $effectiveTime < 0) {
+                throw new \Exception('$effectiveTime must be an unsigned integer');
+            }
+        } else {
+            $effectiveTime = time();
+        }
+
+        // Since we're looking for exactly 1 record based on logical primary
+        // key, we can use the efficient SELECT ... ORDER BY effective_time DESC
+        // query rather than the typical effective subquery.
+        // Ensure that ID critiera doesn't support array values b/c we must be
+        // looking for only 1 matching logical primary key.
+        return $this
+                ->createFilteredQueryBuilder($criteria)
+                ->andWhere("e.effectiveTime <= :effectiveTime")
+                ->setParameter('effectiveTime', $effectiveTime)
+                ->orderBy('e.effectiveTime', 'DESC')
+                ->setMaxResults(1);
+    }
 
 }
