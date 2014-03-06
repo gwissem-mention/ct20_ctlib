@@ -12,7 +12,7 @@ class MapQuest extends MapProviderAbstract
 
     const MILES         = 'm';
     const KILOMETERS    = 'k';
-
+ 
     /**
      * {@inheritdoc}
      */
@@ -158,7 +158,7 @@ class MapQuest extends MapProviderAbstract
     /**
      * {@inheritdoc}
      */
-    protected function routeBuildRequest($request, $fromLatitude, $fromLongitude, $toLatitude, $toLongitude, $options, $country = null)
+    protected function routeBuildRequest($request, $fromLatitude, $fromLongitude, $toLatitude, $toLongitude, $optimizeBy, $options=array(), $country=null)
     {
         // MT @ Feb 4: Putting in quick fix for Canadian mileage calculation
         // (need to force mapquest to use kilometers). Need to clean this up
@@ -173,17 +173,56 @@ class MapQuest extends MapProviderAbstract
         }
 
         $request->url = "https://www.mapquestapi.com/directions/v1/alternateroutes?key=Gmjtd%7Clu6zn1ua2d%2C7s%3Do5-l07g0";
+
+        // if we have avoid types
+        if (isset($options)) {
+            $avoidTypes = $this->convertOptions($options);
+            $request->url .= $avoidTypes;
+        }
+        
         $request->data = 
             array_merge(
                 array(
                     "from" => $fromLatitude . "," . $fromLongitude,
                     "to" => $toLatitude . "," . $toLongitude,
                     "maxRoutes" => 3,
-                    'unit' => $unit
-                ),
-                $options
+                    'unit' => $unit,
+                    'routeType' => $optimizeBy
+                )
             );
+        
         $request->method = CTCurl::REQUEST_GET;
+    }
+
+    /**
+     * Returns avoid types string for request url
+     * @param array $options options for routing service
+     * @return string
+     */
+    protected function convertOptions($options=array())
+    {
+        // keys coming from 'map.mq_avoid_types'
+        $avoidTypesList = array(
+            MapProviderManager::ROUTE_AVOID_LIMITED_ACCESS => 'Limited Access',
+            MapProviderManager::ROUTE_AVOID_TOLL_ROAD => 'Toll road',
+            MapProviderManager::ROUTE_AVOID_FERRY => 'Ferry',
+            MapProviderManager::ROUTE_AVOID_UNPAVED => 'Unpaved',
+            MapProviderManager::ROUTE_AVOID_SEASONAL_CLOSURE => 'Approximate Seasonal Closure',
+            MapProviderManager::ROUTE_AVOID_BORDER_CROSSING => 'Country border crossing'
+        );
+
+        $avoidTypes = '';
+
+        foreach($options as $avoidType) {
+            if(array_key_exists($avoidType, $avoidTypesList)) {
+                $avoidTypes .= '&avoids=' . urlencode($avoidTypesList[$avoidType]);
+            }
+            else {
+                throw new \InvalidArgumentException(sprintf('Please check avoid types configuration. Undefined avoid contant "%s".', $avoidType));
+            }
+        }
+        
+        return $avoidTypes;
     }
     
     /**
@@ -238,9 +277,15 @@ class MapQuest extends MapProviderAbstract
     /**
      * {@inheritdoc}
      */
-    protected function routeProcessResult($result)
-    {
-        $route = $this->extractShortestRoute($result, 'distance');
+    protected function routeProcessResult($result, $optimizeBy)
+    {        
+        if ($optimizeBy == MapProviderManager::OPTIMIZE_BY_DISTANCE) {
+            $metric = "distance";
+        } else {
+            $metric = "time";
+        }
+        
+        $route = $this->extractShortestRoute($result, $metric);
 
         $routeResult = array(
             "distance" => Arr::get("distance", $route),
@@ -272,9 +317,15 @@ class MapQuest extends MapProviderAbstract
     /**
      * @inherit
      */
-    protected function routeTimeAndDistanceProcessResult($result)
+    protected function routeTimeAndDistanceProcessResult($result, $optimizeBy)
     {
-        $route = $this->extractShortestRoute($result, 'distance');
+        if ($optimizeBy == MapProviderManager::OPTIMIZE_BY_DISTANCE) {
+            $metric = "distance";
+        } else {
+            $metric = "time";
+        }
+        
+        $route = $this->extractShortestRoute($result, $metric);
         return array(Arr::get("time", $route), Arr::get("distance", $route));
     }
 

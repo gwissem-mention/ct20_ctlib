@@ -101,7 +101,7 @@ interface MapProviderInterface
      *
      */
     public function route($fromLatitude, $fromLongitude, 
-        $toLatitude, $toLongitude, array $options, $country = null);
+        $toLatitude, $toLongitude, $optimizeBy, array $options, $country = null);
 
     /**
      * Calculates estimated time and distance for route between two points.
@@ -118,7 +118,7 @@ interface MapProviderInterface
      *                              $distance in country-specific unit.
      */
     public function routeTimeAndDistance($fromLatitude, $fromLongitude,
-     $toLatitude, $toLongitude, array $options=array(), $country=null);
+        $toLatitude, $toLongitude, $optimizeBy, array $options = array(), $country = null);
 
     /**
      * Get Allowed Quality codes for address

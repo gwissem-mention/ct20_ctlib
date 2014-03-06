@@ -204,50 +204,53 @@ abstract class MapProviderAbstract implements MapProviderInterface
      * @param float $fromLongitude origin lng
      * @param float $toLatitude destination lat
      * @param float $toLongitude destination lng
+     * @param string $optimizeBy mapquest route type
      * @param array $options
      * @return void 
      *
      */
-    abstract protected function routeBuildRequest($request, $fromLatitude, $fromLongitude, $toLatitude, $toLongitude, $options, $country);
+    abstract protected function routeBuildRequest($request, $fromLatitude, $fromLongitude, $toLatitude, $toLongitude, $optimizeBy, $options, $country);
     
     /**
      * Process Result of routing
      *
      * @param mixed $result result
+     * @param string $optimizeBy mapquest route type
      * @return mixed batch routing
      *
      */
-    abstract protected function routeProcessResult($result);
+    abstract protected function routeProcessResult($result, $optimizeBy);
 
     /**
      * Process Result of routing for time and distance only.
      *
      * @param mixed $result result
+     * @param string $optimizeBy mapquest route type
      * @return array                array($time, $distance)
      *                              $time in seconds
      *                              $distance in country-specific unit.
      */
-    abstract protected function routeTimeAndDistanceProcessResult($result);
+    abstract protected function routeTimeAndDistanceProcessResult($result, $optimizeBy);
 
     /**
      * Implements method in MapProviderInterface
      *
      */    
-    public function route($fromLatitude, $fromLongitude, $toLatitude, $toLongitude, array $options, $country = null)
+    public function route($fromLatitude, $fromLongitude, $toLatitude, $toLongitude, $optimizeBy, array $options, $country = null)
     {
         $curl = $this->createMapServiceRequest();
-        $this->routeBuildRequest($curl, $fromLatitude, $fromLongitude, $toLatitude, $toLongitude, $options, $country);
+        $this->routeBuildRequest($curl, $fromLatitude, $fromLongitude, $toLatitude, $toLongitude, $optimizeBy, $options, $country);
         
         $response = $curl->exec();
 
-        return $this->routeProcessResult($response);
+        return $this->routeProcessResult($response, $optimizeBy);
     }
 
     /**
      * @inherit
      */
     public function routeTimeAndDistance($fromLatitude, $fromLongitude,
-        $toLatitude, $toLongitude, array $options=array(), $country=null)
+        $toLatitude, $toLongitude, $optimizeBy, array $options=array(), $country=null)
     {
         $curl = $this->createMapServiceRequest();
         $this->routeBuildRequest(
@@ -256,11 +259,12 @@ abstract class MapProviderAbstract implements MapProviderInterface
             $fromLongitude,
             $toLatitude,
             $toLongitude,
+            $optimizeBy,
             $options,
             $country
         );
         $response = $curl->exec();
-        return $this->routeTimeAndDistanceProcessResult($response);
+        return $this->routeTimeAndDistanceProcessResult($response, $optimizeBy);
     }
 
     /**

@@ -8,6 +8,16 @@ use Symfony\Component\Yaml\Yaml,
 
 class MapProviderManager implements MapProviderInterface
 {
+    const OPTIMIZE_BY_TIME = 'fastest';
+    const OPTIMIZE_BY_DISTANCE = 'shortest';
+    
+    const ROUTE_AVOID_LIMITED_ACCESS = 'LimitedAccess';
+    const ROUTE_AVOID_TOLL_ROAD = 'Toll';
+    const ROUTE_AVOID_FERRY = 'Ferry';
+    const ROUTE_AVOID_UNPAVED = 'Unpaved';
+    const ROUTE_AVOID_SEASONAL_CLOSURE = 'SeasonalClosure';
+    const ROUTE_AVOID_BORDER_CROSSING = 'CountryBorder';
+
     protected $container;
     protected $siteConfig;
     protected $countryInSiteConfig;
@@ -204,14 +214,14 @@ class MapProviderManager implements MapProviderInterface
     /**
      * {@inheritdoc}
      */    
-    public function route($fromLatitude, $fromLongitude, $toLatitude, $toLongitude, array $options, $country = null)
+    public function route($fromLatitude, $fromLongitude, $toLatitude, $toLongitude, $optimizeBy, array $options, $country = null)
     {
         if ($country === null) {
             $country = $this->countryInSiteConfig;
         }
         return $this
             ->getMapProviderByCountry($country)
-            ->route($fromLatitude, $fromLongitude, $toLatitude, $toLongitude, $options, $country);
+        ->route($fromLatitude, $fromLongitude, $toLatitude, $toLongitude, $optimizeBy, $options, $country);
     }
 
     /**
@@ -229,7 +239,7 @@ class MapProviderManager implements MapProviderInterface
      *                              $distance in country-specific unit.
      */
     public function routeTimeAndDistance($fromLatitude, $fromLongitude,
-        $toLatitude, $toLongitude, array $options=array(), $country=null)
+        $toLatitude, $toLongitude, $optimizeBy, array $options=array(), $country=null)
     {
         return $this
                 ->getMapProviderByCountry($country)
@@ -238,6 +248,7 @@ class MapProviderManager implements MapProviderInterface
                     $fromLongitude,
                     $toLatitude,
                     $toLongitude,
+                    $optimizeBy,
                     $options,
                     $country);
     }
