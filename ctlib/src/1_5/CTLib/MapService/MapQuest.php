@@ -176,7 +176,7 @@ class MapQuest extends MapProviderAbstract
 
         // if we have avoid types
         if (isset($options)) {
-            $avoidTypes = $this->convertOptions($options);
+            $avoidTypes = $this->convertRouteAvoidOptions($options);
             $request->url .= $avoidTypes;
         }
         
@@ -199,10 +199,10 @@ class MapQuest extends MapProviderAbstract
      * @param array $options options for routing service
      * @return string
      */
-    protected function convertOptions($options=array())
+    protected function convertRouteAvoidOptions($options=array())
     {
-        // keys coming from 'map.mq_avoid_types'
-        $avoidTypesList = array(
+        // keys coming from 'map.route_avoid_types'
+        $routeAvoidTypesList = array(
             MapProviderManager::ROUTE_AVOID_LIMITED_ACCESS => 'Limited Access',
             MapProviderManager::ROUTE_AVOID_TOLL_ROAD => 'Toll road',
             MapProviderManager::ROUTE_AVOID_FERRY => 'Ferry',
@@ -211,18 +211,18 @@ class MapQuest extends MapProviderAbstract
             MapProviderManager::ROUTE_AVOID_BORDER_CROSSING => 'Country border crossing'
         );
 
-        $avoidTypes = '';
+        $routeAvoidTypes = '';
 
         foreach($options as $avoidType) {
-            if(array_key_exists($avoidType, $avoidTypesList)) {
-                $avoidTypes .= '&avoids=' . urlencode($avoidTypesList[$avoidType]);
+            if(array_key_exists($avoidType, $routeAvoidTypesList)) {
+                $routeAvoidTypes .= '&avoids=' . urlencode($routeAvoidTypesList[$avoidType]);
             }
             else {
                 throw new \InvalidArgumentException(sprintf('Please check avoid types configuration. Undefined avoid contant "%s".', $avoidType));
             }
         }
         
-        return $avoidTypes;
+        return $routeAvoidTypes;
     }
     
     /**
