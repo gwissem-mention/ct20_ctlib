@@ -4,9 +4,23 @@ namespace CTLib\Entity;
 abstract class EffectiveEntity extends BaseEntity
 {
     
-    protected $hasExplicitEffectiveTime = false;
+    /**
+     * @var boolean
+     */
+    protected $hasExplicitEffectiveTime;
 
-    
+
+    /**
+     * Constructor.
+     *
+     * @param array $fieldValues    Associative array of entity field => value.
+     */
+    public function __construct($fieldValues=array())
+    {
+        parent::__construct($fieldValues);
+        $this->hasExplicitEffectiveTime = false;
+    }
+
     /**
      * Sets Doctrine-used effectiveTime field as well as custom effectiveTime
      * used to track when user updates value.
