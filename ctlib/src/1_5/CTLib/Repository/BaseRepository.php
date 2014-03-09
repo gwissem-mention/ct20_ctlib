@@ -435,6 +435,20 @@ class BaseRepository extends \Doctrine\ORM\EntityRepository
     }
 
     /**
+     * Creates QueryBuilder for this Entity with each field itemized in select
+     * so results are hydrated for DetachedEntityIterator.
+     *
+     * @param string $alias
+     * @return QueryBuilder
+     */
+    public function createDetachedQueryBuilder($alias)
+    {
+        return $this
+                ->createQueryBuilder($alias)
+                ->select($this->getSelectFieldsDql());
+    }
+
+    /**
      * Creates QueryBuilder filtered with passed $criteria.
      *
      * @param array $criteria   array($entityFieldName => $value)

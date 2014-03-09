@@ -74,6 +74,22 @@ class EntityManager extends \Doctrine\ORM\EntityManager
     }
 
     /**
+     * Creates DetachedEntityIterator for results and entity.
+     *
+     * @param array $results    Hydrated as array.
+     * @param string $entityName
+     *
+     * @return DetachedEntityIterator
+     */
+    public function createDetachedEntityIterator($results, $entityName)
+    {
+        $metadata = $this
+                    ->getEntityMetaHelper()
+                    ->getMetadata($entityName);
+        return new DetachedEntityIterator($results, $metadata);
+    }
+
+    /**
      * Returns QueryMetaMap for specified $queryBuilder.
      *
      * @param QueryBuilder $queryBuilder
@@ -310,6 +326,16 @@ class EntityManager extends \Doctrine\ORM\EntityManager
         if ($close) {
             $this->close();
         }
+    }
+
+    /**
+     * Checks whether a transaction is currently active.
+     *
+     * @return boolean TRUE if a transaction is currently active, FALSE otherwise.
+     */
+    public function isTransactionActive()
+    {
+        return $this->getConnection()->isTransactionActive();
     }
 
     /**
