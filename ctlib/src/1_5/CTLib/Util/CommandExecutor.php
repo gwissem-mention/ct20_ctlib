@@ -206,5 +206,22 @@ class CommandExecutor
         );
     }
 
+    /**
+     * Formats SSH prefix to command.
+     *
+     * @param string $host
+     * @param string $user
+     *
+     * @return string
+     */
+    protected function formatSSH($host, $user=null)
+    {
+        if ($user) {
+            return "ssh {$user}@{$host} ";
+        } else {
+            return "ssh {$host}";
+        }
+    }
+
 
 }
