@@ -445,7 +445,7 @@ class BaseRepository extends \Doctrine\ORM\EntityRepository
     {
         return $this
                 ->createQueryBuilder($alias)
-                ->select($this->getSelectFieldsDql());
+                ->select($this->getSelectFieldsDql($alias));
     }
 
     /**
@@ -524,13 +524,18 @@ class BaseRepository extends \Doctrine\ORM\EntityRepository
      *
      * @return string
      */
-    protected function getSelectFieldsDql()
+    protected function getSelectFieldsDql($alias=null)
     {
+        $alias = $alias ?: 'e';
         $fieldNames = $this
                         ->getEntityManager()
                         ->getEntityMetaHelper()
                         ->getFieldNames($this->entityName());
-        $select = array_map(function($f) { return "e.{$f}"; }, $fieldNames);
+        $select = array_map(
+                    function($fieldName) use ($alias) {
+                        return "{$alias}.{$fieldName}";
+                    },
+                    $fieldNames);
         return join(', ', $select);
     }
     

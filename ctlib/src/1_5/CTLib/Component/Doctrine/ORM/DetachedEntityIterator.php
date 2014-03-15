@@ -24,6 +24,11 @@ class DetachedEntityIterator implements
     protected $entities;
 
     /**
+     * @var object
+     */
+    protected $entityMetadata;
+
+    /**
      * @var string
      */
     protected $entityClass;
@@ -47,6 +52,7 @@ class DetachedEntityIterator implements
     {
         $this->index            = 0;
         $this->entities         = $entities;
+        $this->entityMetadata   = $entityMetadata;
         $this->entityClass      = $entityMetadata->name;
         $this->postLoadMethods  = array();
         $this->initialized      = false;
@@ -158,12 +164,15 @@ class DetachedEntityIterator implements
      */
     protected function initialize()
     {
-        if (isset($entityMetadata->lifecycleCallbacks)
-            && isset($entityMetadata->lifecycleCallbacks['postLoad'])) {
-            foreach ($entityMetadata->lifecycleCallbacks['postLoad'] as $method) {
+        if (isset($this->entityMetadata->lifecycleCallbacks)
+            && isset($this->entityMetadata->lifecycleCallbacks['postLoad'])) {
+            foreach ($this
+                        ->entityMetadata
+                        ->lifecycleCallbacks['postLoad'] as $method) {
                 $this->postLoadMethods[] = $method;
             }
         }
+        unset($this->entityMetadata);
         $this->initialized = true;
     }
 
