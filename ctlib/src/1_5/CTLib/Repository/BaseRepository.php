@@ -394,7 +394,7 @@ class BaseRepository extends \Doctrine\ORM\EntityRepository
             // Handle _mustFindBy{FieldName}.
             $fieldName  = lcfirst(substr($methodName, 7));
             $value      = Arr::mustGet(0, $args);
-            return $this->_mustFindBy(array($fieldName => $value));
+            return $this->_findBy(array($fieldName => $value));
 
         } elseif (strpos($methodName, '_mustFindBy') === 0) {
             // Handle _mustFindBy{FieldName}.
