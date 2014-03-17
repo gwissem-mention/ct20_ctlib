@@ -194,6 +194,7 @@ class EntityManager extends \Doctrine\ORM\EntityManager
 
             if (! is_null($value)) {
                 $values[$columnName] = $value;
+                $entity->{"set{$fieldName}"}($value);
             }
         }
 
