@@ -41,22 +41,38 @@ class ExceptionListener
      * @var Session
      */
     protected $session;
+
+    /**
+     * @var string
+     */
+    protected $redirect;
+
     
     /**
-     * @param AppKernel $kernel
+     * @param string $environment
+     * @param boolean $debug
      * @param Logger $logger
-     * @param Session
+     * @param string $execMode
+     * @param Session $session
      */
-    public function __construct($kernel, $logger, $session=null)
+    public function __construct(
+                        $environment,
+                        $debug,
+                        $logger,
+                        $execMode=null,
+                        $session=null)
     {
-        $this->environment  = $kernel->getEnvironment();
-        $this->debug        = $kernel->isDebug();
+        $this->environment  = $environment;
+        $this->debug        = $debug;
         $this->logger       = $logger;
+        $this->execMode     = $execMode;
         $this->session      = $session;
+        $this->redirect     = '/error';
+    }
 
-        if (method_exists($kernel, 'getRuntime')) { 
-            $this->execMode = $kernel->getRuntime()->getExecMode();
-        }
+    public function setRedirect($redirect)
+    {
+        $this->redirect = $redirect;
     }
 
     /**
@@ -69,6 +85,8 @@ class ExceptionListener
         $this->logger->addError((string) $event->getException());
 
         if ($this->execMode == 'svc') {
+            // TODO: Move this to an app listener so we don't need web service
+            // code in CTLib.
             if ($event->getException() instanceof WebServiceException) {
                 $exception = $event->getException();
             } else {
@@ -96,7 +114,7 @@ class ExceptionListener
                     'type'          => get_class($exception),
                     'message'       => $exception->getMessage(),
                     'stacktrace'    => $exception->getTrace(),
-                    'redirect'      => '/error');
+                    'redirect'      => $this->redirect);
                 $response = new JsonResponse($body, 500);
                 $event->setResponse($response);
                 $event->stopPropagation();
@@ -111,7 +129,7 @@ class ExceptionListener
             if ($this->isXmlHttpRequest($event->getRequest())) {
                 $response = new Response('An error occurred', 500);
             } else {
-                $response = new RedirectResponse('/error');                
+                $response = new RedirectResponse($this->redirect);                
             }
             $event->setResponse($response);
             $event->stopPropagation();

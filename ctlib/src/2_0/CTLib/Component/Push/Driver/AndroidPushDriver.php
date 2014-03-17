@@ -37,14 +37,15 @@ class AndroidPushDriver implements PushDriver
 
 
     /**
-     * @param Container $container
+     * @param string $serviceUrl
+     * @param string $serviceAuth
+     * @param Logger $logger
      */
-    public function __construct($container)
+    public function __construct($serviceUrl, $serviceAuth, $logger)
     {
-        $params             = $container->getParameter('push.driver.android');
-        $this->serviceUrl   = Arr::mustGet('service_url', $params);
-        $this->serviceAuth  = Arr::mustGet('service_auth', $params);
-        $this->logger       = $container->get('logger');
+        $this->serviceUrl   = $serviceUrl;
+        $this->serviceAuth  = $serviceAuth;
+        $this->logger       = $logger;
     }
 
     /**

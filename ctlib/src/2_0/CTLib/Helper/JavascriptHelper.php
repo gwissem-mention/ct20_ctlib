@@ -10,11 +10,10 @@ class JavascriptHelper
     protected $values;
     protected $routes;
 
-    public function __construct($translator, $routeInspector, $authorization=null)
+    public function __construct($translator, $routeInspector)
     {
         $this->translator       = $translator;
         $this->routeInspector   = $routeInspector;
-        $this->authorization    = $authorization;
         $this->translations     = array();
         $this->values           = array();
         $this->routes           = array();
@@ -289,21 +288,22 @@ class JavascriptHelper
     {
         return $this->routes;
     }
+
+    /**
+     * 
+     */
+    public function setPermissions($permissions)
+    {
+        $this->permissions = $permissions;
+    }
     
     /**
      * Returns permissions.
-     * @return string
+     * @return array
      */
     public function getPermissions()
     {
-        if ($this->authorization) {
-            return array_fill_keys(
-                $this->authorization->getObjectPermissions(),
-                true
-            );
-        } else {
-            return array();
-        }
+        return $this->permissions;
     }
 
     /**

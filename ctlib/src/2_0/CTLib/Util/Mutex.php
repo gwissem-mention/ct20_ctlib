@@ -32,11 +32,11 @@ class Mutex
     /**
      * Constructor to create a mutex
      * 
-     * @param Kernel $kernel Kernel object
+     * @param string $mutexDir
      */
-    function __construct($kernel)
+    function __construct($mutexDir)
     {
-        $this->mutexDir             = $kernel->getMutexDir();
+        $this->mutexDir             = $mutexDir;
         $this->blockingMutexes      = array();
         $this->nonBlockingMutexes   = array();
     }

@@ -17,25 +17,25 @@ class EncryptHelper
      *
      * @var string
      */
-    protected $algo = "sha256";
+    protected $algorithm;
 
     /**
      * Default salt value to use.
      *
      * @var string
      */
-    protected $salt = 'fA(PVdy|/>*dFJm{.n6a<,bDX@p/JBi!)bk{hK3d730JUMcgDAitAk1U0E9a32.SzPFLPct7e5s1l,Mp)ld6e8ZohXX!B,:#p$vbO@?/Aw{h}&BkfY}oq2{6SB7XM!>Ko>XCmhCG:albg|)t?S/0KC#@.X)j.(/QE|V9zUwA*y29VhP|uP!wplr9Lhmlv/nZU3ur/8S&RI<XMR3f:EQWOlinI75?,vB*3IX7,d^K}Cnb(n}1VfWBJX$_/ADg';
+    protected $salt;
 
     /**
      * Constructor.
      *
+     * @param string $algorithm
      * @param string $salt
      */
-    public function __construct($salt=false)
+    public function __construct($algorithm, $salt)
     {
-        if ($salt) {
-            $this->salt = $salt;
-        }
+        $this->algorithm    = $algorithm;
+        $this->salt         = $salt;
     }
 
     /**
@@ -43,9 +43,9 @@ class EncryptHelper
      *
      * @return string
      */
-    public function getAlgo()
+    public function getAlgorithm()
     {
-        return $this->algo;
+        return $this->algorithm;
     }
 
     /**
@@ -55,9 +55,9 @@ class EncryptHelper
      *
      * @return EncryptHelper
      */
-    public function setAlgo($algorithm)
+    public function setAlgorithm($algorithm)
     {
-        $this->algo = $algorithm;
+        $this->algorithm = $algorithm;
         return $this;
     }
 
@@ -93,7 +93,7 @@ class EncryptHelper
      */
     public function encrypt($string)
     {
-        return hash_hmac($this->algo, $string, $this->salt);
+        return hash_hmac($this->algorithm, $string, $this->salt);
     }
 
     /**

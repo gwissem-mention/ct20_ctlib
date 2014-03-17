@@ -4,15 +4,35 @@ namespace CTLib\Helper;
 class AssetHelper
 {
 
-    protected $runtime;
-    protected $request;
+    /**
+     * @var string
+     */
+    protected $environment;
+    
+    /**
+     * @var array
+     */
+    protected $dirs;
 
-    public function __construct($kernel)
+
+    /**
+     * @param string $environment
+     */
+    public function __construct($environment)
     {
-        $this->runtime = $kernel->getRuntime();
-        $this->request = $kernel->getContainer()->get("request");
+        $this->environment  = $environment;
+        $this->dirs         = array();
     }
 
+    public function addDirectory($name, $path)
+    {
+        $this->dirs[strtolower($name)] = $path;
+    }
+
+    public function getDirectoryNames()
+    {
+        return array_keys($this->dirs);
+    }
 
     public function buildCssLink($url, $media='all')
     {
@@ -24,51 +44,45 @@ class AssetHelper
         return "<script type='text/javascript' src='$url'></script>";
     }
 
-    public function buildGlobalCssLink($filename)
+    public function buildLocalAssetUrl($dirName, $path)
     {
-        return $this->buildCssLink(
-            $this->buildGlobalAssetUrl("/css/$filename")
-        );
+        return $this->getWebRoot()
+                . $this->buildLocalAssetPath($dirName, $path)
+                . ($this->environment == 'dev' ? '?' . time() : '');
     }
 
-    public function buildBrandCssLink($filename)
+    public function buildLocalAssetPath($dirName, $path)
     {
-        return $this->buildCssLink(
-            $this->buildBrandAssetUrl("/css/$filename")
-        );
+        if (! isset($this->dirs[$dirName])) {
+            throw new \Exception("Invalid asset directory '{$dirName}'");
+        }
+        return "{$this->dirs[$dirName]}/{$path}";
     }
 
-    public function buildGatewayCssLink($filename)
+    public function __call($methodName, $args)
     {
-        return $this->buildBrandCssLink($filename);
-    }
+        if (preg_match('/^build([a-z]+)(Css|Js)Link$/i', $methodName, $matches)) {
+            $dirName    = strtolower($matches[1]);
+            $type       = strtolower($matches[2]);
+            $filename   = $args[0];
+            $path       = "{$type}/{$filename}";
+            $url        = $this->buildLocalAssetUrl($dirName, $path);
+            
+            if ($type == 'css') {
+                $media = isset($args[1]) ? $args[1] : 'all';
+                return $this->buildCssLink($url, $media);
+            } else {
+                return $this->buildJsLink($url);
+            }
+        }
 
-    public function buildAppCssLink($filename)
-    {
-        return $this->buildCssLink(
-            $this->buildAppAssetUrl("/css/$filename")
-        );
-    }
+        if (preg_match('/^build([a-z]+)Path$/i', $methodName, $matches)) {
+            $dirName    = strtolower($matches[1]);
+            $path       = $args[0];
+            return $this->buildLocalAssetUrl($dirName, $path);
+        }
 
-    public function buildGlobalJsLink($filename)
-    {
-        return $this->buildJsLink(
-            $this->buildGlobalAssetUrl("/js/$filename")
-        );
-    }
-
-    public function buildBrandJsLink($filename)
-    {
-        return $this->buildJsLink(
-            $this->buildBrandAssetUrl("/js/$filename")
-        );
-    }
-
-    public function buildAppJsLink($filename)
-    {
-        return $this->buildJsLink(
-            $this->buildAppAssetUrl("/js/$filename")
-        );
+        throw new \Exception(get_class($this) . " does not have method '{$methodName}'");
     }
 
     public function buildExternalJsLink($url)
@@ -76,61 +90,14 @@ class AssetHelper
         return $this->buildJsLink($url);
     }
 
-    public function buildGlobalAssetUrl($path)
-    {
-        return $this->buildLocalAssetUrl($this->getGlobalAssetDir() . $path);
-    }
-
-    public function buildBrandAssetUrl($path)
-    {
-        return $this->buildLocalAssetUrl($this->getBrandAssetDir() . $path);
-    }
-
-    public function buildAppAssetUrl($path)
-    {
-        return $this->buildLocalAssetUrl($this->getAppAssetDir() . $path);
-    }
-
-    protected function buildLocalAssetUrl($path)
-    {
-        if (! $this->runtime) { return $this->getWebRoot() . $path; }
-        return $this->getWebRoot()
-            . $path
-            . ($this->runtime->isDevelopment() ? '?' . time() : '');
-    }
-
-    private function getWebRoot()
+    protected function getWebRoot()
     {
         $arr = explode("/", $_SERVER["SCRIPT_NAME"]);
         array_pop($arr);
         return implode("/", $arr);
     }
 
-    protected function getGlobalAssetDir()
-    {
-        return '/bundles/ctglobal'; 
-    }
-
-    public function getAppAssetDir()
-    {
-        if (!$this->runtime) 
-			return '/bundles/hq/';
-		if ($this->runtime->getProductId()=='HCTP') 
-			return '/bundles/hctp/'.$this->runtime->getAppAssetDir(); 
-        return '/bundles/ctapp/' . $this->runtime->getAppAssetDir();
-    }
-
-	public function getBrandAssetDir()
-    {
-        if (! $this->runtime) { return '/bundles/hq/'; }
-        return '/bundles/ctgateway/' . $this->runtime->getBrandAssetDir();
-    }
-
-	public function getGatewayAssetDir()
-    {
-        return $this->getBrandAssetDir();
-    }
-
+    
 
 
 }

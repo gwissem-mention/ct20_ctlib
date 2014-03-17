@@ -27,13 +27,6 @@ use CTLib\Component\Monolog\Logger,
  */
 class EmailHandler extends \Monolog\Handler\AbstractProcessingHandler
 {
-    
-    /**
-     * Defaults used when not configured.
-     */
-    const DEFAULT_THRESHOLD_COUNT   = 5;
-    const DEFAULT_THRESHOLD_SECONDS = 120;
-    const DEFAULT_SLEEP_SECONDS     = 600;
 
     /**
      * Message templates.
@@ -41,13 +34,73 @@ class EmailHandler extends \Monolog\Handler\AbstractProcessingHandler
     const STANDARD_TEMPLATE     = '@CTLib/Resources/EmailLogger/standard.html.php';
     const THRESHOLD_TEMPLATE    = '@CTLib/Resources/EmailLogger/threshold.html.php';
 
+    /**
+     * @var Mailer
+     */
+    protected $mailer;
 
     /**
-     * @param Container $container
-     * @param integer $level    Minimum log level included within this handler.
-     * @param boolean $bubble   Whether to bubble log record to subsequent handler.
+     * @var string
      */
-    public function __construct($container, $level=Logger::ERROR, $bubble=true)
+    protected $logDir;
+
+    /**
+     * @var string
+     */
+    protected $standardTemplate;
+
+    /**
+     * @var string
+     */
+    protected $thresholdTemplate;
+
+    /**
+     * @var string
+     */
+    protected $from;
+
+    /**
+     * @var array
+     */
+    protected $defaultTo;
+
+    /**
+     * @var integer
+     */
+    protected $thresholdCount;
+
+    /**
+     * @var integer
+     */
+    protected $thresholdSeconds;
+
+    /**
+     * @var integer
+     */
+    protected $sleepSeconds;
+
+    
+    /**
+     * @param Mailer $mailer
+     * @param Kernel $kernel
+     * @param string $from
+     * @param array $defaultTo
+     * @param integer $thresholdCount
+     * @param integer $thresholdSeconds
+     * @param integer $sleepSeconds
+     * @param integer $level        See Monolog documentation.
+     * @param boolean $bubble       See Monolog documentation.
+     */
+    public function __construct(
+                        $mailer,
+                        $kernel,
+                        $from,
+                        $defaultTo,
+                        $thresholdCount,
+                        $thresholdSeconds,
+                        $sleepSeconds,
+                        $level=Logger::ERROR,
+                        $bubble=true)
     {
         if (! is_int($level)) {
             $level = constant(
@@ -56,39 +109,59 @@ class EmailHandler extends \Monolog\Handler\AbstractProcessingHandler
         }
         parent::__construct($level, (bool) $bubble);
 
-        $this->mailer           = $container->get('mailer');
-        $this->logDir           = $container
-                                    ->get('kernel')->getRootDir()
-                                    . '/logs/EmailLogger';
-        $this->standardTemplate = $container
-                                    ->get('kernel')
-                                    ->locateResource(self::STANDARD_TEMPLATE);
-        $this->thresholdTemplate = $container
-                                    ->get('kernel')
-                                    ->locateResource(self::THRESHOLD_TEMPLATE);
-        $this->from             = $this->getParam($container, 'from');
-        $this->defaultTo        = $this->getParam($container, 'default_to');
-        $this->routingRules     = $this->getParam($container, 'rules');
-        $this->thresholdCount   = $this->getParam($container, 'threshold_count')
-                                  ?: self::DEFAULT_THRESHOLD_COUNT;
-        $this->thresholdSeconds = $this->getParam($container, 'threshold_seconds')
-                                  ?: self::DEFAULT_THRESHOLD_SECONDS;
-        $this->sleepSeconds     = $this->getParam($container, 'sleep_seconds')
-                                  ?: self::DEFAULT_SLEEP_SECONDS;
+        $this->mailer               = $mailer;
+        $this->logDir               = $kernel->getRootDir() . '/logs/EmailLogger';
+        $this->standardTemplate     = $kernel
+                                        ->locateResource(self::STANDARD_TEMPLATE);
+        $this->thresholdTemplate    = $kernel
+                                        ->locateResource(self::THRESHOLD_TEMPLATE);
+        $this->from                 = $from;
+        $this->defaultTo            = $defaultTo;
+        $this->thresholdCount       = $thresholdCount;
+        $this->thresholdSeconds     = $thresholdSeconds;
+        $this->sleepSeconds         = $sleepSeconds;
+        $this->routingRules         = array();
+        $this->disableDelivery      = false;
+        $this->alwaysSendTo         = array();
     }
 
     /**
-     * Returns value for container parameter.
+     * Sets disableDelivery.
      *
-     * @param Container $container
-     * @param string $paramter
-     *
-     * @return mixed
-     * @throws Exception    If parameter not set.
+     * @param boolean $disableDelivery
+     * @return void
      */
-    protected function getParam($container, $parameter)
+    public function setDisableDelivery($disableDelivery)
     {
-        return $container->getParameter("ctlib.email_logger.{$parameter}");
+        $this->disableDelivery = $disableDelivery;
+    }
+
+    /**
+     * Sets alwaysSendTo.
+     *
+     * @param array $alwaysSendTo
+     * @return void
+     */
+    public function setAlwaysSendTo($alwaysSendTo)
+    {
+        $this->alwaysSendTo = $alwaysSendTo;
+    }
+
+    /**
+     * Adds email routing rule.
+     *
+     * @param string $key
+     * @param string $needle
+     * @param array $to
+     *
+     * @return void
+     */
+    public function addRoutingRule($key, $needle, $to)
+    {
+        $this->routingRules[] = array(
+                                    'key'       => $key,
+                                    'needle'    => $needle,
+                                    'to'        => $to);
     }
 
     /**
@@ -99,11 +172,19 @@ class EmailHandler extends \Monolog\Handler\AbstractProcessingHandler
      */
     public function write(array $record)
     {
+        if ($this->disableDelivery) {
+            return;
+        }        
+
         $to = $this->getTo($record);
 
-        if (is_null($to)) {
+        if (! $to) {
             // Configured to suppress email delivery.
             return;
+        }
+
+        if ($this->alwaysSendTo) {
+            $to = $this->alwaysSendTo;
         }
 
         $logPath        = $this->getLogPath($record);

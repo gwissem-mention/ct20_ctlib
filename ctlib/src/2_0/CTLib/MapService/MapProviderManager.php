@@ -1,5 +1,4 @@
 <?php
-
 namespace CTLib\MapService;
 
 use Symfony\Component\Yaml\Yaml,
@@ -8,74 +7,62 @@ use Symfony\Component\Yaml\Yaml,
 
 class MapProviderManager implements MapProviderInterface
 {
-    const OPTIMIZE_BY_TIME = 'fastest';
-    const OPTIMIZE_BY_DISTANCE = 'shortest';
+    const OPTIMIZE_BY_TIME              = 'fastest';
+    const OPTIMIZE_BY_DISTANCE          = 'shortest';
     
-    const ROUTE_AVOID_LIMITED_ACCESS = 'LimitedAccess';
-    const ROUTE_AVOID_TOLL_ROAD = 'Toll';
-    const ROUTE_AVOID_FERRY = 'Ferry';
-    const ROUTE_AVOID_UNPAVED = 'Unpaved';
-    const ROUTE_AVOID_SEASONAL_CLOSURE = 'SeasonalClosure';
-    const ROUTE_AVOID_BORDER_CROSSING = 'CountryBorder';
+    const ROUTE_AVOID_LIMITED_ACCESS    = 'LimitedAccess';
+    const ROUTE_AVOID_TOLL_ROAD         = 'Toll';
+    const ROUTE_AVOID_FERRY             = 'Ferry';
+    const ROUTE_AVOID_UNPAVED           = 'Unpaved';
+    const ROUTE_AVOID_SEASONAL_CLOSURE  = 'SeasonalClosure';
+    const ROUTE_AVOID_BORDER_CROSSING   = 'CountryBorder';
 
-    protected $container;
-    protected $siteConfig;
-    protected $countryInSiteConfig;
-    protected $providersByCountry = array();
-    protected $providers = array();
 
-    public function __construct($container, $siteConfig)
+    /**
+     * @var string
+     */
+    protected $defaultCountry;
+
+    /**
+     * @var array
+     */
+    protected $providers;
+    
+    
+    /**
+     * @param string $defaultCountry
+     * @param Logger $logger
+     */
+    public function __construct($defaultCountry, $logger)
     {
-        $this->container = $container;
-        $this->siteConfig = $siteConfig;
-        $this->countryInSiteConfig = $siteConfig->get("geo.country_code");
-
-        $mapProviderConfig = $container->getParameter('ctlib.map_service.providers');
-        if (!$mapProviderConfig) {
-            throw new \Exception("Providers have to be configured for map service");
-        }
-        $this->registerMapProviders($mapProviderConfig);
+        $this->defaultCountry   = $defaultCountry;
+        $this->logger           = $logger;
+        $this->providers        = array();
     }
 
     /**
-     * Register map providers to countries based on what is configured in yml
+     * Register map service provider.
      *
-     * @param array $mapProviderConfigs config returned by loadConfig
+     * @param string $class
+     * @param array $countries  Provider will be used for specified countries.
+     * @param array $allowedQualityCodes    Acceptable quality codes used when
+     *                                      geocoding.
+     *
      * @return void
-     *
      */
-    protected function registerMapProviders($mapProviderConfigs)
+    public function registerProvider($class, $countries, $allowedQualityCodes)
     {
-        foreach ($mapProviderConfigs as $config)
-        {
-            $mapProviderClass = "\\" . trim($config["class"], "\\");
-            if (!class_exists($mapProviderClass)) {
-                throw new \Exception("Class {$config["class"]} does not exist!");
-            }
+        $provider = new $class($allowedQualityCodes);
 
-            if (!isset($config["country"]) || !is_array($config["country"])) {
-                throw new \Exception("Config Country has to be an array");
-            }
+        if (! ($provider instanceof MapProviderAbstract)) {
+            throw new \Exception("Map provider class '{$class}' has to extend from MapProviderAbstract");
+        }
 
-            if (!isset($config["allowedQualityCodes"])
-                || !is_array($config["allowedQualityCodes"])
-            ) {
-                throw new \Exception("Allowed Quality codes are invalid");
+        foreach ($countries as $country) {
+            if (isset($this->providers[$country])) {
+                throw new \Exception("Cannot assign multiple map providers to country '{$country}'");
             }
-
-            $mapProvider = new $config["class"]($config["allowedQualityCodes"]);
-
-            if (!$mapProvider instanceof MapProviderAbstract) {
-                throw new \Exception("{$config["class"]} has to be extended from MapProviderAbstract");
-            }
-
-            foreach ($config["country"] as $country) {
-                $country = trim($country);
-                if (array_key_exists($country, $this->providersByCountry)) {
-                    throw new \Exception("Could not have more than one * in country");
-                }
-                $this->providersByCountry[$country] = $mapProvider;
-            }
+            $this->providers[$country] = $provider;
         }
     }
 
@@ -89,18 +76,18 @@ class MapProviderManager implements MapProviderInterface
     protected function getMapProviderByCountry($country)
     {
         if ($country === null) {
-            $country = $this->countryInSiteConfig;
+            $country = $this->defaultCountry;
         }
         
-        //find the country key in array of providersByCountry, 
+        //find the country key in array of providers, 
         //if not found, find provider by key of *
         //if not found, throw exception
-        $mapProvider = Arr::get($country, $this->providersByCountry);
+        $mapProvider = Arr::get($country, $this->providers);
         if ($mapProvider) {
             return $mapProvider;
         }
 
-        $mapProvider = Arr::get("*", $this->providersByCountry);
+        $mapProvider = Arr::get("*", $this->providers);
         if ($mapProvider) {
             return $mapProvider;
         }
@@ -111,10 +98,10 @@ class MapProviderManager implements MapProviderInterface
     /**
      * {@inheritdoc}
      */    
-    public function getJavascriptApiUrl($country = null)
+    public function getJavascriptApiUrl($country=null)
     {
         if ($country === null) {
-            $country = $this->countryInSiteConfig;
+            $country = $this->defaultCountry;
         }
         return $this
             ->getMapProviderByCountry($country)
@@ -124,10 +111,10 @@ class MapProviderManager implements MapProviderInterface
     /**
      * {@inheritdoc}
      */    
-    public function getJavascriptMapPlugin($country = null)
+    public function getJavascriptMapPlugin($country=null)
     {
         if ($country === null) {
-            $country = $this->countryInSiteConfig;
+            $country = $this->defaultCountry;
         }
         return $this
             ->getMapProviderByCountry($country)
@@ -137,33 +124,34 @@ class MapProviderManager implements MapProviderInterface
     /**
      * {@inheritdoc}
      */    
-    public function geocode($address, $country = null)
+    public function geocode($address, $country=null)
     {
         if ($country === null) {
-            $country = $this->countryInSiteConfig;
+            $country = $this->defaultCountry;
         }
+
         return $this
-            ->getMapProviderByCountry($country)
-            ->geocode(
-                array(
-                    "street"      => Arr::mustGet("street", $address),
-                    "city"        => Arr::mustGet("city", $address),
-                    "subdivision" => Arr::get("subdivision", $address),
-                    "postalCode"  => Arr::mustGet("postalCode", $address),
-                    "country"     => $country
-                ),
-                $country
-            );
+                ->getMapProviderByCountry($country)
+                ->geocode(
+                    array(
+                        "street"      => Arr::get("street", $address),
+                        "city"        => Arr::get("city", $address),
+                        "subdivision" => Arr::get("subdivision", $address),
+                        "postalCode"  => Arr::get("postalCode", $address),
+                        "country"     => $country
+                    ),
+                    $country
+                );
     }
 
     /**
      * {@inheritdoc}
      */    
-    public function geocodeBatch(array $addresses, $country = null)
+    public function geocodeBatch(array $addresses, $country=null)
     {
         if (!$addresses) { return null; }
         if ($country === null) {
-            $country = $this->countryInSiteConfig;
+            $country = $this->defaultCountry;
         }
 
         //clean up the addresses
@@ -181,47 +169,64 @@ class MapProviderManager implements MapProviderInterface
         );
 
         return $this
-            ->getMapProviderByCountry($country)
-            ->geocodeBatch($addresses, $country);
+                ->getMapProviderByCountry($country)
+                ->geocodeBatch($addresses, $country);
     }
 
     /**
      * {@inheritdoc}
      */    
-    public function reverseGeocode($latitude, $longitude, $country = null)
+    public function reverseGeocode($latitude, $longitude, $country=null)
     {
         if ($country === null) {
-            $country = $this->countryInSiteConfig;
+            $country = $this->defaultCountry;
         }
+
         return $this
-            ->getMapProviderByCountry($country)
-            ->reverseGeocode($latitude, $longitude, $country);
+                ->getMapProviderByCountry($country)
+                ->reverseGeocode($latitude, $longitude, $country);
     }
 
     /**
      * {@inheritdoc}
      */    
-    public function reverseGeocodeBatch(array $latLngs, $country = null)
+    public function reverseGeocodeBatch(array $latLngs, $country=null)
     {
         if ($country === null) {
-            $country = $this->countryInSiteConfig;
+            $country = $this->defaultCountry;
         }
+
         return $this
-            ->getMapProviderByCountry($country)
-            ->reverseGeocodeBatch($latLngs, $country);
+                ->getMapProviderByCountry($country)
+                ->reverseGeocodeBatch($latLngs, $country);
     }
 
     /**
      * {@inheritdoc}
      */    
-    public function route($fromLatitude, $fromLongitude, $toLatitude, $toLongitude, $optimizeBy, array $options, $country = null)
+    public function route(
+                        $fromLatitude,
+                        $fromLongitude,
+                        $toLatitude,
+                        $toLongitude,
+                        $optimizeBy,
+                        array $options,
+                        $country=null)
     {
         if ($country === null) {
-            $country = $this->countryInSiteConfig;
+            $country = $this->defaultCountry;
         }
+
         return $this
-            ->getMapProviderByCountry($country)
-        ->route($fromLatitude, $fromLongitude, $toLatitude, $toLongitude, $optimizeBy, $options, $country);
+                ->getMapProviderByCountry($country)
+                ->route(
+                    $fromLatitude,
+                    $fromLongitude,
+                    $toLatitude,
+                    $toLongitude,
+                    $optimizeBy,
+                    $options,
+                    $country);
     }
 
     /**
@@ -238,8 +243,14 @@ class MapProviderManager implements MapProviderInterface
      *                              $time in seconds
      *                              $distance in country-specific unit.
      */
-    public function routeTimeAndDistance($fromLatitude, $fromLongitude,
-        $toLatitude, $toLongitude, $optimizeBy, array $options=array(), $country=null)
+    public function routeTimeAndDistance(
+                        $fromLatitude,
+                        $fromLongitude,
+                        $toLatitude,
+                        $toLongitude,
+                        $optimizeBy,
+                        array $options=array(),
+                        $country=null)
     {
         return $this
                 ->getMapProviderByCountry($country)
@@ -253,10 +264,10 @@ class MapProviderManager implements MapProviderInterface
                     $country);
     }
 
-    public function getAllowedQualityCodes($country = null)
+    public function getAllowedQualityCodes($country=null)
     {
         return $this
-            ->getMapProviderByCountry($country)
-            ->getAllowedQualityCodes();
+                ->getMapProviderByCountry($country)
+                ->getAllowedQualityCodes();
     }
 }

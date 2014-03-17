@@ -35,11 +35,16 @@ class SqliteHandler extends \Monolog\Handler\AbstractProcessingHandler
 
 
     /**
-     * @param AppKernel $kernel
+     * @param string $rootDir
+     * @param string $logDir
      * @param integer $level        See Monolog documentation.
      * @param boolean $bubble       See Monolog documentation.
      */
-    public function __construct($kernel, $level=Logger::DEBUG, $bubble=true)
+    public function __construct(
+                        $rootDir,
+                        $logDir,
+                        $level=Logger::DEBUG,
+                        $bubble=true)
     {
         if (! is_int($level)) {
             $level = constant(
@@ -50,8 +55,8 @@ class SqliteHandler extends \Monolog\Handler\AbstractProcessingHandler
         
         // Remove /app from end of root directory path. We'll use this to strip
         // away redundant root path from log messages.
-        $this->pathPrefix   = substr($kernel->getRootDir(), 0, -3);
-        $this->logDir       = $kernel->getLogDir();
+        $this->pathPrefix   = substr($rootDir, 0, -3);
+        $this->logDir       = $logDir;
         $this->initialized  = false;
         $this->useFailover  = false;
     }
@@ -115,7 +120,7 @@ class SqliteHandler extends \Monolog\Handler\AbstractProcessingHandler
         } catch (\PdoException $e) {
             $this->useFailover = true;
             $this->bubble = true;
-        }
+        }        
         $this->initialized = true;
     }
 

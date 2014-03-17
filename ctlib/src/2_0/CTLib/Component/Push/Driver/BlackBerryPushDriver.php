@@ -27,9 +27,6 @@ class BlackBerryPushDriver implements PushDriver
     // to be found in the actual message content).
     const CONTENT_BOUNDARY  = 'D8u3DPythIg#VR6+MLG5';
 
-    // Default message TTL (in seconds).
-    const DEFAULT_TTL = 300;
-
 
     /**
      * @var string
@@ -58,17 +55,24 @@ class BlackBerryPushDriver implements PushDriver
 
 
     /**
-     * @param ServiceContainer $container
+     * @param string $serviceUrl
+     * @param string $serviceAuth
+     * @param string $appId
+     * @param integer $ttlSeconds
+     * @param Logger $logger
      */
-    public function __construct($container)
+    public function __construct(
+                      $serviceUrl,
+                      $serviceAuth,
+                      $appId,
+                      $ttlSeconds,
+                      $logger)
     {
-        $params             = $container->getParameter('push.driver.blackberry');
-        $this->serviceUrl   = Arr::mustGet('service_url', $params);
-        $this->serviceAuth  = Arr::mustGet('service_auth', $params);
-        $this->appId        = Arr::mustGet('app_id', $params);
-        $this->ttlSeconds   = Arr::get('ttl_seconds', $params) ?:
-                              self::DEFAULT_TTL;
-        $this->logger       = $container->get('logger');
+        $this->serviceUrl   = $serviceUrl;
+        $this->serviceAuth  = $serviceAuth;
+        $this->appId        = $appId;
+        $this->ttlSeconds   = $ttlSeconds;
+        $this->logger       = $logger;
     }
 
     /**

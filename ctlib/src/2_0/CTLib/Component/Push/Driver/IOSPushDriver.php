@@ -3,8 +3,7 @@ namespace CTLib\Component\Push\Driver;
 
 use CTLib\Component\Push\PushDriver,
     CTLib\Component\Push\PushMessage,
-    CTLib\Component\Push\PushDeliveryException,
-    CTLib\Util\Arr;
+    CTLib\Component\Push\PushDeliveryException;
 
 
 /**
@@ -17,6 +16,11 @@ use CTLib\Component\Push\PushDriver,
  */
 class IOSPushDriver implements PushDriver
 {
+
+    /**
+     * @var Logger
+     */
+    protected $logger;
     
     /**
      * @var array
@@ -27,9 +31,30 @@ class IOSPushDriver implements PushDriver
     /**
      * @param Container $container
      */
-    public function __construct($container)
+    public function __construct($logger)
     {
-        $this->services = $container->getParameter('push.driver.ios');
+        $this->logger   = $logger;
+        $this->services = array();
+    }
+
+    /**
+     * Adds iOS push service.
+     *
+     * @param string $packageId
+     * @param string $serviceUrl
+     * @param string $certPath
+     * @param string $certPass
+     *
+     * @return void
+     */
+    public function addService($packageId, $serviceUrl, $certPath, $certPass)
+    {
+        $service = array(
+            'serviceUrl'    => $serviceUrl,
+            'certPath'      => $certPath,
+            'certPass'      => $certPass
+        );
+        $this->services[$packageId] = $service;
     }
 
     /**
@@ -43,14 +68,14 @@ class IOSPushDriver implements PushDriver
 
         $conn = $this
                 ->openConnectionToPushServer(
-                    $service['service_url'],
-                    $service['cert_path'],
-                    $service['cert_pass']);
+                    $service['serviceUrl'],
+                    $service['certPath'],
+                    $service['certPass']);
 
         if (! $conn) {
             throw new PushDeliveryException(
                 PushDeliveryException::SERVICE_UNREACHABLE,
-                "URL: {$service['service_url']}"
+                "URL: {$service['serviceUrl']}"
             );
         }
 
@@ -78,18 +103,14 @@ class IOSPushDriver implements PushDriver
      */
     protected function getService($applicationPackageId)
     {
-        foreach ($this->services as $service) {
-            $certPackageId  = Arr::mustGet('package_id', $service);
-            
-            if ($certPackageId === $applicationPackageId) {
-                return $service;
-            }
+        if (isset($this->services[$applicationPackageId])) {
+            return $this->services[$applicationPackageId];
+        } else {
+            throw new PushDeliveryException(
+                PushDeliveryException::DEVICE_INVALID_PACKAGE_ID,
+                "PACKAGE ID: '{$applicationPackageId}'"
+            );    
         }
-
-        throw new PushDeliveryException(
-            PushDeliveryException::DEVICE_INVALID_PACKAGE_ID,
-            "PACKAGE ID: '{$applicationPackageId}'"
-        );
     }
 
     /**
@@ -101,8 +122,10 @@ class IOSPushDriver implements PushDriver
      *
      * @return resource
      */
-    protected function openConnectionToPushServer($serviceUrl, $certPath,
-        $certPass)
+    protected function openConnectionToPushServer(
+                        $serviceUrl,
+                        $certPath,
+                        $certPass)
     {
         $ctx = stream_context_create();
         stream_context_set_option($ctx, 'ssl', 'local_cert', $certPath);

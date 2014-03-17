@@ -19,14 +19,20 @@ class PushManager
      */
     protected $drivers;
 
+    /**
+     * @var boolean
+     */
+    protected $disableDelivery;
+
     
     /**
      * @param Logger $logger
      */
     public function __construct($logger)
     {
-        $this->logger   = $logger;
-        $this->drivers  = array();
+        $this->logger           = $logger;
+        $this->drivers          = array();
+        $this->disableDelivery  = false;
     }
 
     /**
@@ -51,8 +57,10 @@ class PushManager
      * 
      * @return PushMessage
      */
-    public function createMessage($devicePlatform, $devicePushId,
-        $applicationPackageId=null)
+    public function createMessage(
+                        $devicePlatform,
+                        $devicePushId,
+                        $applicationPackageId=null)
     {
         return new PushMessage(
                     $devicePlatform,
@@ -74,8 +82,24 @@ class PushManager
     {
         $this->logger->debug("Sending push message: {$message}");
 
+        if ($this->disableDelivery) {
+            $this->logger->debug("Push delivery disabled");
+            return;
+        }
+
         $driver = $this->getDriver($message->getDevicePlatform());
         $driver->send($message);
+    }
+
+    /**
+     * Sets whether push notification delivery is disabled.
+     *
+     * @param boolean $disableDelivery
+     * @return void
+     */
+    public function setDisableDelivery($disableDelivery)
+    {
+        $this->disableDelivery = $disableDelivery;
     }
 
     /**
