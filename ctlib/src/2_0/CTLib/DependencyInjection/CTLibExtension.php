@@ -17,8 +17,6 @@ class CTLibExtension extends Extension
         $config     = $processor
                         ->processConfiguration(new CTLibConfiguration, $configs);
         
-        // var_dump($config);die();
-        
         $this->loadLoggingServices($config['logging'], $container);
         $this->loadSystemAlertServices($config['system_alerts'], $container);
         $this->loadExceptionListenerServices($config['exception_listener'], $container);
@@ -186,7 +184,7 @@ class CTLibExtension extends Extension
     protected function loadSharedCacheServices($config, $container)
     {
         $def = new Definition(
-                    'CTLib\Helper\SharedCacheHelper',
+                    'CTLib\Component\Cache\SharedCache',
                     array(
                         $config['enabled'],
                         $config['servers'],
