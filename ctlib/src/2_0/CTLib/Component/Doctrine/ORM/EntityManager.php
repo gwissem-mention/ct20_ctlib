@@ -178,6 +178,7 @@ class EntityManager extends \Doctrine\ORM\EntityManager
                 case 'addedOn':
                 case 'modifiedOn':
                     $value = time();
+                    $entity->{"set{$fieldName}"}($value);
                     break;
                 case 'effectiveTime':
                     if ($entity->hasExplicitEffectiveTime()) {
@@ -185,6 +186,7 @@ class EntityManager extends \Doctrine\ORM\EntityManager
                     } else {
                         $value = time();
                     }
+                    $entity->{"set{$fieldName}"}($value);
                     break;
                 default:
                     $getter = "get{$fieldName}";
@@ -194,7 +196,6 @@ class EntityManager extends \Doctrine\ORM\EntityManager
 
             if (! is_null($value)) {
                 $values[$columnName] = $value;
-                $entity->{"set{$fieldName}"}($value);
             }
         }
 
