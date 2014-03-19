@@ -305,18 +305,4 @@ class JavascriptHelper
     {
         return $this->permissions;
     }
-
-    /**
-     * Add default message Ids
-     *
-     * @param mixed $messageIds
-     * @return void
-     */
-    public function defaultTranslations($messageIds)
-    {
-        $messageIds = is_array($messageIds) ? $messageIds : func_get_args();
-        foreach ($messageIds as $messageId) {
-            $this->addTranslation($messageId);
-        }
-    }
 }

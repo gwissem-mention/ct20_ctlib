@@ -350,12 +350,8 @@ class CTLibExtension extends Extension
         $def = new Definition('CTLib\Helper\JavascriptHelper', $args);
         $container->setDefinition('js', $def);
 
-        if (isset($config['js_default_translations'])) {
-            $args = array();
-            foreach ($config['js_default_translations'] as $defaultTranslation) {
-                $args[] = $defaultTranslation;
-            }
-            $def->addMethodCall('defaultTranslations', $args);
+        if ($config['js_default_translations']) {
+            $def->addMethodCall('addTranslation', $config['js_default_translations']);
         }
 
 
