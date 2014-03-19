@@ -351,7 +351,7 @@ class CTLibExtension extends Extension
         $container->setDefinition('js', $def);
 
         if (isset($config['js_default_translations'])) {
-            $args = array(); var_dump($config['js_default_translations']);
+            $args = array();
             foreach ($config['js_default_translations'] as $defaultTranslation) {
                 $args[] = $defaultTranslation;
             }
