@@ -417,7 +417,9 @@ class CTLibConfiguration implements ConfigurationInterface
                 ->booleanNode('use_dynapart')
                     ->defaultFalse()
                 ->end()
-
+                ->arrayNode('js_default_translations')
+                    ->prototype('scalar')->end()
+                ->end()
             ->end()
         ->end();
 

@@ -343,13 +343,20 @@ class CTLibExtension extends Extension
 
         $container->setDefinition('asset', $def);
 
-
         $args = array(
             new Reference('translator'),
             new Reference('route_inspector')
         );
         $def = new Definition('CTLib\Helper\JavascriptHelper', $args);
         $container->setDefinition('js', $def);
+
+        if (isset($config['js_default_translations'])) {
+            $args = array(); var_dump($config['js_default_translations']);
+            foreach ($config['js_default_translations'] as $defaultTranslation) {
+                $args[] = $defaultTranslation;
+            }
+            $def->addMethodCall('defaultTranslations', $args);
+        }
 
 
         if ($config['use_lazy_loader']) {
