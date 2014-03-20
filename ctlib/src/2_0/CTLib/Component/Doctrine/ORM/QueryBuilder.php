@@ -320,7 +320,7 @@ class QueryBuilder extends \Doctrine\ORM\QueryBuilder
         if ($this->isJoinExists($join, $alias, Join::LEFT_JOIN)) {
             return $this;
         }
-        return parent::innerJoin($join, $alias, $conditionType, $condition, $indexBy);
+        return parent::leftJoin($join, $alias, $conditionType, $condition, $indexBy);
     }
 
     /**
