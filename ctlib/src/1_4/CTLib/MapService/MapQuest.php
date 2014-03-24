@@ -3,8 +3,8 @@
 namespace CTLib\MapService;
 
 use CTLib\Util\Arr,
-    CTLib\Util\CTCurl;
-use CTLib\Util\Curl;
+    CTLib\Util\CTCurl,
+    CTLib\Util\Curl;
 
 
 class MapQuest extends MapProviderAbstract
@@ -69,13 +69,11 @@ class MapQuest extends MapProviderAbstract
                 $data[] = array("location" => $address);
             }
             else {
-                //$data[] = array("location" => json_encode($this->buildAddressRequestData($address)));
-	    	$data[] = $this->buildAddressRequestData($address);
+	    	    $data[] = $this->buildAddressRequestData($address);
             }
         }
 
-        //$request->data = $data;
-	$request->PostFields = 'json=' . json_encode(array('locations' => $data));
+	    $request->PostFields = 'json=' . json_encode(array('locations' => $data));
     }
 
     /**

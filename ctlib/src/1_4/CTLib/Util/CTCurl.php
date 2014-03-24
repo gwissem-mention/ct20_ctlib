@@ -100,9 +100,9 @@ class CTCurl extends Curl
 
     public function exec()
     {
-	if (isset($this->PostFields)) {
-	    return parent::exec();
-	}
+	    if (isset($this->PostFields)) {
+	        return parent::exec();
+	    }
 
         if (empty($this->data)) {
             throw new \Exception("request data does not exist!");
