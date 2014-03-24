@@ -101,8 +101,9 @@ abstract class MapProviderAbstract implements MapProviderInterface
         $curl = $this->createMapServiceRequest();
         $curl->IsBatch = true;
         $this->geocodeBatchBuildRequest($curl, $addresses, $country);
-        
         $response = $curl->exec();
+        
+        $response = array($response);
 
         $geocodeResults = $this->geocodeBatchProcessResult($response);
 
