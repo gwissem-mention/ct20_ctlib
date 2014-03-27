@@ -7,11 +7,9 @@ namespace CTLib\WebService;
  * Each respnse part corresponds to 1 and only 1 request part from the request
  * message.
  *
- * After upgrading to PHP 5.4, this class needs to implement JsonSerializable.
- *
  * @author Mike Turoff <mturoff@celltrak.com>
  */
-class ResponsePart
+class ResponsePart implements \JsonSerializable
 {
     /**
      * @var integer
@@ -86,23 +84,9 @@ class ResponsePart
     }
 
     /**
-     * Alias for forJson.
-     *
-     * After upgrading to PHP 5.4, ResponsePart will implement JsonSerializable
-     * and require this method instead of forJson.
+     * {@inheritDoc}
      */
     public function jsonSerialize()
-    {
-        return $this->forJson();
-    }
-
-    /**
-     * Converts this ResponsePart to an array for JSON encoding when compiled
-     * with the overall response message.
-     *
-     * @return array
-     */
-    public function forJson()
     {
         $part = new \stdClass;
         $part->status_code = $this->statusCode;

@@ -4,11 +4,9 @@ namespace CTLib\WebService;
 /**
  * Web service response message.
  *
- * After upgrading to PHP 5.4, this class needs to implement JsonSerializable.
- *
  * @author Mike Turoff <mturoff@celltrak.com>
  */
-class ResponseMessage
+class ResponseMessage implements \JsonSerializable
 {
     /**
      * @var integer
@@ -125,12 +123,7 @@ class ResponseMessage
     }
 
     /**
-     * Returns instance for JSON serialization.
-     *
-     * After upgrading to PHP 5.4, ResponseMessage will implement
-     * JsonSerializable so we can remove ResponseMessage::toJson.
-     *
-     * @return stdClass
+     * {@inheritDoc}
      */
     public function jsonSerialize()
     {
@@ -148,34 +141,6 @@ class ResponseMessage
         }
         
         return $rsp;
-    }
-
-    /**
-     * Converts this response message to JSON.
-     *
-     * @return string
-     */
-    public function toJson()
-    {
-        $rsp = new \stdClass;
-        $rsp->common = new \stdClass;
-        $rsp->common->status_code = $this->commonStatusCode;
-        $rsp->common->buffer = $this->commonBuffer;
-
-        if ($this->responseParts) {
-            $rsp->responses = array_map(
-                function ($part) { return $part->forJson(); },
-                $this->responseParts
-            );
-        }
-
-        if ($this->updates) {
-            $rsp->updates = array_map(
-                function ($u) { return $u->forJson(); },
-                $this->updates
-            );    
-        }
-        return json_encode($rsp);
     }
 
     /**
