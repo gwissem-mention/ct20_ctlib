@@ -354,6 +354,16 @@ class CTLibExtension extends Extension
             $def->addMethodCall('addTranslation', $config['js_default_translations']);
         }
 
+        if ($config['js_permissions']) {
+            if (isset($config['js_permissions']['source'])) {
+                $def->addMethodCall('setPermissionSource', array(new Reference($config['js_permissions']['source'])));
+            }
+
+            if (isset($config['js_permissions']['method'])) {
+                $def->addMethodCall('setPermissionMethod', array($config['js_permissions']['method']));
+            }
+        }
+
 
         if ($config['use_lazy_loader']) {
             $def = new Definition(

@@ -420,6 +420,9 @@ class CTLibConfiguration implements ConfigurationInterface
                 ->arrayNode('js_default_translations')
                     ->prototype('scalar')->end()
                 ->end()
+                ->arrayNode('js_permissions')
+                    ->prototype('scalar')->end()
+                ->end()
             ->end()
         ->end();
 

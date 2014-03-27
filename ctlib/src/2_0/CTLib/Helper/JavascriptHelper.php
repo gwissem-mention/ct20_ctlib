@@ -9,6 +9,9 @@ class JavascriptHelper
     protected $translations;
     protected $values;
     protected $routes;
+    protected $permissions;
+    protected $permissionSource;
+    protected $permissionMethod;
 
     public function __construct($translator, $routeInspector)
     {
@@ -18,6 +21,8 @@ class JavascriptHelper
         $this->values           = array();
         $this->routes           = array();
         $this->permissions      = array();
+        $this->permissionSource = null;
+        $this->permissionMethod = null;
     }
 
     /**
@@ -290,7 +295,35 @@ class JavascriptHelper
     }
 
     /**
-     * 
+     * Set the permission source object
+     *
+     * @param object $permissionSource
+     *
+     * @return void
+     */
+    public function setPermissionSource($permissionSource)
+    {
+        $this->permissionSource = $permissionSource;
+    }
+
+    /**
+     * Set the permission method call
+     *
+     * @param object $permissionSource
+     *
+     * @return void
+     */
+    public function setPermissionMethod($permissionMethod)
+    {
+        $this->permissionMethod = $permissionMethod;
+    }
+
+    /**
+     * Set permissions
+     *
+     * @param array $permissions
+     *
+     * @return void
      */
     public function setPermissions($permissions)
     {
@@ -298,11 +331,25 @@ class JavascriptHelper
     }
     
     /**
-     * Returns permissions.
+     * Return permissions based on set permissions or a
+     * dynamic object method call. Method call's return 
+     * value must be compatible with array_fill_keys
+     * http://us2.php.net/manual/en/function.array-fill-keys.php
+     *
      * @return array
      */
     public function getPermissions()
     {
+        // If statement too long, so broke it up
+        if (is_object($this->permissionSource)) {
+            if(method_exists($this->permissionSource, $this->permissionMethod)) {
+                return array_fill_keys(
+                    $this->permissionSource->{$this->permissionMethod}(),
+                    true
+                );
+            }
+        }
+
         return $this->permissions;
     }
 }
