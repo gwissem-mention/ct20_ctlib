@@ -301,33 +301,18 @@ class JavascriptHelper
      *
      * @return void
      */
-    public function setPermissionSource($permissionSource)
+    public function setPermissionSource($permissionSource, $permissionMethod)
     {
-        $this->permissionSource = $permissionSource;
-    }
-
-    /**
-     * Set the permission method call
-     *
-     * @param object $permissionSource
-     *
-     * @return void
-     */
-    public function setPermissionMethod($permissionMethod)
-    {
-        $this->permissionMethod = $permissionMethod;
-    }
-
-    /**
-     * Set permissions
-     *
-     * @param array $permissions
-     *
-     * @return void
-     */
-    public function setPermissions($permissions)
-    {
-        $this->permissions = $permissions;
+        if(method_exists($permissionSource, $permissionMethod)) {
+            $this->permissions = 
+                array_fill_keys(
+                    $permissionSource->{$permissionMethod}(),
+                    true
+                );
+        }
+        else {
+            throw new \Exception(get_class($this) . ': Method ' . $permissionMethod . ' must exist in ' . get_class($permissionSource));
+        }
     }
     
     /**
@@ -340,16 +325,6 @@ class JavascriptHelper
      */
     public function getPermissions()
     {
-        // If statement too long, so broke it up
-        if (is_object($this->permissionSource)) {
-            if(method_exists($this->permissionSource, $this->permissionMethod)) {
-                return array_fill_keys(
-                    $this->permissionSource->{$this->permissionMethod}(),
-                    true
-                );
-            }
-        }
-
         return $this->permissions;
     }
 }

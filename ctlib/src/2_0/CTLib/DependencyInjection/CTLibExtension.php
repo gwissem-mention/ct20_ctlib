@@ -350,20 +350,24 @@ class CTLibExtension extends Extension
         $def = new Definition('CTLib\Helper\JavascriptHelper', $args);
         $container->setDefinition('js', $def);
 
-        if ($config['js_default_translations']) {
-            $def->addMethodCall('addTranslation', $config['js_default_translations']);
-        }
-
-        if ($config['js_permissions']) {
-            if (isset($config['js_permissions']['source'])) {
-                $def->addMethodCall('setPermissionSource', array(new Reference($config['js_permissions']['source'])));
+        if (array_key_exists('js', $config)) {
+            if ($config['js']['translations']) {
+                $def->addMethodCall('addTranslation', $config['js']['translations']);
             }
 
-            if (isset($config['js_permissions']['method'])) {
-                $def->addMethodCall('setPermissionMethod', array($config['js_permissions']['method']));
+            if ($config['js']['permissions']) {
+                if (isset($config['js']['permissions']['source'])) {
+                    $def
+                        ->addMethodCall(
+                            'setPermissionSource', 
+                            array(
+                                new Reference($config['js']['permissions']['source']), 
+                                $config['js']['permissions']['method']
+                            )
+                        );
+                }
             }
         }
-
 
         if ($config['use_lazy_loader']) {
             $def = new Definition(
