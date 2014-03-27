@@ -301,18 +301,9 @@ class JavascriptHelper
      *
      * @return void
      */
-    public function setPermissionSource($permissionSource, $permissionMethod)
+    public function setPermissionSource(array $permissionSource)
     {
-        if(method_exists($permissionSource, $permissionMethod)) {
-            $this->permissions = 
-                array_fill_keys(
-                    $permissionSource->{$permissionMethod}(),
-                    true
-                );
-        }
-        else {
-            throw new \Exception(get_class($this) . ': Method ' . $permissionMethod . ' must exist in ' . get_class($permissionSource));
-        }
+        $this->permissionSource = $permissionSource;
     }
     
     /**
@@ -325,6 +316,14 @@ class JavascriptHelper
      */
     public function getPermissions()
     {
-        return $this->permissions;
+        if (! $this->permissionSource) {
+            return array();
+        }
+
+        return 
+            array_fill_keys(
+                call_user_func($this->permissionSource),
+                true
+            );
     }
 }

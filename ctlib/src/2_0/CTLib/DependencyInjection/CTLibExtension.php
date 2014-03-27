@@ -361,8 +361,10 @@ class CTLibExtension extends Extension
                         ->addMethodCall(
                             'setPermissionSource', 
                             array(
-                                new Reference($config['js']['permissions']['source']), 
-                                $config['js']['permissions']['method']
+                                array(
+                                    new Reference($config['js']['permissions']['source']), 
+                                    $config['js']['permissions']['method']
+                                )
                             )
                         );
                 }
