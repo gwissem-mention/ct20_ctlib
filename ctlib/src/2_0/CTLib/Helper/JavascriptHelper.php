@@ -297,11 +297,11 @@ class JavascriptHelper
     /**
      * Set the permission source object
      *
-     * @param object $permissionSource
+     * @param callable $permissionSource
      *
      * @return void
      */
-    public function setPermissionSource(array $permissionSource)
+    public function setPermissionSource(callable $permissionSource)
     {
         $this->permissionSource = $permissionSource;
     }
