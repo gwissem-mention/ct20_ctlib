@@ -45,10 +45,16 @@ class CTLibExtension extends Extension
                         array(new Reference('kernel')));
             $def->addTag('monolog.processor');
             $container->setDefinition('monolog.processors.runtime', $def);
+            
+            $def = new Definition(
+                'CTLib\Component\Monolog\SanitizeProcessor',
+                array(new Reference('kernel')));
+            $def->addTag('monolog.processor');
+            $container->setDefinition('monolog.processors.sanitizer', $def);
         }
 
         $logDir = $config['dir'] ?: $container->getParameter('kernel.logs_dir');
-        $rootDir = $container->getParameter('kernel.root_dir');  
+        $rootDir = $container->getParameter('kernel.root_dir');
 
         switch ($config['type']) {
             case 'sqlite':
