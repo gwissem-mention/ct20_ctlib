@@ -25,6 +25,7 @@ address:
         - %street1%
         - %street2%
         - %city%, %subdivision% %postalCode%
+    relatedFilterFieldsToMatch: ['street1', 'city', 'postalCode']
 
 locales:
     en_CA: English
