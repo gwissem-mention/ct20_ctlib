@@ -4,6 +4,7 @@ namespace CTLib\Component\Monolog;
 /**
  * Remove database password from database connection error log record.
  *
+ * @author Ziwei Ren <zren@celltrak.com>
  */
 class SanitizeProcessor
 {
@@ -17,12 +18,62 @@ class SanitizeProcessor
     public function __invoke(array $record)
     {
         if ($record['message']) {
-            if(strstr($record['message'], 'PDO->__construct(') && strstr($record['message'], 'DriverPDOConnection->__construct(') && strstr($record['message'], 'PDOMySqlDriver->connect') ) {
-                $connectionStr = strstr(strstr($record['message'], 'PDO->__construct('), ')', true);
-                if($connectionStr) {
+            if (strpos($record['message'], 'PDO->__construct(') !== false) {
+                $connectionStr = 
+                    strstr(
+                        strstr($record['message'], 'PDO->__construct('),
+                        ')',
+                        true
+                    );
+                
+                if ($connectionStr) {
+                    $replaceStr = '**********';
                     $connectionStrArray = explode(',', $connectionStr);
                     $password = $connectionStrArray[2];
-                    $record['message'] = str_replace($password, '', $record['message']);
+                    $record['message'] = str_replace(
+                        $password, 
+                        $replaceStr, 
+                        $record['message']
+                    );
+                }
+            }
+            
+            if (strpos($record['message'], 'DriverPDOConnection->__construct(') !== false) {
+                $connectionStr = 
+                    strstr(
+                        strstr($record['message'], 'DriverPDOConnection->__construct('),
+                        ')',
+                        true
+                    );
+                
+                if ($connectionStr) {
+                    $replaceStr = '**********';
+                    $connectionStrArray = explode(',', $connectionStr);
+                    $password = $connectionStrArray[2];
+                    $record['message'] = str_replace(
+                        $password, 
+                        $replaceStr, 
+                        $record['message']
+                    );
+                }
+            }
+            
+            if (strpos($record['message'], 'PDOMySqlDriver->connect') !== false) {
+                $connectionStr = 
+                    strstr(
+                        strstr($record['message'], 'PDOMySqlDriver->connect'),
+                        ')', 
+                        true);
+                
+                if ($connectionStr) {
+                    $replaceStr = '**********';
+                    $connectionStrArray = explode(',', $connectionStr);
+                    $password = $connectionStrArray[2];
+                    $record['message'] = str_replace(
+                        $password, 
+                        $replaceStr, 
+                        $record['message']
+                    );
                 }
             }
         }
