@@ -1,7 +1,11 @@
 <?php
 namespace CTLib\Twig\Extension;
 
-
+/**
+ * Streamlines use of AssetHelper in views.
+ *
+ * @author Mike Turoff <mturoff@celltrak.com>
+ */
 class AssetExtension extends \Twig_Extension
 {
     
@@ -47,6 +51,10 @@ class AssetExtension extends \Twig_Extension
             // Add path method.
             $methodName = "{$dirName}Asset";
             $functions[$methodName] = new \Twig_Function_Method($this, $methodName);
+
+            // Add absolute URL method.
+            $methodName = "{$dirName}AssetAbsolute";
+            $functions[$methodName] = new \Twig_Function_Method($this, $methodName);
         }
         return $functions;
     }
@@ -68,9 +76,16 @@ class AssetExtension extends \Twig_Extension
         if (preg_match('/^([a-z]+)Asset$/i', $methodName, $matches)) {
             $dirName    = strtolower($matches[1]);
             $path       = $args[0];
-            return $this->assetHelper->buildLocalAssetPath($dirName, $path);
+            $methodName = "build{$dirName}Path";
+            return $this->assetHelper->{$methodName}($path);
         }
 
+        if (preg_match('/^([a-z]+)AssetAbsolute$/i', $methodName, $matches)) {
+            $dirName    = strtolower($matches[1]);
+            $path       = $args[0];
+            $methodName = "build{$dirName}AbsoluteUrl";
+            return $this->assetHelper->{$methodName}($path);
+        }
 
         throw new \Exception(get_class($this) . " does not have method '{$methodName}'");
 
