@@ -339,9 +339,11 @@ class CTLibExtension extends Extension
         }
 
 
-        $def = new Definition(
-                    'CTLib\Helper\AssetHelper',
-                    array($container->getParameter('kernel.environment')));
+        $args = [
+            $container->getParameter('kernel.environment'),
+            new Reference('request', null, false)
+        ];
+        $def = new Definition('CTLib\Helper\AssetHelper', $args);
 
         foreach ($config['asset_dirs'] as $dir) {
             $def->addMethodCall('addDirectory', array($dir['name'], $dir['path']));
