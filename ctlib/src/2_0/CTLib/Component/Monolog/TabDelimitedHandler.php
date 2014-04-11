@@ -34,6 +34,11 @@ class TabDelimitedHandler extends \Monolog\Handler\AbstractProcessingHandler
      */
     protected $buffer;
 
+    /**
+     * @var boolean
+     */
+    protected $initialized;
+
     
     /**
      * @param string $rootDir
@@ -59,6 +64,7 @@ class TabDelimitedHandler extends \Monolog\Handler\AbstractProcessingHandler
         $this->pathPrefix   = substr($rootDir, 0, -3);
         $this->logDir       = $logDir;
         $this->buffer       = array();
+        $this->initialized  = false;
     }
 
     /**
@@ -121,8 +127,16 @@ class TabDelimitedHandler extends \Monolog\Handler\AbstractProcessingHandler
             return;
         }
 
-        $logPath    = $this->getLogPath(); 
-        $contents   = array_reduce(
+        $logFilename    = $this->getLogFilename();
+        $logPath        = $this->logDir . '/' . $logFilename;
+
+        if (! $this->initialized) {
+            $logIsNew = $this->initialize($logPath);
+        } else {
+            $logIsNew = false;
+        }
+
+        $contents = array_reduce(
                         $this->buffer,
                         function($contents, $lineValues) {
                             $contents .= join(self::VALUE_DELIM, $lineValues)
@@ -131,19 +145,40 @@ class TabDelimitedHandler extends \Monolog\Handler\AbstractProcessingHandler
                         },
                         '');
         @file_put_contents($logPath, $contents, \FILE_APPEND);
-        chmod($logPath, 0660);
+        
+        if ($logIsNew) {
+            @chmod($logPath, 0660);    
+        }
+        
         $this->buffer = array();
     }
 
     /**
-     * Returns path to log file.
+     * Prepares log for writing.
+     *
+     * @param string $logPath
+     * @return boolean  Indicates whether log path exists.
+     */
+    protected function initialize($logPath)
+    {
+        if (! is_dir($this->logDir)) {
+            @mkdir($this->logDir, 0755, true);
+            $logIsNew = true;
+        } else {
+            $logIsNew = ! @file_exists($logPath);
+        }
+        $this->initialized = true;
+        return $logIsNew;
+    }
+
+    /**
+     * Returns name of log file.
      *
      * @return string
      */
-    private function getLogPath()
+    private function getLogFilename()
     {
-        $filename = 'log.' . strtolower(date('d-M-Y') . '-' . gethostname());
-        return $this->logDir . '/' . $filename;
+        return 'log.' . strtolower(date('d-M-Y') . '-' . gethostname());
     }
 
 }

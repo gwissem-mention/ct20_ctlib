@@ -79,6 +79,26 @@ class EmailHandler extends \Monolog\Handler\AbstractProcessingHandler
      */
     protected $sleepSeconds;
 
+    /**
+     * @var array
+     */
+    protected $routingRules;
+
+    /**
+     * @var boolean
+     */
+    protected $disableDelivery;
+
+    /**
+     * @var array
+     */
+    protected $alwaysSendTo;
+
+    /**
+     * @var boolean
+     */
+    protected $initialized;
+
     
     /**
      * @param Mailer $mailer
@@ -123,6 +143,7 @@ class EmailHandler extends \Monolog\Handler\AbstractProcessingHandler
         $this->routingRules         = array();
         $this->disableDelivery      = false;
         $this->alwaysSendTo         = array();
+        $this->initialized          = false;
     }
 
     /**
@@ -185,6 +206,10 @@ class EmailHandler extends \Monolog\Handler\AbstractProcessingHandler
 
         if ($this->alwaysSendTo) {
             $to = $this->alwaysSendTo;
+        }
+
+        if (! $this->initialized) {
+            $this->initialize();   
         }
 
         $logPath        = $this->getLogPath($record);
@@ -261,6 +286,19 @@ class EmailHandler extends \Monolog\Handler\AbstractProcessingHandler
             }
         }
         return $this->defaultTo;
+    }
+
+    /**
+     * Initializes email log for writing.
+     *
+     * @return void
+     */
+    protected function initialize()
+    {
+        if (! is_dir($this->logDir)) {
+            @mkdir($this->logDir, 0755, true);
+        }
+        $this->initialized = true;
     }
 
     /**

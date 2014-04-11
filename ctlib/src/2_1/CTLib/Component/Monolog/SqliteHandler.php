@@ -109,14 +109,25 @@ class SqliteHandler extends \Monolog\Handler\AbstractProcessingHandler
      */
     private function initialize()
     {
-        $logPath = $this->getLogPath();
+        $logFilename    = $this->getLogFilename();
+        $logPath        = $this->logDir . '/' . $logFilename;
+
+        if (! is_dir($this->logDir)) {
+            @mkdir($this->logDir, 0755, true);
+            $logIsNew = true;
+        } else {
+            $logIsNew = ! @file_exists($logPath);
+        }
 
         try {
             $this->pdo = new \PDO($this->getConnectionString($logPath));
             $this->pdo->exec($this->getSchemaSql());
             $this->pdo->exec("PRAGMA synchronous = 0;");
             $this->statement = $this->pdo->prepare($this->getInsertStatement());
-            chmod($logPath, 0660);
+            
+            if ($logIsNew) {
+                @chmod($logPath, 0660);
+            }
         } catch (\PdoException $e) {
             $this->useFailover = true;
             $this->bubble = true;
@@ -124,10 +135,14 @@ class SqliteHandler extends \Monolog\Handler\AbstractProcessingHandler
         $this->initialized = true;
     }
 
-    protected function getLogPath()
+    /**
+     * Returns name of log file.
+     *
+     * @return string
+     */
+    protected function getLogFilename()
     {
-        $filename = strtolower(date('d-M-Y')) . '-log.sqlite';
-        return "{$this->logDir}/{$filename}";
+        return strtolower(date('d-M-Y')) . '-log.sqlite';        
     }
 
     /**

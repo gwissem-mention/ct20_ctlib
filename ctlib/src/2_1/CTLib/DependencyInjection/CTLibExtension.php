@@ -97,11 +97,11 @@ class CTLibExtension extends Extension
         $def->addTag('monolog.handler');
 
         if ($config['disable_delivery']) {
-            $def->addMethodCall('setDisableDelivery', array(true));
+            $def->addMethodCall('setDisableDelivery', [true]);
         }
 
         if ($config['always_send_to']) {
-            $def->addMethodCall('setAlwaysSendTo', $config['always_send_to']);
+            $def->addMethodCall('setAlwaysSendTo', [$config['always_send_to']]);
         }
 
         foreach ($config['rules'] as $ruleConfig) {

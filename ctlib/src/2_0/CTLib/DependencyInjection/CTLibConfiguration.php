@@ -50,7 +50,7 @@ class CTLibConfiguration implements ConfigurationInterface
                     ->isRequired()
                 ->end()
                 ->enumNode('level')
-                    ->values(array('debug','info','warn','error','alert'))
+                    ->values(array('debug','info','warning','error','alert'))
                     ->defaultValue('debug')
                 ->end()
                 ->scalarNode('dir')
