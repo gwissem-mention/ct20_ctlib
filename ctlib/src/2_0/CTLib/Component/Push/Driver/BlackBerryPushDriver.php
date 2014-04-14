@@ -99,8 +99,9 @@ class BlackBerryPushDriver implements PushDriver
         $request->postfields        = $requestBody;
 
         $response = $request->exec();
+        $httpCode = $request->info(CURLINFO_HTTP_CODE);
 
-        switch ($request->info(CURLINFO_HTTP_CODE)) {
+        switch ($httpCode) {
             case 200:
                 // Successfully communicated with BlackBerry push service.
                 return $this->processResponse($response, $request, $message);
@@ -114,7 +115,8 @@ class BlackBerryPushDriver implements PushDriver
                 );
             default:
                 throw new PushDeliveryException(
-                    PushDeliveryException::SERVICE_UNKNOWN_ISSUE
+                    PushDeliveryException::SERVICE_UNKNOWN_ISSUE,
+                    "Service returned HTTP Code {$httpCode}"
                 );
         }
     }
