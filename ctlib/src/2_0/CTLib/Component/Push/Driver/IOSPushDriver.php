@@ -66,6 +66,8 @@ class IOSPushDriver implements PushDriver
 
         $service = $this->getService($message->getApplicationPackageId());
 
+        $this->logger->debug("ios push driver: using service " . json_encode($service));
+
         $conn = $this
                 ->openConnectionToPushServer(
                     $service['serviceUrl'],
@@ -81,6 +83,7 @@ class IOSPushDriver implements PushDriver
 
         // Send it to the server
         if (fwrite($conn, $binaryMessage, strlen($binaryMessage))) {
+            $this->logger->debug("ios push driver: message sent successfully");
             $this->closeConnectionToPushServer($conn);
             return;
         } else {
