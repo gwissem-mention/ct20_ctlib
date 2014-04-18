@@ -73,7 +73,7 @@ class MapQuest extends MapProviderAbstract
             }
         }
 
-	    $request->PostFields = 'json=' . json_encode(array('locations' => $data));
+	    $request->PostFields = 'json=' . urlencode(json_encode(array('locations' => $data)));
     }
 
     /**
