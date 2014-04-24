@@ -15,7 +15,10 @@ use Symfony\Component\HttpKernel\Event\FilterResponseEvent,
 class TwigLazyLoadListener
 {
 
-    protected $assetHelper;
+    /**
+     * @var AssetExtension
+     */
+    protected $assetExtension;
 
     /**
      * holds javascript src, inline javascript and css for lazy loading
@@ -25,14 +28,17 @@ class TwigLazyLoadListener
     protected $loadCollection;
 
 
-    public function __construct($assetHelper)
+    /**
+     * @param AssetExtension $assetExtension
+     */
+    public function __construct($assetExtension)
     {
-        $this->assetHelper = $assetHelper;
-        $this->loadCollection = array(
-            "jsInline"  => array(),
-            "jsSrc"     => array(),
-            "cssSrc"    => array(),
-        );
+        $this->assetExtension = $assetExtension;
+        $this->loadCollection = [
+            "jsInline"  => [],
+            "jsSrc"     => [],
+            "cssSrc"    => [],
+        ];
     }
 
     /**
@@ -75,22 +81,6 @@ class TwigLazyLoadListener
     }
 
     /**
-     * Adds HTML link to AppBundle Javascript file.
-     *
-     * @param string $filename,...
-     * @return $this
-     */
-    public function addAppJs($filename)
-    {
-        $filenames = func_num_args() > 1 ? func_get_args() : array($filename);
-        foreach ($filenames AS $filename) {
-            $html = $this->assetHelper->buildAppJsLink($filename);
-            $this->loadCollection['jsSrc'][$filename] = $html;
-        }
-        return $this;
-    }
-
-    /**
      * Add external js library
      *
      * @param string $url, ...
@@ -101,56 +91,8 @@ class TwigLazyLoadListener
     {
         $urls = func_num_args() > 1 ? func_get_args() : array($url);
         foreach ($urls as $jsUrl) {
-            $html = $this->assetHelper->buildExternalJsLink($jsUrl);
+            $html = $this->assetExtension->buildJsLink($jsUrl);
             $this->loadCollection['jsSrc'][$jsUrl] = $html;
-        }
-        return $this;
-    }
-
-    /**
-     * Adds HTML link to global Javascript file.
-     *
-     * @param string $filename,...
-     * @return $this
-     */
-    public function addGlobalJs($filename)
-    {
-        $filenames = func_num_args() > 1 ? func_get_args() : array($filename);
-        foreach ($filenames AS $filename) {
-            $html = $this->assetHelper->buildGlobalJsLink($filename);
-            $this->loadCollection['jsSrc'][$filename] = $html;
-        }
-        return $this;
-    }
-
-    /**
-     * Adds HTML link to AppBundle CSS file.
-     *
-     * @param string $filename,...
-     * @return $this
-     */
-    public function addAppCss($filename)
-    {
-        $filenames = func_num_args() > 1 ? func_get_args() : array($filename);
-        foreach ($filenames AS $filename) {
-            $html = $this->assetHelper->buildAppCssLink($filename);
-            $this->loadCollection['cssSrc'][$filename] = $html;
-        }
-        return $this;
-    }
-
-    /**
-     * Adds HTML link to global CSS file.
-     *
-     * @param string $filename,...
-     * @return $this
-     */
-    public function addGlobalCss($filename)
-    {
-        $filenames = func_num_args() > 1 ? func_get_args() : array($filename);
-        foreach ($filenames AS $filename) {
-            $html = $this->assetHelper->buildGlobalCssLink($filename);
-            $this->loadCollection['cssSrc'][$filename] = $html;
         }
         return $this;
     }
@@ -167,4 +109,67 @@ class TwigLazyLoadListener
                 . "\n" . join("\n\n", $this->loadCollection['jsInline'])
                 . "</script>";
     }
+
+    /**
+     * Ties into dynamic nature of UrlHelper+AssetExtension.
+     * Supports:
+     *
+     *  add{Namespace}Js($filename,...)
+     *  add{Namespace}Css($filename,...)
+     */
+    public function __call($methodName, $args)
+    {
+        if (preg_match('/^add(.+)Js$/i', $methodName, $matches)) {
+            $namespace = $matches[1];
+            foreach ($args as $filename) {
+                $this->addJsLink($namespace, $filename);
+            }
+            return $this;
+        }
+
+        if (preg_match('/^add(.+)Css$/i', $methodName, $matches)) {
+            $namespace = $matches[1];
+            foreach ($args as $filename) {
+                $this->addCssLink($namespace, $filename);
+            }
+            return $this;
+        }
+
+        throw new \Exception(get_class($this) . " does not have method '{$methodName}'");
+    }
+
+    /**
+     * Adds JS link to be lazy loaded.
+     *
+     * @param string $namespace
+     * @param string $filename
+     *
+     * @return void
+     */
+    protected function addJsLink($namespace, $filename)
+    {
+        $url = $this
+                ->assetExtension
+                ->getRelativeJsUrl($namespace, $filename);
+        $link = $this->assetExtension->buildJsLink($url);
+        $this->loadCollection['jsSrc'][$filename] = $link;
+    }
+
+    /**
+     * Adds CSS link to be lazy loaded.
+     *
+     * @param string $namespace
+     * @param string $filename
+     *
+     * @return void
+     */
+    protected function addCssLink($namespace, $filename)
+    {
+        $url = $this
+                ->assetExtension
+                ->getRelativeCssUrl($namespace, $filename);
+        $link = $this->assetExtension->buildCssLink($url);
+        $this->loadCollection['cssSrc'][$filename] = $link;
+    }
+    
 }

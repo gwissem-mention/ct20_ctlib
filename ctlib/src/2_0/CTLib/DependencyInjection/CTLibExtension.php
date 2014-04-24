@@ -28,6 +28,7 @@ class CTLibExtension extends Extension
         $this->loadMapServices($config['map_service'], $container);
         $this->loadLocalizationServices($config['localization'], $container);
         $this->loadMutexServices($config['mutex'], $container);
+        $this->loadUrlsServices($config['urls'], $container);
         $this->loadViewServices($config['view'], $container);
     }
 
@@ -183,6 +184,11 @@ class CTLibExtension extends Extension
 
     protected function loadSharedCacheServices($config, $container)
     {
+        if (! $config['enabled']) {
+            $config['enabled'] = false;
+            $config['servers'] = [];
+        }
+
         $def = new Definition(
                     'CTLib\Component\Cache\SharedCache',
                     array(
@@ -199,6 +205,8 @@ class CTLibExtension extends Extension
 
     protected function loadEncryptServices($config, $container)
     {
+        if (! $config['enabled']) { return; }
+
         $def = new Definition(
                     'CTLib\Helper\EncryptHelper',
                     array($config['algorithm'], $config['salt']));
@@ -277,9 +285,7 @@ class CTLibExtension extends Extension
 
     protected function loadMapServices($config, $container)
     {
-        if (! $config['enabled']) {
-            return;
-        }
+        if (! $config['enabled']) { return; }
 
         $mgrDef = new Definition(
                         'CTLib\MapService\MapProviderManager',
@@ -324,6 +330,17 @@ class CTLibExtension extends Extension
         $container->setDefinition('mutex', $def);
     }
 
+    protected function loadUrlsServices($config, $container)
+    {
+        $def = new Definition('CTLib\Helper\UrlHelper');
+        $container->setDefinition('url', $def);
+
+        foreach ($config as $namespace => $url) {
+            $args = [$namespace, $url['host'], $url['asset_path']];
+            $def->addMethodCall('addUrl', $args);
+        }        
+    }
+
     protected function loadViewServices($config, $container)
     {
         if (! $config['enabled']) { return; }
@@ -331,19 +348,6 @@ class CTLibExtension extends Extension
         if (! $container->hasDefinition('route_inspector')) {
             throw new \Exception("Must enable 'route_inspector' to enable view services");
         }
-
-
-        $args = [
-            $container->getParameter('kernel.environment'),
-            new Reference('request', null, false)
-        ];
-        $def = new Definition('CTLib\Helper\AssetHelper', $args);
-
-        foreach ($config['asset_dirs'] as $dir) {
-            $def->addMethodCall('addDirectory', array($dir['name'], $dir['path']));
-        }
-
-        $container->setDefinition('asset', $def);
 
         $args = array(
             new Reference('translator'),
@@ -373,10 +377,18 @@ class CTLibExtension extends Extension
             }
         }
 
+        $args = [
+            new Reference('url'),
+            $container->getParameter('kernel.environment')
+        ];
+        $def = new Definition('CTLib\Twig\Extension\AssetExtension', $args);
+        $def->addTag('twig.extension');
+        $container->setDefinition('twig.extension.asset', $def);
+
         if ($config['use_lazy_loader']) {
             $def = new Definition(
                         'CTLib\Listener\TwigLazyLoadListener',
-                        array(new Reference('asset')));
+                        array(new Reference('twig.extension.asset')));
             $def->addTag('kernel.event_listener', array('event' => 'kernel.response'));
             $container->setDefinition('twig.lazyload.listener', $def);
         }
@@ -387,14 +399,6 @@ class CTLibExtension extends Extension
                     array(new Reference('service_container')));
         $def->addTag('twig.extension');
         $container->setDefinition('twig.extension.base', $def);
-
-
-        $def = new Definition(
-                    'CTLib\Twig\Extension\AssetExtension',
-                    array(new Reference('asset')));
-        $def->addTag('twig.extension');
-        $container->setDefinition('twig.extension.asset', $def);
-
 
         $args = array(new Reference('js'));
 
@@ -422,10 +426,6 @@ class CTLibExtension extends Extension
             $def->addTag('twig.extension');
             $container->setDefinition('twig.extension.dynapart', $def);   
         }
-
-
-
-
 
     }
 

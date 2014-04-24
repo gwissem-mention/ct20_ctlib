@@ -1,8 +1,9 @@
 <?php
 namespace CTLib\Twig\Extension;
 
+
 /**
- * Streamlines use of AssetHelper in views.
+ * Streamlines creation of links to assets.
  *
  * @author Mike Turoff <mturoff@celltrak.com>
  */
@@ -10,17 +11,19 @@ class AssetExtension extends \Twig_Extension
 {
     
     /**
-     * @var RouteInspector
+     * @var UrlHelper
      */
-    protected $assetHelper;
+    protected $urlHelper;
 
 
     /**
-     * @param AssetHelper $assetHelper
+     * @param UrlHelper $urlHelper
+     * @param string $environment
      */
-    public function __construct($assetHelper)
+    public function __construct($urlHelper, $environment)
     {
-        $this->assetHelper = $assetHelper;
+        $this->urlHelper    = $urlHelper;
+        $this->environment  = $environment;
     }
 
     /**
@@ -36,60 +39,133 @@ class AssetExtension extends \Twig_Extension
      */
     public function getFunctions()
     {
-        $assetHelper    = $this->assetHelper;
-        $functions      = array();
+        $functions = [];
 
-        foreach ($assetHelper->getDirectoryNames() as $dirName) {
+        foreach ($this->urlHelper->getNamespaces() as $namespace) {
             // Add CSS method.
-            $methodName = "{$dirName}Css";
+            $methodName = "{$namespace}Css";
             $functions[$methodName] = new \Twig_Function_Method($this, $methodName);
 
             // Add JS method.
-            $methodName = "{$dirName}Js";
+            $methodName = "{$namespace}Js";
             $functions[$methodName] = new \Twig_Function_Method($this, $methodName);
 
             // Add path method.
-            $methodName = "{$dirName}Asset";
+            $methodName = "{$namespace}Asset";
             $functions[$methodName] = new \Twig_Function_Method($this, $methodName);
 
             // Add absolute URL method.
-            $methodName = "{$dirName}AssetAbsolute";
+            $methodName = "{$namespace}AssetAbsolute";
             $functions[$methodName] = new \Twig_Function_Method($this, $methodName);
         }
         return $functions;
     }
 
+    /**
+     * Works in coordination with dynamic nature of getFunctions.
+     * Supports:
+     *
+     *  {namespace}Js($filename, ...)
+     *  {namespace}Css($filename, ...)
+     *  {namespace}Asset($path, ...)
+     *  {namespace}AssetAbsolute($path, ...)
+     */
     public function __call($methodName, $args)
     {
-        if (preg_match('/^([a-z]+)(Js|Css)$/i', $methodName, $matches)) {
-            $dirName    = strtolower($matches[1]);
-            $type       = $matches[2];
-            $links      = array();
-            $methodName = "build{$dirName}{$type}Link";
-
+        if (preg_match('/^(.+)Js$/i', $methodName, $matches)) {
+            $namespace  = $matches[1];
+            $links      = [];
             foreach ($args as $filename) {
-                $links[] = $this->assetHelper->{$methodName}($filename);
+                $url        = $this->getRelativeJsUrl($namespace, $filename);
+                $links[]    = $this->buildJsLink($url);
+            }
+            return join("\n", $links);
+        }
+
+        if (preg_match('/^(.+)Css$/i', $methodName, $matches)) {
+            $namespace  = $matches[1];
+            $links      = [];
+            foreach ($args as $filename) {
+                $url        = $this->getRelativeCssUrl($namespace, $filename);
+                $links[]    = $this->buildCssLink($url);
             }
             return join("\n", $links);
         }
 
         if (preg_match('/^([a-z]+)Asset$/i', $methodName, $matches)) {
-            $dirName    = strtolower($matches[1]);
+            $namespace  = $matches[1];
             $path       = $args[0];
-            $methodName = "build{$dirName}Path";
-            return $this->assetHelper->{$methodName}($path);
+            return $this->urlHelper->getRelativeAssetUrl($namespace, $path);
         }
 
         if (preg_match('/^([a-z]+)AssetAbsolute$/i', $methodName, $matches)) {
-            $dirName    = strtolower($matches[1]);
+            $namespace  = $matches[1];
             $path       = $args[0];
-            $methodName = "build{$dirName}AbsoluteUrl";
-            return $this->assetHelper->{$methodName}($path);
+            return $this->urlHelper->getAbsoluteAssetUrl($namespace, $path);
         }
 
         throw new \Exception(get_class($this) . " does not have method '{$methodName}'");
 
     }
 
-    
+    /**
+     * Returns relative URL to JS asset.
+     *
+     * @param string $namespace
+     * @param string $filename
+     *
+     * @return string
+     */
+    public function getRelativeJsUrl($namespace, $filename)
+    {
+        $path   = "js/{$filename}";
+        $url    = $this->urlHelper->getRelativeAssetUrl($namespace, $path);
+
+        if ($this->environment == 'dev') {
+            $url .= '?' . time();
+        }
+        return $url;
+    }
+
+    /**
+     * Returns relative URL to CSS asset.
+     *
+     * @param string $namespace
+     * @param string $filename
+     *
+     * @return string
+     */
+    public function getRelativeCssUrl($namespace, $filename)
+    {
+        $path   = "css/{$filename}";
+        $url    = $this->urlHelper->getRelativeAssetUrl($namespace, $path);
+
+        if ($this->environment == 'dev') {
+            $url .= '?' . time();
+        }
+        return $url;
+    }
+
+    /**
+     * Builds HTML for JS link.
+     *
+     * @param string $url
+     * @return string
+     */
+    public function buildJsLink($url)
+    {
+        return "<script type='text/javascript' src='$url'></script>";
+    }
+
+    /**
+     * Builds HTML for CSS link.
+     *
+     * @param string $url
+     * @return string
+     */
+    public function buildCssLink($url, $media='all')
+    {
+        return "<link rel='stylesheet' href='$url' type='text/css' media='$media' />";
+    }
+
 }

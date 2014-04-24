@@ -680,34 +680,6 @@ abstract class BaseController extends Controller
         return $this->get('route_inspector')->getParameters($routeName);
     }
 
-
-    /**
-     * Assemble the host url (scheme, domainname, and subdir)
-     *
-     * @return string
-     */
-    protected function buildHostUrl()
-    {
-        $routerContext = $this->get('router')->getContext();
-
-        $scheme = $this->getParameter('use_ssl') ? 'https' : 'http';
-
-        return $scheme . '://' .
-            $routerContext->getHost() .
-            $routerContext->getBaseUrl();
-    }
-
-    /**
-     * Assembles absolute url based on this host's url.
-     *
-     * @param string $path
-     * @return string
-     */
-    protected function buildAbsoluteUrl($path)
-    {
-        return $this->buildHostUrl() . Util::prepend($path, '/');
-    }
-
     /**
      * Creates a full template filename using what you give it and defaults.
      *

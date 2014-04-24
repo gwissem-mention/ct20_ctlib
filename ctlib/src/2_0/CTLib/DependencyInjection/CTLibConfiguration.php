@@ -31,6 +31,7 @@ class CTLibConfiguration implements ConfigurationInterface
                 ->append($this->addLocalizationNode())
                 ->append($this->addPushNode())
                 ->append($this->addMutexNode())
+                ->append($this->addUrlsNode())
                 ->append($this->addViewNode())
             ->end();
 
@@ -43,7 +44,7 @@ class CTLibConfiguration implements ConfigurationInterface
         $node = $tb->root('logging');
 
         $node
-            ->canBeDisabled()
+            ->canBeEnabled()
             ->children()
                 ->enumNode('type')
                     ->values(array('sqlite','tab'))
@@ -135,7 +136,7 @@ class CTLibConfiguration implements ConfigurationInterface
         $node = $tb->root('exception_listener');
 
         $node
-            ->canBeDisabled()
+            ->canBeEnabled()
             ->addDefaultsIfNotSet()
             ->children()
                 ->scalarNode('exec_mode')
@@ -156,8 +157,7 @@ class CTLibConfiguration implements ConfigurationInterface
         $node = $tb->root('route_inspector');
 
         $node
-            ->canBeDisabled()
-            ->addDefaultsIfNotSet()
+            ->canBeEnabled()
             ->children()
                 ->scalarNode('namespace')
                     ->isRequired()
@@ -216,6 +216,7 @@ class CTLibConfiguration implements ConfigurationInterface
         $node = $tb->root('encrypt');
 
         $node
+            ->canBeEnabled()
             ->children()
                 ->scalarNode('algorithm')
                     ->defaultValue('sha256')
@@ -365,11 +366,29 @@ class CTLibConfiguration implements ConfigurationInterface
         $node = $tb->root('mutex');
 
         $node
-            ->canBeDisabled()
+            ->canBeEnabled()
             ->addDefaultsIfNotSet()
             ->children()
                 ->scalarNode('dir')
                     ->defaultNull()
+                ->end()
+            ->end()
+        ->end();
+
+        return $node;
+    }
+
+    protected function addUrlsNode()
+    {
+        $tb = new TreeBuilder;
+        $node = $tb->root('urls');
+
+        $node
+            ->useAttributeAsKey('namespace')
+            ->prototype('array')
+                ->children()
+                    ->scalarNode('host')->isRequired()->end()
+                    ->scalarNode('asset_path')->defaultNull()->end()
                 ->end()
             ->end()
         ->end();
@@ -383,7 +402,7 @@ class CTLibConfiguration implements ConfigurationInterface
         $node = $tb->root('view');
 
         $node
-            ->canBeDisabled()
+            ->canBeEnabled()
             ->children()
                 ->arrayNode('asset_dirs')
                     ->prototype('array')
