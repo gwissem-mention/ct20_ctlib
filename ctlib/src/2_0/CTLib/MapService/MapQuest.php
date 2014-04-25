@@ -343,6 +343,10 @@ class MapQuest extends MapProviderAbstract
      */
     protected function buildAddressFromMapQuestResult($result, $keyChain)
     {
+        if (! $result) {
+            throw new \Exception("Array is invalid");
+        }
+
         $mapquestResult = Arr::findByKeyChain($result, $keyChain);
         if (empty($mapquestResult)) {
             throw new \Exception("Array is invalid");
