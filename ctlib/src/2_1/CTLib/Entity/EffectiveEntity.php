@@ -17,8 +17,8 @@ abstract class EffectiveEntity extends BaseEntity
      */
     public function __construct($fieldValues=array())
     {
-        $this->hasExplicitEffectiveTime = false;
         parent::__construct($fieldValues);
+        $this->hasExplicitEffectiveTime = false;
     }
 
     /**
