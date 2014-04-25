@@ -22,7 +22,14 @@ class CsvFileResponse extends BinaryFileResponse
             $request,
             $file,
             $downloadName,
-            array('Content-type' => 'text/csv'),
+            array(
+                'Pragma' => 'public',
+                'Expires' => '0',
+                'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+                'Cache-Control' => 'public',
+                'Content-type'  => 'application/octet-stream',
+                'Content-Transfer-Encoding' => 'binary'
+            ),
             $contentDisposition ?: BinaryFileResponse::DISPOSITION_ATTACHMENT
         );
     }
