@@ -143,6 +143,11 @@ class CommandExecutor
         exec($cmd);
     }
 
+    public function __toString()
+    {
+        return $this->formatCommand();
+    }
+
     /**
      * Formats complete command execution string.
      *
