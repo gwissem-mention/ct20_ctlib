@@ -291,23 +291,70 @@ class CTLibExtension extends Extension
 
     protected function loadMapServices($config, $container)
     {
-        if (! $config['enabled']) { return; }
-
+        if (! $config['enabled']) {
+            return;
+        }
+        
         $mgrDef = new Definition(
-                        'CTLib\MapService\MapProviderManager',
-                        array($config['country'], new Reference('logger')));
+            'CTLib\MapService\MapProviderManager',
+            array($config['country'], new Reference('logger'), new Reference('localizer')));
+        
         $container->setDefinition('map_service', $mgrDef);
-
-        foreach ($config['providers'] as $providerConfig) {
+        
+        foreach ($config['providers'] as $providerId => $providerConfig) {
             $args = array(
-                $providerConfig['class'],
-                $providerConfig['countries'],
-                $providerConfig['allowedQualityCodes']
-            );
+                $providerId,
+                $providerConfig['class'], 
+                $providerConfig['url'],
+                $providerConfig['key']
+                );
+            
             $mgrDef->addMethodCall('registerProvider', $args);
         }
+        
+        foreach ($config['geocoders'] as $country => $geocoderConfigs) {
+            foreach ($geocoderConfigs as $geoConfig) {
+                $args = array(
+                    $country,
+                    $geoConfig['provider'],
+                    $geoConfig['tokens'],
+                    $geoConfig['allowedQualityCodes'],
+                    $geoConfig['batchSize']
+                    );
+                $mgrDef->addMethodCall('registerGeocoder', $args);
+            }
+        }
+        
+        foreach ($config['reverseGeocoders'] as 
+            $country => $reverseGeocoderConfigs) {
+            foreach ($reverseGeocoderConfigs as $reverseGeoConfig) {
+                $args = array(
+                    $country,
+                    $reverseGeoConfig['provider']
+                    );
+                $mgrDef->addMethodCall('registerReverseGeocoder', $args);
+            }
+        }
+        
+        foreach ($config['routers'] as 
+            $country => $routerConfig) {
+            $args = array(
+                $country,
+                $routerConfig['provider']
+                );
+            $mgrDef->addMethodCall('registerRouter', $args);
+        }
+        
+        foreach ($config['javascript_apis'] as 
+            $country => $apiConfig) {
+            $args = array(
+                $country,
+                $apiConfig['provider']
+                );
+            $mgrDef->addMethodCall('registerAPI', $args);
+        }
     }
-
+    
     protected function loadLocalizationServices($config, $container)
     {
         if (! $config['enabled']) { return; }

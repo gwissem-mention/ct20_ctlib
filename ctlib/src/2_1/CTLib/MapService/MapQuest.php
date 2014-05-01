@@ -2,202 +2,488 @@
 
 namespace CTLib\MapService;
 
-use CTLib\Util\Arr,
-    CTLib\Util\CTCurl;
-use CTLib\Util\Curl;
+use CTLib\Util\Arr;
 
-
-class MapQuest extends MapProviderAbstract
+class MapQuest implements Geocoder, BatchGeocoder, ReverseGeocoder, Router
 {
-    const BATCH_GEOCODE_LIMIT = 100;
-
+    const CONNECTION_TIMEOUT = 5;
+    const REQUEST_TIMEOUT = 10;
+    
     const MILES         = 'm';
     const KILOMETERS    = 'k';
- 
+    
     /**
-     * {@inheritdoc}
+     * @var string
      */
-    public function getJavascriptApiUrl($country = null)
+    protected $url;
+    
+    public function __construct($url, $key, $logger)
     {
-        return "https://www.mapquestapi.com/sdk/js/v7.0.s/mqa.toolkit.js?key=Gmjtd%7Clu6zn1ua2d%2C7s%3Do5-l07g0";
+        $this->url    = $url;
+        $this->key = $key;
+        $this->logger = $logger;
     }
-
+    
     /**
-     * {@inheritdoc}
+     * Implements method in GeoCodeInterface
+     *
      */
-    public function getJavascriptMapPlugin($country = null)
+    public function geocode($address, $allowedQualityCodes)
+    {
+        $requestData = $this->buildGeocodeRequestData($address);
+        
+        $response = $this->getGeocodeResponse($requestData);
+        $this->logger->debug("Mapquest: geocode response is {$response}.");
+        
+        $decodedResult = json_decode($response, true);
+        if (! $this->isValidResponse($decodedResult, $errorMsg)) {
+            throw new \exception("Mapquest invalid route response with error {$errorMsg}");
+        }
+        
+        $geocodeResult = Arr::findByKeyChain(
+                        $decodedResult,
+                        "results.0.locations.0");
+        
+        if (empty($geocodeResult)) {
+            throw new \Exception("Mapquest: geocode result is invalid.");
+        }
+        
+        $geocodeResult = $this->normalizeGeocodeResult($geocodeResult);
+        
+        if (in_array($geocodeResult["qualityCode"], $allowedQualityCodes)) {
+            $geocodeResult['isValidated'] = true;
+        }
+        else {
+            $geocodeResult['isValidated'] = false;
+        }
+        
+        return $geocodeResult;
+    }
+    
+    /**
+     * Implements method in BtachGeoCoder
+     *
+     */
+    public function geocodeBatch(array $addresses, $allowedQualityCodes, $batchSize)
+    {
+        for ($i = 0, $count=count($addresses); $i < $count; $i += $batchSize) {
+            $batchData = array_slice($addresses, $i, $batchSize, true);
+            
+            $requestData = array_map([$this, 'buildGeocodeRequestData'], $batchData);
+            $response = $this->getBatchGeocodeResponse($requestData);
+            
+            $decodedResult = json_decode($response, true);
+            if (! $this->isValidResponse($decodedResult, $errorMsg)) {
+                throw new \exception("Mapquest invalid route response with error {$errorMsg}");
+            }
+            
+            $batchResults = Arr::mustGet("results", $decodedResult);
+            
+            foreach ($batchResults as $result) {
+                $geocodeResult = Arr::findByKeyChain($result, "locations.0");
+                
+                if (empty($geocodeResult)) {
+                    throw new \Exception("Mapquest geocode result is invalid.");
+                }
+                
+                $geocodeResult = $this->normalizeGeocodeResult($geocodeResult);
+                
+                if (in_array($geocodeResult["qualityCode"], $allowedQualityCodes)) {
+                    $geocodeResult['isValidated'] = true;
+                }
+                else {
+                    $geocodeResult['isValidated'] = false;
+                }
+                
+                $geocodeResults[] = $geocodeResult;
+            }
+        }
+        
+        return $geocodeResults;
+    }
+    
+    /**
+     * Implements method in ReverseGeoCoder
+     *
+     */    
+    public function reverseGeocode($latitude, $longitude)
+    {
+        $response = $this->getReverseGeocodeResponse($latitude, $longitude);
+        $this->logger->debug("Mapquest: reverse geocode response is {$response}.");
+        
+        $decodedResult = json_decode($response, true);
+        if (! $this->isValidResponse($decodedResult, $errorMsg)) {
+            throw new \exception("Mapquest invalid route response with error {$errorMsg}");
+        }
+        
+        $reverseGeocodeResult = Arr::findByKeyChain(
+                            $decodedResult,
+                            "results.0.locations.0");
+        
+        if (empty($reverseGeocodeResult)) {
+            throw new \Exception("Mapquest: reverse geocode result is invalid.");
+        }
+        
+        $reverseGeocodeResult = $this->
+                                normalizeGeocodeResult($reverseGeocodeResult);
+        
+        $reverseGeocodeResult['isValidated'] = true;
+        
+        return $reverseGeocodeResult;
+    }
+    
+    /**
+     * Implements method in Router
+     *
+     */    
+    public function route($fromLatitude, $fromLongitude, 
+        $toLatitude, $toLongitude, $optimizeBy, array $options, $distanceUnit)
+    {
+        $requestData = $this->buildRouteRequestData(
+            $fromLatitude, 
+            $fromLongitude, 
+            $toLatitude, 
+            $toLongitude, 
+            $optimizeBy, 
+            $options, 
+            $distanceUnit
+            );
+        
+        $response = $this->getRouteResponse($requestData);
+        
+        $decodedResult = json_decode($response, true);
+        if (! $this->isValidResponse($decodedResult, $errorMsg)) {
+            throw new \exception("Mapquest invalid route response with error {$errorMsg}");
+        }
+        
+        $routeResult = Arr::get("route", $decodedResult);
+        if (empty($routeResult)) {
+            throw new \Exception("Mapquest: route result is invalid");
+        }
+        
+        $routeResult = $this->normalizeRouteResult($routeResult);
+        
+        return $routeResult;
+    }
+    
+    /**
+     * Implements method in Router
+     *
+     */       
+    public function routeTimeAndDistance($fromLatitude, $fromLongitude,
+        $toLatitude, $toLongitude, $optimizeBy, array $options, $distanceUnit)
+    {
+        $requestData = $this->buildRouteRequestData(
+            $fromLatitude, 
+            $fromLongitude, 
+            $toLatitude, 
+            $toLongitude, 
+            $optimizeBy, 
+            $options, 
+            $distanceUnit
+            );
+        
+        $response = $this->getRouteResponse($requestData);
+        
+        $decodedResult = json_decode($response, true);
+        
+        if (! $this->isValidResponse($decodedResult, $errorMsg)) {
+            throw new \exception("Mapquest invalid route response with error {$errorMsg}");
+        }
+        
+        $routeResult = Arr::get("route", $decodedResult);
+        if (empty($routeResult)) {
+            throw new \Exception("Mapquest: route result is invalid");
+        }
+        
+        $routeResult = array(Arr::get("time", $routeResult), Arr::get("distance", $routeResult));
+        
+        return $routeResult;
+    }
+    
+    /**
+     * Return mapquest javascript api url
+     */
+    public function getJavascriptApiUrl()
+    {
+        return "https://www.mapquestapi.com/sdk/js/v7.0.s/mqa.toolkit.js?key=" . $this->key;
+    }
+    
+    /**
+     * Return mapquest javascript plugin
+     */
+    public function getJavascriptMapPlugin()
     {
         return "mapquest.maps.plugin.js";
     }
     
     /**
-     * {@inheritdoc}
+     * Build Address Request array sending to mapquest
+     *
+     * @param array $address contains address compenents 
+     * @return formatted request data for mapquest
+     *
      */
-    protected function geocodeBuildRequest($request, $address, $country = null)
+    protected function buildGeocodeRequestData($address)
     {
-        $request->url = "https://www.mapquestapi.com/geocoding/v1/address?key=Gmjtd%7Clu6zn1ua2d%2C7s%3Do5-l07g0";
-        if (is_string($address)) {
-            $request->data = array("location" => $address);
+        $street = Arr::get("street1", $address);
+        if (Arr::get("street2", $address)) { 
+            $street .= ", " . Arr::get("street2", $address);
         }
-        else {
-            $request->data = $this->buildAddressRequestData($address);
-        }
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function geocodeProcessResult($result)
-    {
-        $decodedResult = json_decode($result, true);
-        return $this->buildAddressFromMapQuestResult($decodedResult, "results.0.locations.0");
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function geocodeBatchBuildRequest($request, $addresses, $country = null)
-    {
-        $request->IsBatch = true;
-        $request->BatchLimit = static::BATCH_GEOCODE_LIMIT;
-        $request->Url = "https://www.mapquestapi.com/geocoding/v1/batch?key=Gmjtd%7Clu6zn1ua2d%2C7s%3Do5-l07g0";
-        $request->Method = CTCurl::REQUEST_POST;
-
-        $data = array();
-        foreach ($addresses as $address) {
-            if (is_string($address)) {
-                $data[] = array("location" => $address);
-            }
-            else {
-                //$data[] = array("location" => json_encode($this->buildAddressRequestData($address)));
-	    	$data[] = $this->buildAddressRequestData($address);
-            }
-        }
-
-        //$request->data = $data;
-	$request->PostFields = 'json=' . json_encode(array('locations' => $data));
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function geocodeBatchProcessResult($result)
-    {
-        if (empty($result) || !is_array($result)) {
-            throw new \Exception("result is not valid");
-        }
-
-        $combinedResult = array();
-        foreach($result as $batch) {
-            $decodedResult = json_decode($batch, true);
-            if (!$decodedResult) {
-                throw new \Exception("result is invalid");
-            }
-
-            $batchResults = Arr::mustGet("results", $decodedResult);
-            foreach ($batchResults as $row) {
-                $combinedResult[] = $this->buildAddressFromMapQuestResult($row, "locations.0");
-            }
-        }
-        return $combinedResult;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function reverseGeocodeBuildRequest($request, $latitude, $longitude, $country = null)
-    {
-        $request->url = "https://www.mapquestapi.com/geocoding/v1/reverse?key=Gmjtd%7Clu6zn1ua2d%2C7s%3Do5-l07g0";
-        $request->data = array(
-            "lat" => $latitude,
-            "lng" => $longitude
-        );
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function reverseGeocodeProcessResult($result)
-    {
-        $decodedResult = json_decode($result, true);
-        $address = $this->buildAddressFromMapQuestResult($decodedResult, "results.0.locations.0");
-
-        // if country is canada, do another geocode to correct 
-        // postalCode for 3-character postal code
-        if ($address["country"] == "CA") {
-            $address = $this->geocode($address, $address["country"]);
+        if (Arr::get("street3", $address)) { 
+            $street .= ", " . Arr::get("street3", $address); 
         }
         
-        return $address;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function reverseGeocodeBatchBuildRequest($request, array $latLngs, $country = null)
-    {
-        return false;
+        $requestData = array(
+            "street"     => $street,
+            "adminArea5" => Arr::get("city", $address),
+            "adminArea3" => Arr::get("subdivision", $address),
+            "district"   => Arr::get("adminArea4", $address),
+            "postalCode" => Arr::get("postalCode", $address),
+            "adminArea1" => Arr::get("countryCode", $address)
+            );
+        
+        return $requestData;
     }
     
     /**
-     * {@inheritdoc}
+     * Get geocode response array from mapquest
+     *
+     * @param $requestData contains address
+     * @return curl execution result
+     *
      */
-    protected function reverseGeocodeBatchProcessResult($result)
+    protected function getGeocodeResponse($requestData)
     {
-        return false;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function reverseGeocodeBatch(array $latLngs, $country = null)
-    {
-        $result = array();
-        foreach ($latLngs as $latLng) {
-            $result[] = $this->reverseGeocode($latLng[0], $latLng[1], $country);
+        $path = "geocoding/v1/address?key=". $this->key;
+        $curl = $this->createMapServiceRequest($path);
+        
+        $postData = 'json=' . urlencode(json_encode(array('location' => $requestData)));
+        curl_setopt($curl, CURLOPT_POST, true);
+        curl_setopt($curl, CURLOPT_POSTFIELDS, $postData);
+        
+        $response = curl_exec($curl);
+        
+        if (! $response) {
+            $errorCode = curl_errno($curl);
+            throw new \Exception("Mapquest: failed on http request error {$errorCode}.");
         }
-        return $result;
+        
+        return $response;
     }
-
+    
     /**
-     * {@inheritdoc}
+     * Get batch geocode response array from mapquest
+     *
+     * @param $requestData contains a list of addresses
+     * @return curl execution result
+     *
      */
-    protected function routeBuildRequest($request, $fromLatitude, $fromLongitude, $toLatitude, $toLongitude, $optimizeBy, $options=array(), $country=null)
+    protected function getBatchGeocodeResponse($requestData)
     {
-        // MT @ Feb 4: Putting in quick fix for Canadian mileage calculation
-        // (need to force mapquest to use kilometers). Need to clean this up
-        // by making use of country's config file (US.yml) to specify unit.
-        switch ($country) {
-            case 'CA':
+        $path = "geocoding/v1/batch?key=". $this->key;
+        $curl = $this->createMapServiceRequest($path);
+        
+        $postData = 'json=' .  urlencode(json_encode(array('locations' => $requestData)));
+        curl_setopt($curl, CURLOPT_POST, true);
+        curl_setopt($curl, CURLOPT_POSTFIELDS, $postData);
+        
+        $response = curl_exec($curl);
+        
+        if (! $response) {
+            $errorCode = curl_errno($curl);
+            throw new \Exception("Mapquest: failed on http request error {$errorCode}.");
+        }
+        
+        return $response;
+    }
+    
+    /**
+     * Get Reverse geocode response array from google
+     *
+     * @param $latitude contains latitude
+     * @param $longitude contains longitude
+     * @return curl execution result
+     *
+     */
+    protected function getReverseGeocodeResponse($latitude, $longitude)
+    {        
+        $path = "geocoding/v1/reverse?key=". $this->key;
+        $curl = $this->createMapServiceRequest($path);
+        
+        $requestData = array(
+                'lat' => $latitude, 
+                "lng" => $longitude
+            );
+            
+        $requestData = http_build_query($requestData);
+        curl_setopt($curl, CURLOPT_POST, true);
+        curl_setopt($curl, CURLOPT_POSTFIELDS, $requestData);
+        
+        $response = curl_exec($curl);
+        
+        if (! $response) {
+            $errorCode = curl_errno($curl);
+            throw new \Exception("Mapquest: failed on http request error {$errorCode}.");
+        }
+        
+        return $response;
+    }
+    
+    /**
+     * Build request data array sending to mapquest
+     *
+     * @param $fromLatitude origin latitude
+     * @param $fromLongitude origin longitude
+     * @param $toLatitude destination latitude 
+     * @param $toLongitude destination longitude
+     * @param $optimizeBy route request type
+     * @param $options route avoid options 
+     * @param $distanceUnit distance unit by country
+     * @return formatted request data string for mapquest
+     *
+     */    
+    protected function buildRouteRequestData($fromLatitude, $fromLongitude, 
+        $toLatitude, $toLongitude, $optimizeBy, $options, $distanceUnit)
+    {
+        switch ($distanceUnit) {
+            case 'kilometer':
                 $unit = self::KILOMETERS;
                 break;
             default:
-                // Includes US + GB (yes; GB is on miles).
                 $unit = self::MILES;
         }
-
-        $request->url = "https://www.mapquestapi.com/directions/v1/alternateroutes?key=Gmjtd%7Clu6zn1ua2d%2C7s%3Do5-l07g0";
-
-        // if we have avoid types
-        if (isset($options)) {
+        
+        // if avoid types is set
+        $avoidTypes = '';
+        if ($options != null) {
             $avoidTypes = $this->convertRouteAvoidOptions($options);
-            $request->url .= $avoidTypes;
         }
         
-        $request->data = 
-            array_merge(
-                array(
-                    "from" => $fromLatitude . "," . $fromLongitude,
-                    "to" => $toLatitude . "," . $toLongitude,
-                    "maxRoutes" => 3,
-                    'unit' => $unit,
-                    'routeType' => $optimizeBy
-                )
-            );
+        $requestData =
+            array(
+                "from"      => $fromLatitude . "," . $fromLongitude,
+                "to"        => $toLatitude . "," . $toLongitude,
+                'unit'      => $unit,
+                'routeType' => $optimizeBy
+                );
         
-        $request->method = CTCurl::REQUEST_GET;
+        $requestData = http_build_query($requestData) . $avoidTypes;
+        
+        return $requestData;
+    }
+    
+    /**
+     * Get Geocode Response array from mapquest
+     *
+     * @param $requestData contains origin and destination params and
+     *  route options
+     * @return curl execution result
+     *
+     */
+    protected function getRouteResponse($requestData)
+    {
+        $path = "directions/v2/route?key=". $this->key;
+        
+        $urlQuery = parse_url($path, \PHP_URL_QUERY);
+        if ($urlQuery) {
+            $path .= "&" . $requestData;
+        }
+        else {
+            $path .= "?" . $requestData;
+        }
+        
+        $curl = $this->createMapServiceRequest($path);
+        $response = curl_exec($curl);
+        
+        if (! $response) {
+            $errorCode = curl_errno($curl);
+            throw new \Exception("Mapquest: failed on http request error {$errorCode}.");
+        }
+        
+        return $response;
+    }
+    
+    /**
+    * Build Address array From MapQuest Result
+    *
+    * @param array $result response result from mapquest
+    * @return array address array
+    *
+    */
+    protected function normalizeGeocodeResult($result)
+    {
+        $country     = Arr::mustGet("adminArea1", $result);
+        $postalCode  = Arr::mustGet("postalCode", $result);
+        
+        if ($country == "US") {
+            $arr = explode("-", $postalCode);
+            if (count($arr) > 0) {
+                $postalCode = $arr[0];
+            }
+        }
+        
+        return array(
+            "qualityCode" => Arr::mustGet("geocodeQualityCode", $result),
+            "street"      => Arr::mustGet("street", $result),
+            "city"        => Arr::mustGet("adminArea5", $result),
+            "district"    => Arr::mustGet("adminArea4", $result),
+            "locality"    => null,
+            "subdivision" => Arr::mustGet("adminArea3", $result),
+            "postalCode"  => $postalCode,
+            "country"     => $country,
+            "mapUrl"      => Arr::get("mapUrl", $result),
+            "lat"         => Arr::findByKeyChain($result, "latLng.lat"),
+            "lng"         => Arr::findByKeyChain($result, "latLng.lng")
+            );
     }
 
+    /**
+    * Build route info array from mapquest result
+    *
+    * @param array $result response result from route service
+    * @return array route array
+    *
+    */
+    protected function normalizeRouteResult($result)
+    { 
+        $from = Arr::findByKeyChain($result, "locations.0");
+        if (empty($from)) {
+            throw new \Exception("Mapquest: route result is missing origin.");
+        }
+        
+        $to = Arr::findByKeyChain($result, "locations.1");
+        if (empty($to)) {
+            throw new \Exception("Mapquest: route result is missing destination");
+        }
+        
+        $routeResult = array(
+            "distance" => Arr::get("distance", $result),
+            "time" => Arr::get("time", $result),
+            "from" => $this->normalizeGeocodeResult($from),
+            "to" => $this->normalizeGeocodeResult($to)
+            );
+        
+        $maneuvers = Arr::findByKeyChain($result, "legs.0.maneuvers");
+        if (empty($maneuvers)) {
+            throw new \Exception("Mapquest: route result is missing maneuvers.");
+        }
+        
+        foreach ($maneuvers as $maneuver) {
+            $routeResult["directions"][] = array(
+                "narrative" => Arr::get("narrative", $maneuver),
+                "iconUrl"   => Arr::get("iconUrl", $maneuver),
+                "distance"  => Arr::get("distance", $maneuver),
+                "time"      => Arr::get("time", $maneuver),
+                "mapUrl"    => Arr::get("mapUrl", $maneuver),
+                "startLat"  => Arr::get("startPoint.lat", $maneuver),
+                "startLng"  => Arr::get("startPoint.lng", $maneuver)
+                );
+        }
+        
+        return $routeResult;
+    }
+    
     /**
      * Returns avoid types string for request url
      * @param array $options options for routing service
@@ -213,183 +499,73 @@ class MapQuest extends MapProviderAbstract
             MapProviderManager::ROUTE_AVOID_UNPAVED => 'Unpaved',
             MapProviderManager::ROUTE_AVOID_SEASONAL_CLOSURE => 'Approximate Seasonal Closure',
             MapProviderManager::ROUTE_AVOID_BORDER_CROSSING => 'Country border crossing'
-        );
-
+            );
+        
         $routeAvoidTypes = '';
-
-        foreach($options as $avoidType) {
-            if(array_key_exists($avoidType, $routeAvoidTypesList)) {
+        
+        foreach ($options as $avoidType) {
+            if (isset($routeAvoidTypesList[$avoidType])) {
                 $routeAvoidTypes .= '&avoids=' . urlencode($routeAvoidTypesList[$avoidType]);
             }
             else {
-                throw new \InvalidArgumentException(sprintf('Please check avoid types configuration. Undefined avoid contant "%s".', $avoidType));
+                throw new \Exception("Please check avoid types configuration. Undefined avoid contant {$avoidType}.");
             }
         }
         
         return $routeAvoidTypes;
     }
+     
+    /**
+    * Check if response is valid or not
+    * @param array $decodedResponse json decoded results
+    * @return true/flase if response is invalid
+    *
+    */    
+    protected function isValidResponse($decodedResponse, &$errorMsg=null)
+    {
+        if (is_null($decodedResponse)) {
+            $jsonDecodeError = json_last_error();
+            $errorMsg = "Mapquest: response is not valid JSON with error {$jsonDecodeError}";
+            return false;
+        }
+        
+        $statusCode = Arr::findByKeyChain(
+            $decodedResponse, 
+            "info.statuscode");
+        $this->logger->debug("Mapquest: response status code is {$statusCode}.");
+        
+        if ($statusCode != 0) {
+            $message = Arr::findByKeyChain(
+                $decodedResponse, 
+                "info.messages.0");
+            $errorMsg = "Mapquest request failed because of :{$message}";            
+            return false;
+        }
+        
+        return true;
+    }
     
     /**
-     * Returns shortest route information contained within raw MapQuest route
-     * response.
-     *
-     * @param string $result    JSON MapQuest route response.
-     * @param string $metric    Shortest will be determined using this metric:
-     *                          either 'distance' or 'time'.
-     * @return array
-     */
-    protected function extractShortestRoute($result, $metric)
+    * Build curl to map service
+    *
+    * @param string $path specific service url
+    * @return php curl
+    *
+    */
+    protected function createMapServiceRequest($path)
     {
-        if (! in_array($metric, array('time', 'distance'))) {
-            throw new \Exception('Invalid $metric');
-        }
-
-        $decodedResult = json_decode($result, true);
-
-        if (! $decodedResult) {
-            throw new \Exception("result is invalid");
-        }
-
-        $route = Arr::get("route", $decodedResult);
-        if (! $route) {
-            throw new \Exception("result is invalid");
-        }
-
-        $alternateRoutes = Arr::extract('alternateRoutes', $route);
-
-        if (! $alternateRoutes) {
-            // No need to compute shortest route when there's only one
-            // available.
-            return $route;
-        }
-
-        // Concatenate primary route with alternates, and return shortest of the
-        // set.
-        $routes = array_map(
-            function($r) { return $r['route']; },
-            $alternateRoutes
-        );
-        array_unshift($routes, $route);
-
-        usort($routes, function($r1, $r2) use ($metric) {
-            if ($r1[$metric] == $r2[$metric]) { return 0; }
-            return $r1[$metric] < $r2[$metric] ? -1 : 1;
-        });
-        return $routes[0];
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function routeProcessResult($result, $optimizeBy)
-    {        
-        if ($optimizeBy == MapProviderManager::OPTIMIZE_BY_DISTANCE) {
-            $metric = "distance";
-        } else {
-            $metric = "time";
-        }
+        $requestUrl = $this->url . $path;
         
-        $route = $this->extractShortestRoute($result, $metric);
-
-        $routeResult = array(
-            "distance" => Arr::get("distance", $route),
-            "time" => Arr::get("time", $route),
-            "from" => $this->buildAddressFromMapQuestResult($route, "locations.0"),
-            "to" => $this->buildAddressFromMapQuestResult($route, "locations.1"),
-            "directions" => array()
-        );
-
-        $maneuvers = Arr::findByKeyChain($route, "legs.0.maneuvers");
-        if (!$maneuvers) {
-            throw new \Exception("result is invalid");
-        }
-
-        foreach ($maneuvers as $maneuver) {
-            $routeResult["directions"][] = array(
-                "narrative" => Arr::get("narrative", $maneuver),
-                "iconUrl"   => Arr::get("iconUrl", $maneuver),
-                "distance"  => Arr::get("distance", $maneuver),
-                "time"      => Arr::get("time", $maneuver),
-                "mapUrl"    => Arr::get("mapUrl", $maneuver),
-                "startLat"  => Arr::get("startPoint.lat", $maneuver),
-                "startLng"  => Arr::get("startPoint.lng", $maneuver)
-            );
-        }
-        return $routeResult;
-    }
-
-    /**
-     * @inherit
-     */
-    protected function routeTimeAndDistanceProcessResult($result, $optimizeBy)
-    {
-        if ($optimizeBy == MapProviderManager::OPTIMIZE_BY_DISTANCE) {
-            $metric = "distance";
-        } else {
-            $metric = "time";
-        }
-        
-        $route = $this->extractShortestRoute($result, $metric);
-        return array(Arr::get("time", $route), Arr::get("distance", $route));
-    }
-
-    /**
-     * Build Address array From MapQuest Result
-     *
-     * @param array $result response result from mapquest
-     * @param string $keyChain key change to get from result
-     * @return array address array
-     *
-     */
-    protected function buildAddressFromMapQuestResult($result, $keyChain)
-    {
-        $mapquestResult = Arr::findByKeyChain($result, $keyChain);
-        if (empty($mapquestResult)) {
-            throw new \Exception("Array is invalid");
-        }
-
-        $country     = Arr::mustGet("adminArea1", $mapquestResult);
-        $postalCode  = Arr::mustGet("postalCode", $mapquestResult);
-        
-        if ($country == "US") {
-            $arr = explode("-", $postalCode);
-            if (count($arr) > 0) {
-                $postalCode = $arr[0];
-            }
-        }
-        
-        return array(
-            "qualityCode" => Arr::mustGet("geocodeQualityCode", $mapquestResult),
-            "street"      => Arr::mustGet("street", $mapquestResult),
-            "city"        => Arr::mustGet("adminArea5", $mapquestResult),
-            "district"    => Arr::mustGet("adminArea4", $mapquestResult),
-            "locality"    => null,
-            "subdivision" => Arr::mustGet("adminArea3", $mapquestResult),
-            "postalCode"  => $postalCode,
-            "country"     => $country,
-            "mapUrl"      => Arr::get("mapUrl", $mapquestResult),
-            "lat"         => Arr::findByKeyChain($mapquestResult, "latLng.lat"),
-            "lng"         => Arr::findByKeyChain($mapquestResult, "latLng.lng")
-        );
-    }
-
-    /**
-     * Build Address Request array sending to mapquest
-     *
-     * @param array $address that contains This is a description
-     * @return mixed This is the return value description
-     *
-     */
-    protected function buildAddressRequestData($address)
-    {
-        $params = array(
-            "street"     => Arr::get("street", $address),
-            "adminArea5" => Arr::get("city", $address),
-            "adminArea3" => Arr::get("subdivision", $address),
-            "postalCode" => Arr::get("postalCode", $address),
-        );
-        $country = Arr::get("country", $address);
-        if ($country) { $params["adminArea1"] = $country; }
-        return $params;
+        $curl = curl_init();
+        curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($curl, CURLOPT_FAILONERROR, true);
+        // Do not need to verify ssl
+        curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, 0);
+        curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, static::CONNECTION_TIMEOUT);
+        curl_setopt($curl, CURLOPT_TIMEOUT, static::REQUEST_TIMEOUT);
+        curl_setopt($curl, CURLOPT_URL, $requestUrl);
+                
+        return $curl;
     }
 }
