@@ -467,7 +467,7 @@ class MapProviderManager
      */ 
     public function getJavascriptApiUrl($country=null)
     {
-        if (!$country) {
+        if (! $country) {
             $country = $this->defaultCountry;
         }
         
@@ -484,12 +484,32 @@ class MapProviderManager
      */
     public function getJavascriptMapPlugin($country=null)
     {
-        if (!$country) {
+        if (! $country) {
             $country = $this->defaultCountry;
         }
         
         $APIProvider = $this->getJavascriptAPIProvider($country);
         return $APIProvider->getJavascriptMapPlugin();
+    }
+    
+    /**
+     * Get allowed quality codes for javascript api by given country
+     *
+     * @param string $country country
+     * @return array allowed quality codes
+     *
+     */
+    public function getAllowedQualityCodes($country=null)
+    {
+        if (! $country) {
+            $country = $this->defaultCountry;
+        }
+        
+        if (! isset($this->geocoders[$country])) {
+            throw new \Exception("Can not find geocode provider for country {$country}");
+        }
+        
+        return $this->geocoders[$country][0]['allowedQualityCodes'];
     }
     
     /**
