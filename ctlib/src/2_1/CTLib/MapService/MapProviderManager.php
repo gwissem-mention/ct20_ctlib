@@ -202,7 +202,11 @@ class MapProviderManager
                 }
                 
                 //save the first priority geocode result
-                if ($geocodeResult == null) {
+                if (! $geocodeResult) {
+                    $geocodeResult = $result;
+                } elseif ($geocodeResult['street'] == '' && 
+                            $geocodeResult['city'] == '' && 
+                            $geocodeResult['subdivision'] == '') {
                     $geocodeResult = $result;
                 }
             } catch (\Exception $e) {
@@ -210,9 +214,6 @@ class MapProviderManager
             }
         }
         
-        if ($geocoder == null) {
-            $geocodeProvider['isValidated'] = false;
-        }
         //if all geocoder fails to validate without exception, return the 
         //result from the geocoder with first priority
         return $geocodeResult;
@@ -275,6 +276,13 @@ class MapProviderManager
                                     $geocoder['allowedQualityCodes']);
                                     
                         $results[$index] = $result;
+                        if ($batchResults) {
+                            if ($batchResults[$index]['street'] == '' &&
+                                $batchResults[$index]['city'] == '' &&
+                                $batchResults[$index]['subdivision'] == '') {
+                                $batchResults[$index] = $result;
+                            }
+                        }
                     } catch (\Exception $e) {
                         $this->logger->warn("Geocode exception: {$e}.");
                     }
