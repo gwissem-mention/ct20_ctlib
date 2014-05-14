@@ -179,7 +179,7 @@ class Google implements Geocoder, ReverseGeocoder
                 $addressComponents['city'] = $component['long_name'];
             }
             if (in_array("administrative_area_level_1", $component['types'])) {
-                $addressComponents['subdivision'] = $component['long_name'];
+                $addressComponents['subdivision'] = $component['short_name'];
             }
             if (in_array("administrative_area_level_2", $component['types'])) {
                 $addressComponents['district'] = $component['long_name'];
@@ -188,7 +188,7 @@ class Google implements Geocoder, ReverseGeocoder
                 $addressComponents['locality'] = $component['long_name'];
             }
             if (in_array("country", $component['types'])) {
-                $addressComponents['country'] = $component['long_name'];
+                $addressComponents['country'] = $component['short_name'];
             }
             if (in_array("postal_code", $component['types'])) {
                 $addressComponents['postalCode'] = $component['long_name'];
