@@ -6,8 +6,8 @@ use CTLib\Util\Arr;
 
 class MapQuest implements Geocoder, BatchGeocoder, ReverseGeocoder, Router
 {
-    const CONNECTION_TIMEOUT = 5;
-    const REQUEST_TIMEOUT = 10;
+    const CONNECTION_TIMEOUT = 30;
+    const REQUEST_TIMEOUT = 60;
     
     const MILES         = 'm';
     const KILOMETERS    = 'k';
@@ -568,7 +568,6 @@ class MapQuest implements Geocoder, BatchGeocoder, ReverseGeocoder, Router
         
         $curl = curl_init();
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($curl, CURLOPT_FAILONERROR, true);
         // Do not need to verify ssl
         curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, 0);
         curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);

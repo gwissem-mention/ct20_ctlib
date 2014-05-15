@@ -6,8 +6,8 @@ use CTLib\Util\Arr;
 
 class Google implements Geocoder, ReverseGeocoder
 {   
-    const CONNECTION_TIMEOUT = 5;
-    const REQUEST_TIMEOUT = 10;
+    const CONNECTION_TIMEOUT = 30;
+    const REQUEST_TIMEOUT = 60;
     
     /**
      * @var string
