@@ -228,7 +228,7 @@ class Google implements Geocoder, ReverseGeocoder
         $status = Arr::findByKeyChain(
             $decodedResponse, 
             "status");
-        $this->logger->debug("Google: reverse geocode response status is {$status}.");
+        $this->logger->debug("Google: response status is {$status}.");
         
         if ($status != 'OK') {
             $errorMsg = "Google: request failed because of {$status}";

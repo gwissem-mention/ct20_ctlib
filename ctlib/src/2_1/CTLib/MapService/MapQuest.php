@@ -66,28 +66,31 @@ class MapQuest implements Geocoder, BatchGeocoder, ReverseGeocoder, Router
      */
     public function geocodeBatch(array $addresses, $allowedQualityCodes, $batchSize)
     {
+        $geocodeResults = array();
         for ($i = 0, $count=count($addresses); $i < $count; $i += $batchSize) {
+            $batchData = array();
             $batchData = array_slice($addresses, $i, $batchSize, true);
             
             $requestData = array_map([$this, 'buildGeocodeRequestData'], $batchData);
             $response = $this->getBatchGeocodeResponse($requestData);
             
+            $indexes = array_keys($batchData); 
             $decodedResult = json_decode($response, true);
+            
             if (! $this->isValidResponse($decodedResult, $errorMsg)) {
                 throw new \exception("Mapquest invalid route response with error {$errorMsg}");
             }
             
             $batchResults = Arr::mustGet("results", $decodedResult);
             
-            foreach ($batchResults as $result) {
+            foreach ($batchResults as $order => $result) {
                 $geocodeResult = Arr::findByKeyChain($result, "locations.0");
                 
                 if (empty($geocodeResult)) {
-                    throw new \Exception("Mapquest geocode result is invalid.");
+                    throw new \Exception("Mapquest geocode batch result is invalid.");
                 }
                 
                 $geocodeResult = $this->normalizeGeocodeResult($geocodeResult);
-                
                 if (in_array($geocodeResult["qualityCode"], $allowedQualityCodes)) {
                     $geocodeResult['isValidated'] = true;
                 }
@@ -95,7 +98,7 @@ class MapQuest implements Geocoder, BatchGeocoder, ReverseGeocoder, Router
                     $geocodeResult['isValidated'] = false;
                 }
                 
-                $geocodeResults[] = $geocodeResult;
+                $geocodeResults[$indexes[$order]] = $geocodeResult;
             }
         }
         
@@ -284,17 +287,19 @@ class MapQuest implements Geocoder, BatchGeocoder, ReverseGeocoder, Router
         $path = "geocoding/v1/batch?key=". $this->key;
         $curl = $this->createMapServiceRequest($path);
         
-        $postData = 'json=' .  urlencode(json_encode(array('locations' => $requestData)));
+        $postData = 'json=' .  urlencode(json_encode(array('locations' => array_values($requestData))));
         curl_setopt($curl, CURLOPT_POST, true);
         curl_setopt($curl, CURLOPT_POSTFIELDS, $postData);
         
         $response = curl_exec($curl);
-        
-        if (! $response) {
+
+        if ($response === '') {
             $errorCode = curl_errno($curl);
+            var_dump(curl_error($curl));
+            var_dump($errorCode);
             throw new \Exception("Mapquest: failed on http request error {$errorCode}.");
         }
-        
+        $response = curl_exec($curl);
         return $response;
     }
     
@@ -565,7 +570,7 @@ class MapQuest implements Geocoder, BatchGeocoder, ReverseGeocoder, Router
         curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, static::CONNECTION_TIMEOUT);
         curl_setopt($curl, CURLOPT_TIMEOUT, static::REQUEST_TIMEOUT);
         curl_setopt($curl, CURLOPT_URL, $requestUrl);
-                
+        
         return $curl;
     }
 }
