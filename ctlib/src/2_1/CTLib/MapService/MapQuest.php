@@ -70,11 +70,13 @@ class MapQuest implements Geocoder, BatchGeocoder, ReverseGeocoder, Router
         for ($i = 0, $count=count($addresses); $i < $count; $i += $batchSize) {
             $batchData = array();
             $batchData = array_slice($addresses, $i, $batchSize, true);
+            //get indexes from batch data, indexes are using to return results with
+            //the same order
+            $indexes = array_keys($batchData);
             
             $requestData = array_map([$this, 'buildGeocodeRequestData'], $batchData);
             $response = $this->getBatchGeocodeResponse($requestData);
             
-            $indexes = array_keys($batchData); 
             $decodedResult = json_decode($response, true);
             
             if (! $this->isValidResponse($decodedResult, $errorMsg)) {
@@ -287,19 +289,22 @@ class MapQuest implements Geocoder, BatchGeocoder, ReverseGeocoder, Router
         $path = "geocoding/v1/batch?key=". $this->key;
         $curl = $this->createMapServiceRequest($path);
         
-        $postData = 'json=' .  urlencode(json_encode(array('locations' => array_values($requestData))));
+        $postData = 'json=' .  urlencode(
+                                json_encode(
+                                    array(
+                                        'locations' => array_values($requestData)
+                                )));
+                            
         curl_setopt($curl, CURLOPT_POST, true);
         curl_setopt($curl, CURLOPT_POSTFIELDS, $postData);
         
         $response = curl_exec($curl);
-
-        if ($response === '') {
+        
+        if (! $response) {
             $errorCode = curl_errno($curl);
-            var_dump(curl_error($curl));
-            var_dump($errorCode);
             throw new \Exception("Mapquest: failed on http request error {$errorCode}.");
         }
-        $response = curl_exec($curl);
+        
         return $response;
     }
     
