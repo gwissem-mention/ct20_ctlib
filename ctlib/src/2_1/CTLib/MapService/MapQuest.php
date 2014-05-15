@@ -6,8 +6,8 @@ use CTLib\Util\Arr;
 
 class MapQuest implements Geocoder, BatchGeocoder, ReverseGeocoder, Router
 {
-    const CONNECTION_TIMEOUT = 30;
-    const REQUEST_TIMEOUT = 60;
+    const CONNECTION_TIMEOUT = 5;
+    const REQUEST_TIMEOUT = 10;
     
     const MILES         = 'm';
     const KILOMETERS    = 'k';
@@ -20,7 +20,7 @@ class MapQuest implements Geocoder, BatchGeocoder, ReverseGeocoder, Router
     public function __construct($url, $key, $logger)
     {
         $this->url    = $url;
-        $this->key = $key;
+        $this->key    = $key;
         $this->logger = $logger;
     }
     
@@ -73,9 +73,11 @@ class MapQuest implements Geocoder, BatchGeocoder, ReverseGeocoder, Router
             //get indexes from batch data, indexes are using to return results with
             //the same order
             $indexes = array_keys($batchData);
+            $this->logger->debug("Mapquest: batch geocode i is {$i}.");
             
             $requestData = array_map([$this, 'buildGeocodeRequestData'], $batchData);
             $response = $this->getBatchGeocodeResponse($requestData);
+            $this->logger->debug("Mapquest: batch geocode response is {$response}.");
             
             $decodedResult = json_decode($response, true);
             

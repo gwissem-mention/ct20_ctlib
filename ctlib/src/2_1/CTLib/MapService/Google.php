@@ -6,8 +6,8 @@ use CTLib\Util\Arr;
 
 class Google implements Geocoder, ReverseGeocoder
 {   
-    const CONNECTION_TIMEOUT = 30;
-    const REQUEST_TIMEOUT = 60;
+    const CONNECTION_TIMEOUT = 5;
+    const REQUEST_TIMEOUT = 10;
     
     /**
      * @var string
@@ -16,8 +16,8 @@ class Google implements Geocoder, ReverseGeocoder
     
     public function __construct($url, $key, $logger)
     {
-        $this->url = $url;
-        $this->key = $key;
+        $this->url    = $url;
+        $this->key    = $key;
         $this->logger = $logger;
     }
     
