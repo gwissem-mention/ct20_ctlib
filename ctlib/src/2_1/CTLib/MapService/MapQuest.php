@@ -94,15 +94,20 @@ class MapQuest implements Geocoder, BatchGeocoder, ReverseGeocoder, Router
                     throw new \Exception("Mapquest geocode batch result is invalid.");
                 }
                 
-                $geocodeResult = $this->normalizeGeocodeResult($geocodeResult);
-                if (in_array($geocodeResult["qualityCode"], $allowedQualityCodes)) {
-                    $geocodeResult['isValidated'] = true;
-                }
-                else {
-                    $geocodeResult['isValidated'] = false;
+                $normalizedResult = $this->normalizeGeocodeResult($geocodeResult);
+                
+                if (empty($normalizedResult)) {
+                    throw new \Exception("Mapquest geocode batch result is invalid.");
                 }
                 
-                $geocodeResults[$indexes[$order]] = $geocodeResult;
+                if (in_array($normalizedResult["qualityCode"], $allowedQualityCodes)) {
+                    $normalizedResult['isValidated'] = true;
+                }
+                else {
+                    $normalizedResult['isValidated'] = false;
+                }
+                
+                $geocodeResults[$indexes[$order]] = $normalizedResult;
             }
         }
         
