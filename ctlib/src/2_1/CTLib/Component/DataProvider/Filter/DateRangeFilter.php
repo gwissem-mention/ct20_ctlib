@@ -76,11 +76,11 @@ class DateRangeFilter implements DataProviderFilter
                 break;
 
             case self::THIS_WEEK:
-                $today = new \DateTime('today', $this->timezone);
+				$weekEnd = new \DateTime('next Saturday', $this->timezone);
                 $weekStart = new \DateTime('Sunday last week', $this->timezone);
-                $qbr->andWhere("{$this->dateField} BETWEEN :weekStart AND :today")
-                    ->setParameter('weekStart', $this->formatStartTime($weekStart))
-                    ->setParameter('today', $this->formatStopTime($today));
+				$qbr->andWhere("{$this->dateField} BETWEEN :weekStart AND :weekEnd")
+					->setParameter('weekStart', $this->formatStartTime($weekStart))
+					->setParameter('weekEnd', $this->formatStopTime($weekEnd));
                 break;
 
             case self::EARLIER_THAN_THIS_WEEK:
