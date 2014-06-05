@@ -135,6 +135,13 @@ class DetachedEntityIterator implements
         $entity = $this->entities[$offset];
         $entity = new $this->entityClass($entity);
 
+        if (method_exists($entity, 'resetHasExplicitEffectiveTime')) {
+            // This tells EffectiveEntity instances to set
+            // hasExplicitEffectiveTime flag back to false so that if entity is
+            // inserted, it won't attempt to use existing effective time.
+            $entity->resetHasExplicitEffectiveTime();
+        }
+
         foreach ($this->postLoadMethods as $method) {
             $entity->{$method}();
         }

@@ -52,6 +52,16 @@ abstract class EffectiveEntity extends BaseEntity
     {
         return $this->hasExplicitEffectiveTime;
     }
+
+    /**
+     * Sets hasExplicitEffectiveTime back to false.
+     *
+     * @return void
+     */
+    public function resetHasExplicitEffectiveTime()
+    {
+        $this->hasExplicitEffectiveTime = false;
+    }
         
     /**
      * Throw Exception because effective entities don't have modifiedOn.
