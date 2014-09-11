@@ -265,6 +265,9 @@ class CTLibExtension extends Extension
 
             $args = array('BB', new Reference($serviceId));
             $mgrDef->addMethodCall('registerDriver', $args);
+
+            $args = array('BB10', new Reference($serviceId));
+            $mgrDef->addMethodCall('registerDriver', $args);
         }
 
         if (isset($config['platforms']['ios'])) {
