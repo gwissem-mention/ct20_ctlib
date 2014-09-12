@@ -107,7 +107,7 @@ class BlackBerryPushDriver implements PushDriver
                 return $this->processResponse($response, $request, $message);
             case 404:
                 throw new PushDeliveryException(
-                    PushDeliveryException::SENDER_NOT_AUTHORIZED
+                    PushDeliveryException::SERVICE_UNREACHABLE
                 );
             case 500:
                 throw new PushDeliveryException(
