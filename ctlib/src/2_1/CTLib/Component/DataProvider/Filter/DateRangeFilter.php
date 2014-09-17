@@ -132,7 +132,7 @@ class DateRangeFilter implements DataProviderFilter
             $dateTo,
             $this->timezone
         );
-        $dateToDateTime->setTime(23, 59, 59);
+        $dateToDateTime->setTime(0, 0);
 
         return array(
             $dateFromDateTime,
