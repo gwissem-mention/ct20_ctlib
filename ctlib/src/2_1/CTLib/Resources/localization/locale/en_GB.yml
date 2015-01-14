@@ -8,7 +8,7 @@ datetime:
     formats:
         longDate: d MMMM yyyy
         shortDate: dd/M/yyyy
-        casualDate: d MMM
+        casualDate: d MMM, yyyy
 
         longTime: HH:mm
         shortTime: HH:mm
