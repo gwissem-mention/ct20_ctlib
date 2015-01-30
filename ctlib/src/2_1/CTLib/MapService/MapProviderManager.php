@@ -81,7 +81,16 @@ class MapProviderManager
         $provider = new $class($url, $key, $this->logger);
         $this->providers[$providerId] = $provider;
     }
-    
+
+    /** Register map service providers
+     *
+     * return array providers
+     */
+    public function getProviders()
+    {
+        return $this->providers;
+    }
+
     /** Register map service geocoder
      * @param string $country 
      * @param string $providerId provider name 
@@ -105,7 +114,16 @@ class MapProviderManager
             'batchSize'           => $batchSize
             );
     }
-    
+
+    /** Register map service geocoders
+     *
+     * return array geocoders
+     */
+    public function getGeocoders()
+    {
+        return $this->geocoders;
+    }
+
     /** Register map service reverse geocoder
      * @param string $country
      * @param string $providerId provider name
