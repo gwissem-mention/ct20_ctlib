@@ -62,9 +62,13 @@ class IOSPushDriver implements PushDriver
      */
     public function send(PushMessage $message)
     {
+        $this->logger->debug("iOS push driver: send message {$message}");
+
         $binaryMessage = $this->buildBinaryMessage($message);
 
         $service = $this->getService($message->getApplicationPackageId());
+
+        $this->logger->debug("iOS push driver: use service " . json_encode($service));
 
         $conn = $this
                 ->openConnectionToPushServer(
