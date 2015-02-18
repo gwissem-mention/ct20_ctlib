@@ -74,12 +74,14 @@ class IOSPushDriver implements PushDriver
                 ->openConnectionToPushServer(
                     $service['serviceUrl'],
                     $service['certPath'],
-                    $service['certPass']);
+                    $service['certPass'],
+                    $errorCode,
+                    $errorMessage);
 
         if (! $conn) {
             throw new PushDeliveryException(
                 PushDeliveryException::SERVICE_UNREACHABLE,
-                "URL: {$service['serviceUrl']}"
+                "URL: '{$service['serviceUrl']}' with error '{$errorMessage}' ({$errorCode})"
             );
         }
 
@@ -121,15 +123,19 @@ class IOSPushDriver implements PushDriver
      * Opens connection to iOS push server.
      *
      * @param string $serviceUrl 
-     * @param string $certPath  Path to certificate file.
-     * @param string $certPass  Certificate file passphrase.
+     * @param string $certPath      Path to certificate file.
+     * @param string $certPass      Certificate file passphrase.
+     * @param string $errorCode     Populated by method.
+     * @param string $errorMessage  Populated by method.
      *
      * @return resource
      */
     protected function openConnectionToPushServer(
                         $serviceUrl,
                         $certPath,
-                        $certPass)
+                        $certPass,
+                        &$errorCode=null,
+                        &$errorMessage=null)
     {
         $ctx = stream_context_create();
         stream_context_set_option($ctx, 'ssl', 'local_cert', $certPath);
@@ -138,8 +144,8 @@ class IOSPushDriver implements PushDriver
         // Open a socket connection to the iOS push server.
         return stream_socket_client(
             $serviceUrl,
-            $errno,
-            $errstr,
+            $errorCode,
+            $errorMessage,
             60, // timeout
             STREAM_CLIENT_CONNECT|STREAM_CLIENT_PERSISTENT,
             $ctx
