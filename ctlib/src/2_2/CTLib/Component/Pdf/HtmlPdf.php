@@ -33,6 +33,14 @@ class HtmlPdf
         return $this->domPdf->output();
     }
 
+	public function saveToFile($html, $filename)
+	{
+		$this->domPdf->load_html($html);
+		$this->domPdf->render();
+		$this->domPdf->stream($filename);
+	}
+	
+	
     /**
      * conver to pdf string
      *

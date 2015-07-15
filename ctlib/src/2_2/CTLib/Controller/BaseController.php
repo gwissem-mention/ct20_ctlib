@@ -690,7 +690,7 @@ abstract class BaseController extends Controller
      *
      * @return string
      */
-    protected function buildFullTemplateName($view, $type='html', $controller=null, $bundle=null)
+	public function buildFullTemplateName($view, $type='html', $controller=null, $bundle=null)
     {
         // Full path of template name
         if (preg_match("/\w+:\w+:\w+.\w+.twig/", $view, $match)) {
