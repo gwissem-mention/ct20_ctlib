@@ -81,23 +81,18 @@ class RecordSetController extends DynaPartController
             'currentSort'       => array(),
             'currentFilters'    => array()
         );
+        
+        $sessionStorage = $this->session()->get($cacheId);
 
-        if (!$this->isSessionStorageValid()) {
-            $this->session()->remove($cacheId);
-        }
-        else {
-            $sessionStorage = $this->session()->get($cacheId);
-
-            if ($sessionStorage) {
-                if ($sessionStorage->currentPage) {
-                    $options['currentPage'] = (int) $sessionStorage->currentPage;
-                }
-                if ($sessionStorage->sorts) {
-                    $options['currentSort'] = $sessionStorage->sorts;
-                }
-                if ($sessionStorage->filters) {
-                    $options['currentFilters'] = $sessionStorage->filters;
-                }
+        if ($sessionStorage) {
+            if ($sessionStorage->currentPage) {
+                $options['currentPage'] = (int) $sessionStorage->currentPage;
+            }
+            if ($sessionStorage->sorts) {
+                $options['currentSort'] = $sessionStorage->sorts;
+            }
+            if ($sessionStorage->filters) {
+                $options['currentFilters'] = $sessionStorage->filters;
             }
         }
 
