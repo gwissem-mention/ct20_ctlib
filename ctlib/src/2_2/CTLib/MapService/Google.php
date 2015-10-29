@@ -4,11 +4,17 @@ namespace CTLib\MapService;
 
 use CTLib\Util\Arr;
 
-class Google implements Geocoder, ReverseGeocoder
+class Google implements Geocoder, ReverseGeocoder, Router
 {   
     const CONNECTION_TIMEOUT = 5;
     const REQUEST_TIMEOUT = 10;
-    
+
+    const MILES         = 'imperial';
+    const KILOMETERS    = 'metric';
+
+    const SHORTEST_DISTANCE = 'distance';
+    const SHORTEST_TIME     = 'duration';
+
     /**
      * @var string
      */
@@ -20,7 +26,7 @@ class Google implements Geocoder, ReverseGeocoder
         $this->key    = $key;
         $this->logger = $logger;
     }
-    
+
     /**
      * Implements method in Geocoder
      *
@@ -85,7 +91,250 @@ class Google implements Geocoder, ReverseGeocoder
         
         return $reverseGeocodeResult;
     }
-    
+
+    /**
+     * Implements method in Router
+     *
+     */
+    public function route(
+        $fromLatitude,
+        $fromLongitude,
+        $toLatitude,
+        $toLongitude,
+        $optimizeBy,
+        array $options,
+        $distanceUnit)
+    {
+        $requestData = $this->buildRouteRequestData(
+            $fromLatitude,
+            $fromLongitude,
+            $toLatitude,
+            $toLongitude,
+            $options,
+            $distanceUnit
+        );
+
+        $response = $this->getRouteResponse($requestData);
+
+        $decodedResult = json_decode($response, true);
+        if (! $this->isValidResponse($decodedResult, $errorMsg)) {
+            throw new \exception("Google invalid route response with error {$errorMsg}");
+        }
+
+        $routeResult = Arr::get("route", $decodedResult);
+        if (empty($routeResult)) {
+            throw new \Exception("Google: route result is invalid");
+        }
+
+        $routeResult = $this->normalizeRouteResult($routeResult);
+
+        return $routeResult;
+    }
+
+    /**
+     * Implements method in Router
+     *
+     */
+    public function routeTimeAndDistance(
+        $fromLatitude,
+        $fromLongitude,
+        $toLatitude,
+        $toLongitude,
+        $optimizeBy,
+        array $options,
+        $distanceUnit)
+    {
+        $requestData = $this->buildRouteRequestData(
+            $fromLatitude,
+            $fromLongitude,
+            $toLatitude,
+            $toLongitude,
+            $options,
+            $distanceUnit
+        );
+
+        $response = $this->getRouteResponse($requestData);
+
+        $decodedResult = json_decode($response, true);
+
+        if (! $this->isValidResponse($decodedResult, $errorMsg)) {
+            throw new \exception("Google invalid route response with error {$errorMsg}");
+        }
+
+        $route = $this->extractShortestRoute($decodedResult, 'fastest');
+
+        $distance = $this
+                        ->convertDistanceValue(
+                            $route['legs'][0]['distance']['value'], $distanceUnit);
+
+        $time = $route['legs'][0]['duration']['value'];
+
+        return array($time, $distance);
+    }
+
+    /**
+     * Returns shortest route information contained within raw Google route
+     * response.
+     *
+     * @param string $results         JSON MapQuest route response.
+     * @param string $optimizedBy    Shortest will be determined using this metric:
+     *                          either 'shortest' or 'fastest'.
+     * @return array
+     */
+    protected function extractShortestRoute($results, $optimizedBy)
+    {
+        switch ($optimizedBy) {
+            case 'shortest':
+                $metric = self::SHORTEST_DISTANCE;
+                break;
+            default:
+                $metric = self::SHORTEST_TIME;
+        }
+
+        $routes = Arr::get("routes", $results);
+
+        if (empty($routes)) {
+            throw new \Exception("Google: route result is invalid");
+        }
+
+        usort($routes, function($r1, $r2) use ($metric) {
+            if ($r1['legs'][0][$metric]['value'] == $r2['legs'][0][$metric]['value'])
+                { return 0; }
+            return
+                $r1['legs'][0][$metric]['value'] < $r2['legs'][0][$metric]['value']
+                    ? -1 : 1;
+        });
+
+        return $routes[0];
+    }
+
+    /**
+     * Convert distance value (meters) into kilometers or miles
+     *
+     * @param $distanceValue integer
+     * @param $distanceUnit string
+     *
+     * @return $distance
+     */
+    protected function convertDistanceValue($distanceValue, $distanceUnit)
+    {
+        switch ($distanceUnit) {
+            case 'kilometer':
+                $distance = $distanceValue / 1000;
+                break;
+            default:
+                $distance = $distanceValue / 1609.344;
+        }
+
+        return $distance;
+    }
+
+    /**
+     * Build request data array sending to google
+     *
+     * @param $fromLatitude origin latitude
+     * @param $fromLongitude origin longitude
+     * @param $toLatitude destination latitude
+     * @param $toLongitude destination longitude
+     * @param $optimizeBy route request type
+     * @param $options route avoid options
+     * @param $distanceUnit distance unit by country
+     * @return formatted request data string for google
+     *
+     */
+    protected function buildRouteRequestData(
+        $fromLatitude,
+        $fromLongitude,
+        $toLatitude,
+        $toLongitude,
+        $options,
+        $distanceUnit)
+    {
+        switch ($distanceUnit) {
+            case 'kilometer':
+                $unit = self::KILOMETERS;
+                break;
+            default:
+                $unit = self::MILES;
+        }
+
+        // if avoid types is set
+        $avoidTypes = '';
+        if ($options != null) {
+            $avoidTypes = $this->convertRouteAvoidOptions($options);
+        }
+
+        $requestData =
+            array(
+                'origin'        => $fromLatitude . "," . $fromLongitude,
+                'destination'   => $toLatitude . "," . $toLongitude,
+                'units'         => $unit
+            );
+
+        $requestData = http_build_query($requestData) . $avoidTypes;
+
+        return $requestData;
+    }
+
+    /**
+     * Get Route Response array from google
+     *
+     * @param $requestData contains origin and destination params and
+     *  route options
+     * @return curl execution result
+     *
+     */
+    protected function getRouteResponse($requestData)
+    {
+        $curl = $this->createMapServiceRequest();
+        $requestUrl = $this->url . "directions/json?". $requestData.
+            "&alternatives=true&&key=". $this->key;
+
+        curl_setopt($curl, CURLOPT_URL, $requestUrl);
+
+        $response = curl_exec($curl);
+
+        if (! $response) {
+            $errorCode = curl_errno($curl);
+            throw new \Exception("Google: failed on http request error. {$errorCode}");
+        }
+
+        return curl_exec($curl);
+    }
+
+    /**
+     * Returns avoid types string for request url
+     * @param array $options options for routing service
+     * @return string
+     */
+    protected function convertRouteAvoidOptions($options=array())
+    {
+        // keys coming from 'map.route_avoid_types'
+        $routeAvoidTypesList = array(
+            MapProviderManager::ROUTE_AVOID_TOLL_ROAD           => 'tolls',
+            MapProviderManager::ROUTE_AVOID_HIGHWAY             => 'highways',
+            MapProviderManager::ROUTE_AVOID_FERRY               => 'ferries',
+            MapProviderManager::ROUTE_AVOID_INDOOR              => 'indoor',
+            MapProviderManager::ROUTE_AVOID_LIMITED_ACCESS      => '',
+            MapProviderManager::ROUTE_AVOID_UNPAVED             => '',
+            MapProviderManager::ROUTE_AVOID_SEASONAL_CLOSURE    => '',
+            MapProviderManager::ROUTE_AVOID_BORDER_CROSSING     => ''
+        );
+
+        $routeAvoidTypes = '';
+
+        foreach ($options as $avoidType) {
+            if (isset($routeAvoidTypesList[$avoidType])) {
+                $routeAvoidTypes .= '&avoid=' . urlencode($routeAvoidTypesList[$avoidType]);
+            }
+            else {
+                throw new \Exception("Please check avoid types configuration. Undefined avoid constant {$avoidType}.");
+            }
+        }
+
+        return $routeAvoidTypes;
+    }
+
     /**
      * Build Address Request array sending to google
      *

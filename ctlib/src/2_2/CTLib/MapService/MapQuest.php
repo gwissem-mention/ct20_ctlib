@@ -144,8 +144,14 @@ class MapQuest implements Geocoder, BatchGeocoder, ReverseGeocoder, Router
      * Implements method in Router
      *
      */    
-    public function route($fromLatitude, $fromLongitude, 
-        $toLatitude, $toLongitude, $optimizeBy, array $options, $distanceUnit)
+    public function route(
+        $fromLatitude,
+        $fromLongitude,
+        $toLatitude,
+        $toLongitude,
+        $optimizeBy,
+        array $options,
+        $distanceUnit)
     {
         $requestData = $this->buildRouteRequestData(
             $fromLatitude, 
@@ -178,8 +184,14 @@ class MapQuest implements Geocoder, BatchGeocoder, ReverseGeocoder, Router
      * Implements method in Router
      *
      */       
-    public function routeTimeAndDistance($fromLatitude, $fromLongitude,
-        $toLatitude, $toLongitude, $optimizeBy, array $options, $distanceUnit)
+    public function routeTimeAndDistance(
+        $fromLatitude,
+        $fromLongitude,
+        $toLatitude,
+        $toLongitude,
+        $optimizeBy,
+        array $options,
+        $distanceUnit)
     {
         $requestData = $this->buildRouteRequestData(
             $fromLatitude, 
@@ -356,8 +368,14 @@ class MapQuest implements Geocoder, BatchGeocoder, ReverseGeocoder, Router
      * @return formatted request data string for mapquest
      *
      */    
-    protected function buildRouteRequestData($fromLatitude, $fromLongitude, 
-        $toLatitude, $toLongitude, $optimizeBy, $options, $distanceUnit)
+    protected function buildRouteRequestData(
+        $fromLatitude,
+        $fromLongitude,
+        $toLatitude,
+        $toLongitude,
+        $optimizeBy,
+        $options,
+        $distanceUnit)
     {
         switch ($distanceUnit) {
             case 'kilometer':
@@ -506,13 +524,14 @@ class MapQuest implements Geocoder, BatchGeocoder, ReverseGeocoder, Router
     {
         // keys coming from 'map.route_avoid_types'
         $routeAvoidTypesList = array(
-            MapProviderManager::ROUTE_AVOID_LIMITED_ACCESS => 'Limited Access',
-            MapProviderManager::ROUTE_AVOID_TOLL_ROAD => 'Toll road',
-            MapProviderManager::ROUTE_AVOID_FERRY => 'Ferry',
-            MapProviderManager::ROUTE_AVOID_UNPAVED => 'Unpaved',
-            MapProviderManager::ROUTE_AVOID_SEASONAL_CLOSURE => 'Approximate Seasonal Closure',
-            MapProviderManager::ROUTE_AVOID_BORDER_CROSSING => 'Country border crossing'
-            );
+            MapProviderManager::ROUTE_AVOID_LIMITED_ACCESS      => 'Limited Access',
+            MapProviderManager::ROUTE_AVOID_TOLL_ROAD           => 'Toll road',
+            MapProviderManager::ROUTE_AVOID_FERRY               => 'Ferry',
+            MapProviderManager::ROUTE_AVOID_UNPAVED             => 'Unpaved',
+            MapProviderManager::ROUTE_AVOID_SEASONAL_CLOSURE    => 'Approximate Seasonal Closure',
+            MapProviderManager::ROUTE_AVOID_BORDER_CROSSING     => 'Country border crossing',
+            MapProviderManager::ROUTE_AVOID_INDOOR              => ''
+        );
         
         $routeAvoidTypes = '';
         
