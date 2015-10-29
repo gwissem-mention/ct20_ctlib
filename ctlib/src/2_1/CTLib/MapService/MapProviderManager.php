@@ -5,7 +5,7 @@ use Symfony\Component\Yaml\Yaml,
     Symfony\Component\HttpKernel\Config\FileLocator,
     CTLib\Util\Arr,
     CTLib\Helper\LocalizationHelper;
-    
+
 class MapProviderManager
 {
     /**
@@ -13,7 +13,7 @@ class MapProviderManager
      */
     const OPTIMIZE_BY_TIME              = 'fastest';
     const OPTIMIZE_BY_DISTANCE          = 'shortest';
-    
+
     /**
      * @const constants for route avoid options configuration
      */
@@ -23,38 +23,40 @@ class MapProviderManager
     const ROUTE_AVOID_UNPAVED           = 'Unpaved';
     const ROUTE_AVOID_SEASONAL_CLOSURE  = 'SeasonalClosure';
     const ROUTE_AVOID_BORDER_CROSSING   = 'CountryBorder';
-    
+    const ROUTE_AVOID_HIGHWAY           = 'Highway';
+    const ROUTE_AVOID_INDOOR            = 'Indoor';
+
     /**
      * @var string
      */
     protected $defaultCountry;
-    
+
     /**
      * @var array
      */
     protected $providers;
-    
+
     /**
      * @var array
      */
     protected $geocoders;
-    
+
     /**
      * @var array
      */
     protected $reverseGeocoders;
-    
+
     /**
      * @var array
      */
     protected $routers;
-    
+
     /**
      * @var array
      */
     protected $apis;
-    
-    /** 
+
+    /**
      * @param string $defaultCountry
      * @param Logger $logger
      * @param LocalizerHelper $localizer
@@ -70,7 +72,7 @@ class MapProviderManager
         $this->routers          = array();
         $this->apis             = array();
     }
-    
+
     /** Register map service provider
      * @param string $providerId provider name
      * @param string $class provider class
@@ -92,27 +94,27 @@ class MapProviderManager
     }
 
     /** Register map service geocoder
-     * @param string $country 
-     * @param string $providerId provider name 
+     * @param string $country
+     * @param string $providerId provider name
      * @param string $tokens tokens to filter address components
-     * @param string $allowedQualityCodes quality codes set for 
-     * address validation 
+     * @param string $allowedQualityCodes quality codes set for
+     * address validation
      * @param string $batchSize batch limit for map service supports
      * batch geocode
      */
-    public function registerGeocoder($country, $providerId, 
-        $tokens, $allowedQualityCodes, $batchSize = null)
+    public function registerGeocoder($country, $providerId,
+                                     $tokens, $allowedQualityCodes, $batchSize = null)
     {
         if (!isset($this->providers[$providerId])) {
             throw new \Exception("Can not find provider with provider id: {$providerId}");
         }
-        
+
         $this->geocoders[$country][] = array(
             'providerId'          => $providerId,
             'tokens'              => $tokens,
             'allowedQualityCodes' => $allowedQualityCodes,
             'batchSize'           => $batchSize
-            );
+        );
     }
 
     /** Register map service geocoders
@@ -133,12 +135,12 @@ class MapProviderManager
         if (!isset($this->providers[$providerId])) {
             throw new \Exception("Can not find provider with provider id: {$providerId}");
         }
-        
+
         $this->reverseGeocoders[$country][] = array(
             'providerId' => $providerId
-            );
+        );
     }
-    
+
     /** Register map service router
      * @param string $country
      * @param string $providerId provider name
@@ -148,12 +150,12 @@ class MapProviderManager
         if (!isset($this->providers[$providerId])) {
             throw new \Exception("Can not find provider with provider id: {$providerId}");
         }
-        
+
         $this->routers[$country] = array(
             'providerId' => $providerId
-            );
+        );
     }
-    
+
     /** Register map service router
      * @param string $country
      * @param string $providerId provider name
@@ -163,12 +165,12 @@ class MapProviderManager
         if (!isset($this->providers[$providerId])) {
             throw new \Exception("Can not find provider with provider id: {$providerId}");
         }
-        
+
         $this->apis[$country] = array(
             'providerId' => $providerId
-            );
+        );
     }
-        
+
     /**
      * Geocode address
      * @param array $address
@@ -187,112 +189,112 @@ class MapProviderManager
      *                  isValidated => ...
      *              )
      *
-     */    
+     */
     public function geocode($address)
     {
         $country = Arr::get('countryCode', $address, $this->defaultCountry);
-        
+
         if (! isset($this->geocoders[$country])) {
             throw new \Exception("Can not find geocode provider for country {$country}");
         }
-        
+
         $geocodeResult = array();
         foreach ($this->geocoders[$country] as $priority => $geocoder) {
             $geocodeProvider = $this->providers[$geocoder['providerId']];
             $this->logger->debug("Geocode provider is {$geocoder['providerId']} with priority {$priority}.");
-            
+
             $result = array();
-            
+
             //filter address components by tokens configuration
             $filteredAddress = $this
-                                ->filterAddressByTokens(
-                                    $address, 
-                                    $geocoder['tokens']);
-            
+                ->filterAddressByTokens(
+                    $address,
+                    $geocoder['tokens']);
+
             try {
                 $result = $geocodeProvider
-                                ->geocode(
-                                    $filteredAddress,
-                                    $geocoder['allowedQualityCodes']);
-                
+                    ->geocode(
+                        $filteredAddress,
+                        $geocoder['allowedQualityCodes']);
+
                 if (isset($result['isValidated']) && $result['isValidated']) {
                     return $result;
                 }
-                
+
                 //save the first priority geocode result
                 if (! $geocodeResult) {
                     $geocodeResult = $result;
-                } elseif ($geocodeResult['street'] == '' && 
-                            $geocodeResult['city'] == '' && 
-                            $geocodeResult['subdivision'] == '') {
+                } elseif ($geocodeResult['street'] == '' &&
+                    $geocodeResult['city'] == '' &&
+                    $geocodeResult['subdivision'] == '') {
                     $geocodeResult = $result;
                 }
             } catch (\Exception $e) {
                 $this->logger->warn("Geocode provider exception: {$e}.");
             }
         }
-        
+
         //if all geocoder fails to validate without exception, return the 
         //result from the geocoder with first priority
         return $geocodeResult;
     }
-    
+
     /**
      * Batch geocode addresses
      *
      * @param array addresses all addresses in an array
-     * @return array array of returned geocodes, each one follows 
+     * @return array array of returned geocodes, each one follows
      * the format of geocode function
      *
-     */      
+     */
     public function geocodeBatch(array $addresses)
     {
-        if (! $addresses) { 
+        if (! $addresses) {
             return array();
         }
-        
+
         $country = Arr::get('countryCode', $addresses[0], $this->defaultCountry);
-        
+
         if (! isset($this->geocoders[$country])) {
             throw new \Exception("Can not find geocode provider for country {$country}");
         }
-        
+
         $batchResults = array();
         foreach ($this->geocoders[$country] as $priority => $geocoder) {
             $geocodeProvider = $this->providers[$geocoder['providerId']];
             $this->logger->debug("Geocode provider is {$geocoder['providerId']} with priority {$priority}.");
-            
+
             $results = array();
-            
+
             //filter address components by tokens 
             $filteredAddresses = array_map(
-                                    function ($address) use ($geocoder) {
-                                        return $this->
-                                                filterAddressByTokens(
-                                                    $address,
-                                                    $geocoder['tokens']);
-                                    },
-                                    $addresses);
-            
+                function ($address) use ($geocoder) {
+                    return $this->
+                        filterAddressByTokens(
+                            $address,
+                            $geocoder['tokens']);
+                },
+                $addresses);
+
             //check if current map service provider supports batch    
             if ($geocodeProvider instanceof BatchGeocoder) {
                 try {
                     $results = $geocodeProvider
-                                ->geocodeBatch(
-                                    $filteredAddresses,
-                                    $geocoder['allowedQualityCodes'],
-                                    $geocoder['batchSize']);
+                        ->geocodeBatch(
+                            $filteredAddresses,
+                            $geocoder['allowedQualityCodes'],
+                            $geocoder['batchSize']);
                 } catch (\Exception $e) {
                     $this->logger->warn("Geocode exception: {$e}.");
                 }
             } else {
-                foreach ($filteredAddresses as $index => $filteredAddress ) {                                
+                foreach ($filteredAddresses as $index => $filteredAddress ) {
                     try {
                         $result = $geocodeProvider
-                                ->geocode(
-                                    $filteredAddress,
-                                    $geocoder['allowedQualityCodes']);
-                                    
+                            ->geocode(
+                                $filteredAddress,
+                                $geocoder['allowedQualityCodes']);
+
                         $results[$index] = $result;
                         if ($batchResults) {
                             if ($batchResults[$index]['street'] == '' &&
@@ -306,17 +308,17 @@ class MapProviderManager
                     }
                 }
             }
-            
+
             //get validated addresses from current batch geocode results
             $validatedAddresses = array_filter(
-                                    $results,
-                                    function ($r) {
-                                        return $r['isValidated'] == 1; 
-                                    });
-            
+                $results,
+                function ($r) {
+                    return $r['isValidated'] == 1;
+                });
+
             //get invalid addresses from current batch geocode results                       
             $invalidAddresses = array_diff_key($results, $validatedAddresses);
-            
+
             //update final batch results by validated addresses
             //if batch result is null, save first priority results
             //otherwise replace invalid batch results with validated addresses 
@@ -325,21 +327,21 @@ class MapProviderManager
             } else {
                 $batchResults = array_replace($batchResults, $validatedAddresses);
             }
-            
+
             //validate invalid addresses only each time
             //if there is no invalid addresses, return final batch results
-            if ($invalidAddresses) {                    
+            if ($invalidAddresses) {
                 $addresses = array_intersect_key(
-                    $addresses, 
+                    $addresses,
                     $invalidAddresses);
             } else {
                 return $batchResults;
             }
         }
-        
+
         return $batchResults;
     }
-    
+
     /**
      * Reverse geocode latitude and longitude
      *
@@ -347,37 +349,37 @@ class MapProviderManager
      * @param float $longitude longitude
      * @return array returned array follows those in geocode function
      *
-     */      
+     */
     public function reverseGeocode($latitude, $longitude, $country=null)
     {
         if ($country === null) {
             $country = $this->defaultCountry;
         }
-        
+
         if (! isset($this->reverseGeocoders[$country])) {
             throw new \Exception("Can not find geocode provider for country {$country}");
         }
-        
+
         $reverseGeocodeResult = array();
         foreach ($this->reverseGeocoders[$country] as $priority => $reverseGeocoder) {
             $reverseGeocodeProvider = $this
-                                    ->providers[$reverseGeocoder['providerId']];
+                ->providers[$reverseGeocoder['providerId']];
             $this->logger->debug("Reverse geocode provider is {$reverseGeocoder['providerId']} with priority {$priority}.");
-            
+
             $result = array();
-            
+
             try {
                 $result = $reverseGeocodeProvider
-                        ->reverseGeocode(
-                            $latitude,
-                            $longitude,
-                            $country
-                        );
-                
+                    ->reverseGeocode(
+                        $latitude,
+                        $longitude,
+                        $country
+                    );
+
                 if (isset($result['isValidated']) && $result['isValidated']) {
                     return $result;
                 }
-                
+
                 //save the first priority reverse geocode result
                 if ($reverseGeocodeResult) {
                     $reverseGeocodeResult = $result;
@@ -386,16 +388,16 @@ class MapProviderManager
                 $this->logger->warn("Reverse geocode exception: {$e}.");
             }
         }
-        
+
         if ($reverseGeocodeResult) {
             $reverseGeocodeResult['isValidated'] = false;
         }
-        
+
         //if all reverse geocoder fails to validate, return the result from 
         //the reverse geocoder with first priority
         return  $reverseGeocodeResult;
     }
-    
+
     /**
      * Get directions from one geo point to another
      *
@@ -412,39 +414,39 @@ class MapProviderManager
      *                  from => array follows the result format of reverse goecode
      *                  to => array follows the result format of reverse geocode
      *                  directions => array(
-     *                      narrative => 
-     *                      iconUrl => 
-     *                      distance => 
-     *                      time => 
+     *                      narrative =>
+     *                      iconUrl =>
+     *                      distance =>
+     *                      time =>
      *                      mapUrl =>
      *                      startLat =>
      *                      startLng =>
      *
-     */  
-    public function route($fromLatitude, $fromLongitude, 
-        $toLatitude, $toLongitude, $optimizeBy, array $options, $country=null)
+     */
+    public function route($fromLatitude, $fromLongitude,
+                          $toLatitude, $toLongitude, $optimizeBy, array $options, $country=null)
     {
         if (! $country) {
             $country = $this->defaultCountry;
         }
-        
+
         $routeProvider = $this->getRouteProvider($country);
         $distanceUnit = $this->localizer->getCountryDistanceUnit($country);
-        
+
         $result = $routeProvider
-                ->route(
-                    $fromLatitude,
-                    $fromLongitude,
-                    $toLatitude,
-                    $toLongitude,
-                    $optimizeBy,
-                    $options,
-                    $distanceUnit
-                );
-            
+            ->route(
+                $fromLatitude,
+                $fromLongitude,
+                $toLatitude,
+                $toLongitude,
+                $optimizeBy,
+                $options,
+                $distanceUnit
+            );
+
         return $result;
     }
-    
+
     /**
      * Calculates estimated time and distance for route between two points.
      *
@@ -460,47 +462,47 @@ class MapProviderManager
      *                $time in seconds
      *                $distance in country-specific unit.
      */
-    public function routeTimeAndDistance($fromLatitude, $fromLongitude, 
-        $toLatitude, $toLongitude, $optimizeBy, array $options, $country=null)
+    public function routeTimeAndDistance($fromLatitude, $fromLongitude,
+                                         $toLatitude, $toLongitude, $optimizeBy, array $options, $country=null)
     {
         if (! $country) {
             $country = $this->defaultCountry;
         }
-        
+
         $routeProvider = $this->getRouteProvider($country);
         $distanceUnit = $this->localizer->getCountryDistanceUnit($country);
-        
+
         $result = $routeProvider
-                ->routeTimeAndDistance(
-                    $fromLatitude,
-                    $fromLongitude,
-                    $toLatitude,
-                    $toLongitude,
-                    $optimizeBy,
-                    $options,
-                    $distanceUnit
-                );
-        
+            ->routeTimeAndDistance(
+                $fromLatitude,
+                $fromLongitude,
+                $toLatitude,
+                $toLongitude,
+                $optimizeBy,
+                $options,
+                $distanceUnit
+            );
+
         return $result;
     }
-    
+
     /**
      * Get map javascript api url for given country
      *
      * @param string $country country
      * @return string javascript api url
      *
-     */ 
+     */
     public function getJavascriptApiUrl($country=null)
     {
         if (! $country) {
             $country = $this->defaultCountry;
         }
-        
+
         $APIProvider = $this->getJavascriptAPIProvider($country);
         return $APIProvider->getJavascriptApiUrl();
     }
-    
+
     /**
      * Get map javascript plugin path for given country
      *
@@ -513,11 +515,11 @@ class MapProviderManager
         if (! $country) {
             $country = $this->defaultCountry;
         }
-        
+
         $APIProvider = $this->getJavascriptAPIProvider($country);
         return $APIProvider->getJavascriptMapPlugin();
     }
-    
+
     /**
      * Get allowed quality codes for javascript api by given country
      *
@@ -530,14 +532,14 @@ class MapProviderManager
         if (! $country) {
             $country = $this->defaultCountry;
         }
-        
+
         if (! isset($this->geocoders[$country])) {
             throw new \Exception("Can not find geocode provider for country {$country}");
         }
-        
+
         return $this->geocoders[$country][0]['allowedQualityCodes'];
     }
-    
+
     /**
      * Get route provider for given country
      *
@@ -550,15 +552,15 @@ class MapProviderManager
         if (!isset($this->routers[$country])) {
             throw new \Exception("Can not find route provider for country {$country}");
         }
-        
+
         $router = $this->routers[$country];
         $routeProvider = $this->providers[$router['providerId']];
-        
+
         $this->logger->debug("Route provider is {$router['providerId']}.");
-        
+
         return $routeProvider;
     }
-    
+
     /**
      * Get javascript api provider for given country
      *
@@ -571,30 +573,30 @@ class MapProviderManager
         if (! isset($this->apis[$country])) {
             throw new \Exception("Can not find javascript api for country {$country}");
         }
-        
+
         $javascriptAPI = $this->apis[$country];
         $APIProvider = $this->providers[$javascriptAPI['providerId']];
-        
+
         $this->logger->debug("Javascript API provider is {$javascriptAPI['providerId']}.");
-        
+
         return $APIProvider;
     }
-    
+
     /**
      * Get filtered address by configuration of tokens
      *
      * @param array $address
-     * @param array $tokens  
+     * @param array $tokens
      * @return array filtered address by tokens
      *
-     */    
+     */
     protected function filterAddressByTokens($address, $tokens)
     {
         $filteredAddress = array();
         foreach ($tokens as $token) {
             $filteredAddress[$token] = Arr::get($token, $address);
         }
-        
+
         return $filteredAddress;
     }
 }
