@@ -28,6 +28,22 @@ class Google implements Geocoder, ReverseGeocoder, Router
     }
 
     /**
+     * Return mapquest javascript api url
+     */
+    public function getJavascriptApiUrl()
+    {
+        return "https://maps.googleapis.com/maps/api/js?key=" . $this->key;
+    }
+
+    /**
+     * Return mapquest javascript plugin
+     */
+    public function getJavascriptMapPlugin()
+    {
+        return "google.maps.plugin.js";
+    }
+
+    /**
      * Implements method in Geocoder
      *
      */
