@@ -501,15 +501,17 @@ class MapQuest implements Geocoder, BatchGeocoder, ReverseGeocoder, Router
         }
 
         foreach ($maneuvers as $maneuver) {
+            $startPoint = Arr::get('startPoint', $maneuver);
+
             $routeResult["directions"][] = array(
                 "narrative" => Arr::get("narrative", $maneuver),
                 "iconUrl"   => Arr::get("iconUrl", $maneuver),
                 "distance"  => Arr::get("distance", $maneuver),
                 "time"      => Arr::get("time", $maneuver),
                 "mapUrl"    => Arr::get("mapUrl", $maneuver),
-                "startLat"  => Arr::get("startPoint.lat", $maneuver),
-                "startLng"  => Arr::get("startPoint.lng", $maneuver)
-            );
+                "startLat"  => Arr::get("lat", $startPoint),
+                "startLng"  => Arr::get("lng", $startPoint)
+                );
         }
 
         return $routeResult;
