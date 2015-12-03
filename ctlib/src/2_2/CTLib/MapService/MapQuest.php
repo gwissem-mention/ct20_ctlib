@@ -529,8 +529,7 @@ class MapQuest implements Geocoder, BatchGeocoder, ReverseGeocoder, Router
             MapProviderManager::ROUTE_AVOID_FERRY               => 'Ferry',
             MapProviderManager::ROUTE_AVOID_UNPAVED             => 'Unpaved',
             MapProviderManager::ROUTE_AVOID_SEASONAL_CLOSURE    => 'Approximate Seasonal Closure',
-            MapProviderManager::ROUTE_AVOID_BORDER_CROSSING     => 'Country border crossing',
-            MapProviderManager::ROUTE_AVOID_INDOOR              => ''
+            MapProviderManager::ROUTE_AVOID_BORDER_CROSSING     => 'Country border crossing'
         );
         
         $routeAvoidTypes = '';

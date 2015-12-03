@@ -330,7 +330,6 @@ class Google implements Geocoder, ReverseGeocoder, Router
             MapProviderManager::ROUTE_AVOID_TOLL_ROAD           => 'tolls',
             MapProviderManager::ROUTE_AVOID_HIGHWAY             => 'highways',
             MapProviderManager::ROUTE_AVOID_FERRY               => 'ferries',
-            MapProviderManager::ROUTE_AVOID_INDOOR              => 'indoor',
             MapProviderManager::ROUTE_AVOID_LIMITED_ACCESS      => '',
             MapProviderManager::ROUTE_AVOID_UNPAVED             => '',
             MapProviderManager::ROUTE_AVOID_SEASONAL_CLOSURE    => '',

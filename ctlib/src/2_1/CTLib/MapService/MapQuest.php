@@ -37,7 +37,7 @@ class MapQuest implements Geocoder, BatchGeocoder, ReverseGeocoder, Router
 
         $decodedResult = json_decode($response, true);
         if (! $this->isValidResponse($decodedResult, $errorMsg)) {
-            throw new \exception("Mapquest invalid route response with error {$errorMsg}");
+            throw new \Exception("Mapquest invalid route response with error {$errorMsg}");
         }
 
         $geocodeResult = Arr::findByKeyChain(
@@ -82,7 +82,7 @@ class MapQuest implements Geocoder, BatchGeocoder, ReverseGeocoder, Router
             $decodedResult = json_decode($response, true);
 
             if (! $this->isValidResponse($decodedResult, $errorMsg)) {
-                throw new \exception("Mapquest invalid route response with error {$errorMsg}");
+                throw new \Exception("Mapquest invalid route response with error {$errorMsg}");
             }
 
             $batchResults = Arr::mustGet("results", $decodedResult);
@@ -121,7 +121,7 @@ class MapQuest implements Geocoder, BatchGeocoder, ReverseGeocoder, Router
 
         $decodedResult = json_decode($response, true);
         if (! $this->isValidResponse($decodedResult, $errorMsg)) {
-            throw new \exception("Mapquest invalid route response with error {$errorMsg}");
+            throw new \Exception("Mapquest invalid route response with error {$errorMsg}");
         }
 
         $reverseGeocodeResult = Arr::findByKeyChain(
@@ -167,7 +167,7 @@ class MapQuest implements Geocoder, BatchGeocoder, ReverseGeocoder, Router
 
         $decodedResult = json_decode($response, true);
         if (! $this->isValidResponse($decodedResult, $errorMsg)) {
-            throw new \exception("Mapquest invalid route response with error {$errorMsg}");
+            throw new \Exception("Mapquest invalid route response with error {$errorMsg}");
         }
 
         $routeResult = Arr::get("route", $decodedResult);
@@ -208,7 +208,7 @@ class MapQuest implements Geocoder, BatchGeocoder, ReverseGeocoder, Router
         $decodedResult = json_decode($response, true);
 
         if (! $this->isValidResponse($decodedResult, $errorMsg)) {
-            throw new \exception("Mapquest invalid route response with error {$errorMsg}");
+            throw new \Exception("Mapquest invalid route response with error {$errorMsg}");
         }
 
         $routeResult = Arr::get("route", $decodedResult);
@@ -531,8 +531,7 @@ class MapQuest implements Geocoder, BatchGeocoder, ReverseGeocoder, Router
             MapProviderManager::ROUTE_AVOID_FERRY               => 'Ferry',
             MapProviderManager::ROUTE_AVOID_UNPAVED             => 'Unpaved',
             MapProviderManager::ROUTE_AVOID_SEASONAL_CLOSURE    => 'Approximate Seasonal Closure',
-            MapProviderManager::ROUTE_AVOID_BORDER_CROSSING     => 'Country border crossing',
-            MapProviderManager::ROUTE_AVOID_INDOOR              => ''
+            MapProviderManager::ROUTE_AVOID_BORDER_CROSSING     => 'Country border crossing'
         );
 
         $routeAvoidTypes = '';

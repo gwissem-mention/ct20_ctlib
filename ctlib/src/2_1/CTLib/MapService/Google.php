@@ -55,7 +55,7 @@ class Google implements Geocoder, ReverseGeocoder, Router
 
         $decodedResult = json_decode($response, true);
         if (! $this->isValidResponse($decodedResult, $errorMsg)) {
-            throw new \exception("Google: invalid geocode response with error {$errorMsg}");
+            throw new \Exception("Google: invalid geocode response with error {$errorMsg}");
         }
 
         $geocodeResult = Arr::findByKeyChain(
@@ -89,7 +89,7 @@ class Google implements Geocoder, ReverseGeocoder, Router
 
         $decodedResult = json_decode($response, true);
         if (! $this->isValidResponse($decodedResult, $errorMsg)) {
-            throw new \exception("Google: invalid reverse geocode response with error {$errorMsg}");
+            throw new \Exception("Google: invalid reverse geocode response with error {$errorMsg}");
         }
 
         $reverseGeocodeResult = Arr::findByKeyChain(
@@ -134,7 +134,7 @@ class Google implements Geocoder, ReverseGeocoder, Router
 
         $decodedResult = json_decode($response, true);
         if (! $this->isValidResponse($decodedResult, $errorMsg)) {
-            throw new \exception("Google invalid route response with error {$errorMsg}");
+            throw new \Exception("Google invalid route response with error {$errorMsg}");
         }
 
         $routeResult = Arr::get("route", $decodedResult);
@@ -174,7 +174,7 @@ class Google implements Geocoder, ReverseGeocoder, Router
         $decodedResult = json_decode($response, true);
 
         if (! $this->isValidResponse($decodedResult, $errorMsg)) {
-            throw new \exception("Google invalid route response with error {$errorMsg}");
+            throw new \Exception("Google invalid route response with error {$errorMsg}");
         }
 
         $route = $this->extractShortestRoute($decodedResult, 'fastest');
@@ -330,7 +330,6 @@ class Google implements Geocoder, ReverseGeocoder, Router
             MapProviderManager::ROUTE_AVOID_TOLL_ROAD           => 'tolls',
             MapProviderManager::ROUTE_AVOID_HIGHWAY             => 'highways',
             MapProviderManager::ROUTE_AVOID_FERRY               => 'ferries',
-            MapProviderManager::ROUTE_AVOID_INDOOR              => 'indoor',
             MapProviderManager::ROUTE_AVOID_LIMITED_ACCESS      => '',
             MapProviderManager::ROUTE_AVOID_UNPAVED             => '',
             MapProviderManager::ROUTE_AVOID_SEASONAL_CLOSURE    => '',

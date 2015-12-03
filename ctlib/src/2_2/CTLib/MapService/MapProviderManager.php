@@ -24,7 +24,6 @@ class MapProviderManager
     const ROUTE_AVOID_SEASONAL_CLOSURE  = 'SeasonalClosure';
     const ROUTE_AVOID_BORDER_CROSSING   = 'CountryBorder';
     const ROUTE_AVOID_HIGHWAY           = 'Highway';
-    const ROUTE_AVOID_INDOOR            = 'Indoor';
     
     /**
      * @var string
