@@ -137,14 +137,9 @@ class Google implements Geocoder, ReverseGeocoder, Router
             throw new \Exception("Google invalid route response with error {$errorMsg}");
         }
 
-        $routeResult = Arr::get("route", $decodedResult);
-        if (empty($routeResult)) {
-            throw new \Exception("Google: route result is invalid");
-        }
+        $route = $this->extractShortestRoute($decodedResult, $optimizeBy);
 
-        $routeResult = $this->normalizeRouteResult($routeResult);
-
-        return $routeResult;
+        return $route;
     }
 
     /**
@@ -177,7 +172,7 @@ class Google implements Geocoder, ReverseGeocoder, Router
             throw new \Exception("Google invalid route response with error {$errorMsg}");
         }
 
-        $route = $this->extractShortestRoute($decodedResult, 'fastest');
+        $route = $this->extractShortestRoute($decodedResult, $optimizeBy);
 
         $distance = $this
             ->convertDistanceValue(
@@ -185,7 +180,16 @@ class Google implements Geocoder, ReverseGeocoder, Router
 
         $time = $route['legs'][0]['duration']['value'];
 
-        return array($time, $distance);
+        $wayPoints = array();
+        $steps = $route['legs'][0]['steps'];
+        foreach ($steps as $step) {
+            $wayPoints[] = $step['start_location'];
+        }
+
+        return array(
+                'time' => $time,
+                'distance' => $distance,
+                'directions' => $wayPoints);
     }
 
     /**
