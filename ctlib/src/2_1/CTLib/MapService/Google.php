@@ -138,8 +138,51 @@ class Google implements Geocoder, ReverseGeocoder, Router
         }
 
         $route = $this->extractShortestRoute($decodedResult, $optimizeBy);
+        $routeResult = $this->normalizeRouteResult($route, $distanceUnit);
 
-        return $route;
+        return $routeResult;
+    }
+
+    /**
+     * Build route info array from google result
+     *
+     * @param array $result response result from route service
+     * @return array route array
+     *
+     */
+    protected function normalizeRouteResult($result, $distanceUnit)
+    {
+        $routeResult = array(
+            "distance" => $this
+                    ->convertDistanceValue(
+                        $result['legs'][0]['distance']['value'], $distanceUnit),
+            "time" => $result['legs'][0]['duration']['value'],
+            "from" => null,
+            "to" => null
+        );
+
+        $maneuvers = Arr::findByKeyChain($result, "legs.0.steps");
+        if (empty($maneuvers)) {
+            throw new \Exception("Google: route result is missing maneuvers.");
+        }
+
+        foreach ($maneuvers as $maneuver) {
+            $startPoint = Arr::get('start_location', $maneuver);
+
+            $routeResult["directions"][] = array(
+                "narrative" => null,
+                "iconUrl"   => null,
+                "distance"  => $this
+                                ->convertDistanceValue(
+                                $maneuver['distance']['value'], $distanceUnit),
+                "time"      => $maneuver['duration']['value'],
+                "mapUrl"    => null,
+                "startLat"  => Arr::get("lat", $startPoint),
+                "startLng"  => Arr::get("lng", $startPoint)
+            );
+        }
+
+        return $routeResult;
     }
 
     /**
@@ -180,16 +223,7 @@ class Google implements Geocoder, ReverseGeocoder, Router
 
         $time = $route['legs'][0]['duration']['value'];
 
-        $wayPoints = array();
-        $steps = $route['legs'][0]['steps'];
-        foreach ($steps as $step) {
-            $wayPoints[] = $step['start_location'];
-        }
-
-        return array(
-                'time' => $time,
-                'distance' => $distance,
-                'directions' => $wayPoints);
+        return array($time, $distance);
     }
 
     /**
