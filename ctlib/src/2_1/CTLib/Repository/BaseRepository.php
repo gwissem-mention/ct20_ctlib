@@ -187,11 +187,7 @@ class BaseRepository extends \Doctrine\ORM\EntityRepository
 
         if (! $results) { return array(); }
 
-        $entityMetadata = $this
-                            ->getEntityManager()
-                            ->getEntityMetaHelper()
-                            ->getMetadata($this->entityName());
-        return new DetachedEntityIterator($results, $entityMetadata);
+        return $this->createDetachedEntityIterator($results);
     }
 
     /**
@@ -464,6 +460,23 @@ class BaseRepository extends \Doctrine\ORM\EntityRepository
                 ->setParameter($fieldName, $value);
         }
         return $qbr;
+    }
+
+    /**
+     * Creates DetachedEntityIterator for results returned from
+     * DetachedQueryBuilder.
+     * 
+     * @param  array $results 
+     * @return DetachedEntityIterator
+     */
+    protected function createDetachedEntityIterator($results)
+    {
+        $entityName = $this->entityName();
+        $entityMetadata = $this
+                            ->getEntityManager()
+                            ->getEntityMetaHelper()
+                            ->getMetadata($entityName);
+        return new DetachedEntityIterator($results, $entityMetadata);
     }
 
     /**
