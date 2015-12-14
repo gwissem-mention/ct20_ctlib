@@ -28,6 +28,7 @@ class MapPartController extends DynaPartController
         $assetLoader
             ->addExternalJs($mapService->getJavascriptApiUrl())
             ->addAppJs($mapService->getJavascriptMapPlugin())
+            ->addAppJs("markerwithlabel.js")
             ->addAppCss("mapsPois.css")
             ->addInlineJs('$("#'.$domId.'").maps('.$json.');');
         $jsHelper
