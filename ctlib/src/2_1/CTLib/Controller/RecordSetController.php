@@ -95,13 +95,10 @@ class RecordSetController extends DynaPartController
                 $options['currentFilters'] = $sessionStorage->filters;
             }
         }
-
         $options['currentFilters'] = array_merge(
             $options['currentFilters'],
             $currentFilters
         );
-
         return $options;
     }
-
 }

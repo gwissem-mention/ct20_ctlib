@@ -151,6 +151,8 @@ class EntityManager extends \Doctrine\ORM\EntityManager
     /**
      * Inserts an entity directly into the database.
      *
+     * Mike T. @ 7/9/2013: This method should be considered experimental only.
+     *
      * NOTE: This method does not use Doctrine's UnitOfWork nor does it make
      *       the entity managed by the EntityManager.
      *
@@ -211,6 +213,8 @@ class EntityManager extends \Doctrine\ORM\EntityManager
     /**
      * Updates entity's database record.
      *
+     * Mike T. @ 7/9/2013: This method should be considered experimental only.
+     *
      * NOTE: This method does not use Doctrine's UnitOfWork nor does it make
      *       the entity managed by the EntityManager.
      *
@@ -219,95 +223,30 @@ class EntityManager extends \Doctrine\ORM\EntityManager
      */
     public function update($entity)
     {
-        $metaData   = $this->getEntityMetaHelper()->getMetadata($entity);
-        $tableName  = $metaData->getTableName();
-        $fields     = array_flip($metaData->fieldNames); // We need field => column
-        $entityId   = $this->getEntityId($entity);
-        $values     = [];
-        $identifier = [];
+	    $meta   = $this->getEntityMetaHelper()->getMetadata($entity);
+        $fields = $meta->fieldNames;
+        $values = array();
+        $id     = $this->getEntityId($entity);
+        $useId  = array();
 
-        // Iterate through all of entity's fields to build a columnName => value
-        // map. We'll use this map to run Connection#update.
-        foreach ($fields as $fieldName => $columnName) {
-            if (isset($entityId[$fieldName])) {
-                // Field won't be part of update values because it's the entity's
-                // ID.
-                $idValue = $entityId[$fieldName];
-                $identifier[$columnName] = $idValue;
+        foreach ($fields as $columnName => $fieldName) {
+            if (isset($id[$fieldName])) {
+                $useId[$columnName] = $id[$fieldName];
                 continue;
             }
 
             if ($fieldName == 'modifiedOn') {
-                // Do a solid by automatically setting modifiedOn.
                 $value = time();
             } else {
-                // Retrieve the field's value currently set in the entity.
                 $getter = "get{$fieldName}";
                 $value  = $entity->{$getter}();
             }
-
             $values[$columnName] = $value;
-        }
-        
-        $this
-            ->getConnection()
-            ->update($tableName, $values, $identifier);
-    }
-
-    /**
-     * Updates entity's database record and object for specified update fields.
-     * 
-     * NOTE: This method does not use Doctrine's UnitOfWork nor does it make
-     *       the entity managed by the EntityManager.
-     * 
-     * @param  Entity $entity       
-     * @param  array $updateFields [$fieldName => $newValue, ...]
-     * 
-     * @return void               
-     */
-    public function updateForFields($entity, $updateFields)
-    {
-        $metaData   = $this->getEntityMetaHelper()->getMetadata($entity);
-        $tableName  = $metaData->getTableName();
-        $fields     = array_flip($metaData->fieldNames); // We need field => column
-        $entityId   = $this->getEntityId($entity);
-        $values     = [];
-        $identifier = [];
-
-        if (isset($fields['modifiedOn'])
-            && ! isset($updateFields['modifiedOn'])) {
-            // Do a solid and automatically set modifiedOn when it hasn't been
-            // explicitly set by the user.
-            $updateFields['modifiedOn'] = time();
-        }
-
-        // Iterate through each updated value and build columnName => value map
-        // so we can use Connection#update. Also update the entity with the
-        // changed value.
-        foreach ($updateFields as $fieldName => $value) {
-            if (! isset($fields[$fieldName])) {
-                throw new \RuntimeException("Field '{$fieldName}' does not exist for " . get_class($entity));
-            }
-
-            // Convert to columnName and add to value map.
-            $columnName = $fields[$fieldName];
-            $values[$columnName] = $value;
-
-            // Update the entity with the changed value.
-            $setter = "set{$fieldName}";
-            $entity->{$setter}($value);
-        }
-    
-        // Convert entity's ID to columnName => $value map for use with
-        // Connection#update.
-        foreach ($entityId as $fieldName => $value) {
-            $columnName = $fields[$fieldName];
-            $identifier[$columnName] = $value;
         }
 
         $this
             ->getConnection()
-            ->update($tableName, $values, $identifier);
+            ->update($meta->getTableName(), $values, $useId);
     }
 
     /**

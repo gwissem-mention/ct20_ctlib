@@ -380,7 +380,6 @@ class CTLibConfiguration implements ConfigurationInterface
                 ->end()
                 
                 ->arrayNode('geocoders')
-                    ->performNoDeepMerging()
                     ->children()
 
                         ->arrayNode('US')
@@ -467,7 +466,6 @@ class CTLibConfiguration implements ConfigurationInterface
                 ->end()
                     
                 ->arrayNode('reverseGeocoders')
-                    ->performNoDeepMerging()
                     ->children()
 
                         ->arrayNode('US')
@@ -506,7 +504,6 @@ class CTLibConfiguration implements ConfigurationInterface
                 ->end()
                 
                 ->arrayNode('routers')
-                    ->performNoDeepMerging()
                     ->children()
 
                         ->arrayNode('US')
@@ -539,7 +536,6 @@ class CTLibConfiguration implements ConfigurationInterface
                 ->end()                
                 
                 ->arrayNode('javascript_apis')
-                    ->performNoDeepMerging()
                     ->children()
 
                         ->arrayNode('US')

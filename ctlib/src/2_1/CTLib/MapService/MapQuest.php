@@ -37,7 +37,7 @@ class MapQuest implements Geocoder, BatchGeocoder, ReverseGeocoder, Router
 
         $decodedResult = json_decode($response, true);
         if (! $this->isValidResponse($decodedResult, $errorMsg)) {
-            throw new \Exception("Mapquest invalid route response with error {$errorMsg}");
+            throw new \exception("Mapquest invalid route response with error {$errorMsg}");
         }
 
         $geocodeResult = Arr::findByKeyChain(
@@ -82,7 +82,7 @@ class MapQuest implements Geocoder, BatchGeocoder, ReverseGeocoder, Router
             $decodedResult = json_decode($response, true);
 
             if (! $this->isValidResponse($decodedResult, $errorMsg)) {
-                throw new \Exception("Mapquest invalid route response with error {$errorMsg}");
+                throw new \exception("Mapquest invalid route response with error {$errorMsg}");
             }
 
             $batchResults = Arr::mustGet("results", $decodedResult);
@@ -121,7 +121,7 @@ class MapQuest implements Geocoder, BatchGeocoder, ReverseGeocoder, Router
 
         $decodedResult = json_decode($response, true);
         if (! $this->isValidResponse($decodedResult, $errorMsg)) {
-            throw new \Exception("Mapquest invalid route response with error {$errorMsg}");
+            throw new \exception("Mapquest invalid route response with error {$errorMsg}");
         }
 
         $reverseGeocodeResult = Arr::findByKeyChain(
@@ -144,14 +144,8 @@ class MapQuest implements Geocoder, BatchGeocoder, ReverseGeocoder, Router
      * Implements method in Router
      *
      */
-    public function route(
-        $fromLatitude,
-        $fromLongitude,
-        $toLatitude,
-        $toLongitude,
-        $optimizeBy,
-        array $options,
-        $distanceUnit)
+    public function route($fromLatitude, $fromLongitude, 
+        $toLatitude, $toLongitude, $optimizeBy, array $options, $distanceUnit)
     {
         $requestData = $this->buildRouteRequestData(
             $fromLatitude,
@@ -167,7 +161,7 @@ class MapQuest implements Geocoder, BatchGeocoder, ReverseGeocoder, Router
 
         $decodedResult = json_decode($response, true);
         if (! $this->isValidResponse($decodedResult, $errorMsg)) {
-            throw new \Exception("Mapquest invalid route response with error {$errorMsg}");
+            throw new \exception("Mapquest invalid route response with error {$errorMsg}");
         }
 
         $routeResult = Arr::get("route", $decodedResult);
@@ -184,14 +178,8 @@ class MapQuest implements Geocoder, BatchGeocoder, ReverseGeocoder, Router
      * Implements method in Router
      *
      */
-    public function routeTimeAndDistance(
-        $fromLatitude,
-        $fromLongitude,
-        $toLatitude,
-        $toLongitude,
-        $optimizeBy,
-        array $options,
-        $distanceUnit)
+    public function routeTimeAndDistance($fromLatitude, $fromLongitude,
+        $toLatitude, $toLongitude, $optimizeBy, array $options, $distanceUnit)
     {
         $requestData = $this->buildRouteRequestData(
             $fromLatitude,
@@ -208,7 +196,7 @@ class MapQuest implements Geocoder, BatchGeocoder, ReverseGeocoder, Router
         $decodedResult = json_decode($response, true);
 
         if (! $this->isValidResponse($decodedResult, $errorMsg)) {
-            throw new \Exception("Mapquest invalid route response with error {$errorMsg}");
+            throw new \exception("Mapquest invalid route response with error {$errorMsg}");
         }
 
         $routeResult = Arr::get("route", $decodedResult);
@@ -368,14 +356,8 @@ class MapQuest implements Geocoder, BatchGeocoder, ReverseGeocoder, Router
      * @return formatted request data string for mapquest
      *
      */
-    protected function buildRouteRequestData(
-        $fromLatitude,
-        $fromLongitude,
-        $toLatitude,
-        $toLongitude,
-        $optimizeBy,
-        $options,
-        $distanceUnit)
+    protected function buildRouteRequestData($fromLatitude, $fromLongitude, 
+        $toLatitude, $toLongitude, $optimizeBy, $options, $distanceUnit)
     {
         switch ($distanceUnit) {
             case 'kilometer':
@@ -501,16 +483,14 @@ class MapQuest implements Geocoder, BatchGeocoder, ReverseGeocoder, Router
         }
 
         foreach ($maneuvers as $maneuver) {
-            $startPoint = Arr::get('startPoint', $maneuver);
-
             $routeResult["directions"][] = array(
                 "narrative" => Arr::get("narrative", $maneuver),
                 "iconUrl"   => Arr::get("iconUrl", $maneuver),
                 "distance"  => Arr::get("distance", $maneuver),
                 "time"      => Arr::get("time", $maneuver),
                 "mapUrl"    => Arr::get("mapUrl", $maneuver),
-                "startLat"  => Arr::get("lat", $startPoint),
-                "startLng"  => Arr::get("lng", $startPoint)
+                "startLat"  => Arr::get("startPoint.lat", $maneuver),
+                "startLng"  => Arr::get("startPoint.lng", $maneuver)
                 );
         }
 

@@ -84,42 +84,6 @@ class ResponsePart implements \JsonSerializable
     }
 
     /**
-     * Returns $statusCode
-     * @return integer 
-     */
-    public function getStatusCode()
-    {
-        return $this->statusCode;
-    }
-
-    /**
-     * Returns $type
-     * @return string 
-     */
-    public function getType()
-    {
-        return $this->type;
-    }
-
-    /**
-     * Returns $requestId
-     * @return integer 
-     */
-    public function getRequestId()
-    {
-        return $this->requestId;
-    }
-
-    /**
-     * Returns $buffer
-     * @return array 
-     */
-    public function getBuffer()
-    {
-        return $this->buffer;
-    }
-
-    /**
      * {@inheritDoc}
      */
     public function jsonSerialize()

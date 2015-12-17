@@ -23,7 +23,6 @@ class MapProviderManager
     const ROUTE_AVOID_UNPAVED           = 'Unpaved';
     const ROUTE_AVOID_SEASONAL_CLOSURE  = 'SeasonalClosure';
     const ROUTE_AVOID_BORDER_CROSSING   = 'CountryBorder';
-    const ROUTE_AVOID_HIGHWAY           = 'Highway';
 
     /**
      * @var string
@@ -101,12 +100,8 @@ class MapProviderManager
      * @param string $batchSize batch limit for map service supports
      * batch geocode
      */
-    public function registerGeocoder(
-        $country,
-        $providerId,
-        $tokens,
-        $allowedQualityCodes,
-        $batchSize = null)
+    public function registerGeocoder($country, $providerId, 
+        $tokens, $allowedQualityCodes, $batchSize = null)
     {
         if (!isset($this->providers[$providerId])) {
             throw new \Exception("Can not find provider with provider id: {$providerId}");
@@ -426,20 +421,12 @@ class MapProviderManager
      *                      startLng =>
      *
      */
-    public function route(
-        $fromLatitude,
-        $fromLongitude,
-        $toLatitude,
-        $toLongitude,
-        $optimizeBy,
-        array $options,
-        $country=null)
+    public function route($fromLatitude, $fromLongitude, 
+        $toLatitude, $toLongitude, $optimizeBy, array $options, $country=null)
     {
         if (! $country) {
             $country = $this->defaultCountry;
         }
-
-        $this->checkMapServiceConfiguration($optimizeBy, $options);
 
         $routeProvider = $this->getRouteProvider($country);
         $distanceUnit = $this->localizer->getCountryDistanceUnit($country);
@@ -473,20 +460,12 @@ class MapProviderManager
      *                $time in seconds
      *                $distance in country-specific unit.
      */
-    public function routeTimeAndDistance(
-        $fromLatitude,
-        $fromLongitude,
-        $toLatitude,
-        $toLongitude,
-        $optimizeBy,
-        array $options,
-        $country=null)
+    public function routeTimeAndDistance($fromLatitude, $fromLongitude, 
+        $toLatitude, $toLongitude, $optimizeBy, array $options, $country=null)
     {
         if (! $country) {
             $country = $this->defaultCountry;
         }
-
-        $this->checkMapServiceConfiguration($optimizeBy, $options);
 
         $routeProvider = $this->getRouteProvider($country);
         $distanceUnit = $this->localizer->getCountryDistanceUnit($country);
@@ -503,44 +482,6 @@ class MapProviderManager
             );
 
         return $result;
-    }
-
-    /**
-     * Check map service configuration
-     *
-     * @param string $optimizeBy route specific type shortest/fastest
-     * @param array $options map route service-specific options
-     *
-     * throw InvalidArgumentException if configuration is not valid
-     */
-    public function checkMapServiceConfiguration($optimizeBy, array $options)
-    {
-        if ($optimizeBy) {
-            switch ($optimizeBy) {
-                case self::OPTIMIZE_BY_TIME:
-                    break;
-                case self::OPTIMIZE_BY_DISTANCE:
-                    break;
-                default:
-                    throw new \InvalidArgumentException("Map service configuration optimized by '{$optimizeBy}' is not valid.");
-            }
-        }
-
-        if ($options) {
-            $routeAvoidTypesList = array(
-                self::ROUTE_AVOID_LIMITED_ACCESS      => 'LimitedAccess',
-                self::ROUTE_AVOID_TOLL_ROAD           => 'Toll',
-                self::ROUTE_AVOID_FERRY               => 'Ferry',
-                self::ROUTE_AVOID_UNPAVED             => 'Unpaved',
-                self::ROUTE_AVOID_SEASONAL_CLOSURE    => 'SeasonalClosure',
-                self::ROUTE_AVOID_BORDER_CROSSING     => 'CountryBorder',
-                self::ROUTE_AVOID_HIGHWAY             => 'Highway'
-            );
-
-            if (! array_intersect($options, $routeAvoidTypesList)) {
-                throw new \InvalidArgumentException("Map service configuration avoid options '{$options}' is not valid.");
-            }
-        }
     }
 
     /**
