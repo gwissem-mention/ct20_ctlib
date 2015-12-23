@@ -234,4 +234,25 @@ class Util
 
         return $fileName;
     }
+
+    /**
+     * Converts string to boolean.
+     * NOTE: This method is not intended to replace PHP's built-in string to
+     * boolean value cast. Instead, its purpose to is to convert common strings
+     * to their boolean counterpart (e.g., "y" => true).
+     * @param  string $str
+     * @return boolean
+     */
+    public static function strToBool($str)
+    {
+        $str = strtolower($str);
+
+        if (in_array($str, ['1', 'true', 'y'])) {
+            return true;
+        } elseif (in_array($str, ['0', 'false', 'n'])) {
+            return false;
+        } else {
+            return null;
+        }
+    }
 }
