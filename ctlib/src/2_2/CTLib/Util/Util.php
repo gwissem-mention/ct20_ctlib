@@ -255,4 +255,27 @@ class Util
             return null;
         }
     }
+
+    /**
+     * Converts PHP ini memory string to bytes.
+     * @param  string $str 
+     * @return integer      
+     */
+    public static function iniStrToBytes($str)
+    {
+        $unit   = strtolower(substr($str, -1));
+        $value  = substr($str, 0, -1);
+
+        switch($unit) {
+            // The 'G' modifier is available since PHP 5.1.0
+            case 'g':
+                $value *= 1024;
+            case 'm':
+                $value *= 1024;
+            case 'k':
+                $value *= 1024;
+        }
+
+        return $value;
+    }
 }
