@@ -34,7 +34,7 @@ class PDOExceptionInspector
     public function isDeadlock()
     {
         $dbErrorCode    = $this->getSQLState();
-        $lockErrorCodes = ['4001', 'HY000'];
+        $lockErrorCodes = ['40001', 'HY000'];
 
         return in_array($dbErrorCode, $lockErrorCodes); 
     }
