@@ -80,9 +80,9 @@ class MapProviderManager
      * @param string $webservice_url provider url
      * @param string $webservice_key provider url
      */
-    public function registerProvider($providerId, $class, $javascript_url, $javascript_key, $webservice_url=null, $webservice_key=null)
+    public function registerProvider($providerId, $class, $javaScriptUrl, $javaScriptKey, $webServiceUrl, $webServiceKey)
     {
-        $provider = new $class($javascript_url, $javascript_key, $this->logger, $webservice_url, $webservice_key);
+        $provider = new $class($javaScriptUrl, $javaScriptKey, $webServiceUrl, $webServiceKey, $this->logger);
         $this->providers[$providerId] = $provider;
     }
 
