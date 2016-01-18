@@ -24,8 +24,8 @@ class MapQuest implements Geocoder, BatchGeocoder, ReverseGeocoder, Router
         $this->javaScriptUrl    = $javaScriptUrl;
         $this->javaScriptKey    = $javaScriptKey;
         
-        $this->webServiceUrl    = $webServiceUrl ?: $this->javaScriptUrl;
-        $this->webServiceKey    = $webServiceKey ?: $this->javaScriptKey;
+        $this->webServiceUrl    = $webServiceUrl;
+        $this->webServiceKey    = $webServiceKey;
     }
 
     /**
