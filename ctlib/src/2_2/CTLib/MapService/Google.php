@@ -20,11 +20,22 @@ class Google implements Geocoder, ReverseGeocoder, Router
      */
     protected $url;
 
-    public function __construct($url, $key, $logger)
+    public function __construct($javascript_url, $javascript_key, $logger, $webservice_url = null, $webservice_key = null)
     {
-        $this->url    = $url;
-        $this->key    = $key;
         $this->logger = $logger;
+        
+        $this->javascript_url    = $javascript_url;
+        $this->javascript_key    = $javascript_key;
+        
+        $this->webservice_url    = $webservice_url;
+        $this->webservice_key    = $webservice_key;
+        if ($this->webservice_url == null){
+            $this->webservice_url =$this->javascript_url;
+        }
+        if ($this->webservice_key == null){
+            $this->webservice_key =$this->javascript_key;        
+        }
+        
     }
 
     /**
@@ -32,9 +43,9 @@ class Google implements Geocoder, ReverseGeocoder, Router
      */
     public function getJavascriptApiUrl()
     {
-        return "https://maps.googleapis.com/maps/api/js?key=" . $this->key;
+        return $this->javascript_url . "js?key=" . $this->javascript_key;
     }
-
+   
     /**
      * Return mapquest javascript plugin
      */
@@ -341,8 +352,8 @@ class Google implements Geocoder, ReverseGeocoder, Router
     protected function getRouteResponse($requestData)
     {
         $curl = $this->createMapServiceRequest();
-        $requestUrl = $this->url . "directions/json?". $requestData.
-            "&alternatives=true&&key=". $this->key;
+        $requestUrl = $this->webservice_url . "directions/json?". $requestData.
+            "&alternatives=true&&key=". $this->webservice_key;
 
         curl_setopt($curl, CURLOPT_URL, $requestUrl);
 
@@ -418,8 +429,10 @@ class Google implements Geocoder, ReverseGeocoder, Router
     protected function getGeocodeResponse($requestData)
     {
         $curl = $this->createMapServiceRequest();
-        $requestUrl = $this->url . "geocode/json?address=". $requestData .
-            "&sensor=false&key=". $this->key;
+
+        $requestUrl = $this->webservice_url . "geocode/json?address=". $requestData .
+            "&sensor=false&key=". $this->webservice_key;
+
         curl_setopt($curl, CURLOPT_URL, $requestUrl);
 
         $response = curl_exec($curl);
@@ -444,8 +457,8 @@ class Google implements Geocoder, ReverseGeocoder, Router
     {
         $curl = $this->createMapServiceRequest();
         $requestData = $latitude . "," . $longitude;
-        $requestUrl = $this->url . "geocode/json?latlng=". $requestData .
-            "&sensor=false&key=". $this->key;
+        $requestUrl = $this->webservice_url . "geocode/json?latlng=". $requestData .
+            "&sensor=false&key=". $this->webservice_key;
 
         curl_setopt($curl, CURLOPT_URL, $requestUrl);
 

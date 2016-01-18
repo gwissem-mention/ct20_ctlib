@@ -75,11 +75,14 @@ class MapProviderManager
     /** Register map service provider
      * @param string $providerId provider name
      * @param string $class provider class
-     * @param string $url provider url
+     * @param string $javascript_url javascript provider url
+     * @param string $javascript_key provider url
+     * @param string $webservice_url provider url
+     * @param string $webservice_key provider url
      */
-    public function registerProvider($providerId, $class, $url, $key)
+    public function registerProvider($providerId, $class, $javascript_url, $javascript_key, $webservice_url=null, $webservice_key=null)
     {
-        $provider = new $class($url, $key, $this->logger);
+        $provider = new $class($javascript_url, $javascript_key, $this->logger, $webservice_url, $webservice_key);
         $this->providers[$providerId] = $provider;
     }
 
@@ -266,7 +269,6 @@ class MapProviderManager
         foreach ($this->geocoders[$country] as $priority => $geocoder) {
             $geocodeProvider = $this->providers[$geocoder['providerId']];
             $this->logger->debug("Geocode provider is {$geocoder['providerId']} with priority {$priority}.");
-
             $results = array();
 
             //filter address components by tokens 
@@ -297,7 +299,6 @@ class MapProviderManager
                             ->geocode(
                                 $filteredAddress,
                                 $geocoder['allowedQualityCodes']);
-
                         $results[$index] = $result;
                         if ($batchResults) {
                             if ($batchResults[$index]['street'] == '' &&

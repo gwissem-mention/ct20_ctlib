@@ -303,15 +303,16 @@ class CTLibExtension extends Extension
             array($config['country'], new Reference('logger'), new Reference('localizer')));
         
         $container->setDefinition('map_service', $mgrDef);
-        
         foreach ($config['providers'] as $providerId => $providerConfig) {
-            $args = array(
+                $args = array(
                 $providerId,
                 $providerConfig['class'], 
-                $providerConfig['url'],
-                $providerConfig['key']
+                $providerConfig['javascript_url'],
+                $providerConfig['javascript_key'],
+                $providerConfig['webservice_url'],
+                $providerConfig['webservice_key']
                 );
-            
+
             $mgrDef->addMethodCall('registerProvider', $args);
         }
         

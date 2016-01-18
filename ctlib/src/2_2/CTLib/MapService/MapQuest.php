@@ -17,11 +17,22 @@ class MapQuest implements Geocoder, BatchGeocoder, ReverseGeocoder, Router
      */
     protected $url;
 
-    public function __construct($url, $key, $logger)
+    public function __construct($javascript_url, $javascript_key, $logger, $webservice_url = null, $webservice_key = null)
     {
-        $this->url    = $url;
-        $this->key    = $key;
         $this->logger = $logger;
+        
+        $this->javascript_url    = $javascript_url;
+        $this->javascript_key    = $javascript_key;
+        
+        $this->webservice_url    = $webservice_url;
+        $this->webservice_key    = $webservice_key;
+        if ($this->webservice_url == null){
+            $this->webservice_url =$this->javascript_url;
+        }
+        if ($this->webservice_key == null){
+            $this->webservice_key =$this->javascript_key;        
+        }
+        
     }
 
     /**
@@ -226,9 +237,9 @@ class MapQuest implements Geocoder, BatchGeocoder, ReverseGeocoder, Router
      */
     public function getJavascriptApiUrl()
     {
-        return "https://www.mapquestapi.com/sdk/js/v7.0.s/mqa.toolkit.js?key=" . $this->key;
+        return $this->javascript_url . "sdk/js/v7.0.s/mqa.toolkit.js?key=" . $this->javascript_key;
     }
-
+    
     /**
      * Return mapquest javascript plugin
      */
@@ -275,7 +286,7 @@ class MapQuest implements Geocoder, BatchGeocoder, ReverseGeocoder, Router
      */
     protected function getGeocodeResponse($requestData)
     {
-        $path = "geocoding/v1/address?key=". $this->key;
+        $path = "geocoding/v1/address?key=". $this->webservice_key;
         $curl = $this->createMapServiceRequest($path);
 
         $postData = 'json=' . urlencode(json_encode(array('location' => $requestData)));
@@ -301,7 +312,7 @@ class MapQuest implements Geocoder, BatchGeocoder, ReverseGeocoder, Router
      */
     protected function getBatchGeocodeResponse($requestData)
     {
-        $path = "geocoding/v1/batch?key=". $this->key;
+        $path = "geocoding/v1/batch?key=". $this->webservice_key;
         $curl = $this->createMapServiceRequest($path);
 
         $postData = 'json=' .  urlencode(
@@ -333,7 +344,7 @@ class MapQuest implements Geocoder, BatchGeocoder, ReverseGeocoder, Router
      */
     protected function getReverseGeocodeResponse($latitude, $longitude)
     {
-        $path = "geocoding/v1/reverse?key=". $this->key;
+        $path = "geocoding/v1/reverse?key=". $this->webservice_key;
         $curl = $this->createMapServiceRequest($path);
 
         $requestData = array(
@@ -414,7 +425,7 @@ class MapQuest implements Geocoder, BatchGeocoder, ReverseGeocoder, Router
      */
     protected function getRouteResponse($requestData)
     {
-        $path = "directions/v2/route?key=". $this->key;
+        $path = "directions/v2/route?key=". $this->webservice_key;
 
         $urlQuery = parse_url($path, \PHP_URL_QUERY);
         if ($urlQuery) {
@@ -587,7 +598,7 @@ class MapQuest implements Geocoder, BatchGeocoder, ReverseGeocoder, Router
      */
     protected function createMapServiceRequest($path)
     {
-        $requestUrl = $this->url . $path;
+        $requestUrl = $this->webservice_url . $path;
 
         $curl = curl_init();
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
