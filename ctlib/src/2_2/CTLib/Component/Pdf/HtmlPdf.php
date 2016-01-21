@@ -34,6 +34,17 @@ class HtmlPdf
     }
 
     /**
+     * Stream PDF to client
+     *
+     * @param string $filename
+     *
+     */
+    public function save($filename)
+    {
+        $this->domPdf->stream($filename);
+    }
+
+    /**
      * conver to pdf string
      *
      * @return string PDF string
