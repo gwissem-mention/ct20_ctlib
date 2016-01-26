@@ -34,7 +34,7 @@ class HtmlPdf
     }
 
     /**
-     * Stream PDF to client
+     * Stream PDF file to client
      *
      * @param string $filename
      *
