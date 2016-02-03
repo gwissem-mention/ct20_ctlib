@@ -157,12 +157,13 @@ class Google implements Geocoder, ReverseGeocoder, Router
     protected function normalizeRouteResult($result, $distanceUnit)
     {
         $routeResult = array(
-            "distance" => $this
+            "distance"  => $this
                     ->convertDistanceValue(
                         $result['legs'][0]['distance']['value'], $distanceUnit),
-            "time" => $result['legs'][0]['duration']['value'],
-            "from" => null,
-            "to" => null
+            "time"      => $result['legs'][0]['duration']['value'],
+            "from"      => null,
+            "to"        => null,
+            "polyline"  => $result['overview_polyline']['points']
         );
 
         $maneuvers = Arr::findByKeyChain($result, "legs.0.steps");
