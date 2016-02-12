@@ -299,7 +299,7 @@ class DataProvider
         $cnf->cachePages        = $request->get('cachedPage', 0);
         $cnf->filters           = $request->get('filters', array());
         $cnf->sorts             = $request->get('sorts', array());
-        $cnf->suppressTotal     = $request->get('suppressTotal', false);
+        $cnf->suppressTotal     = $request->get('suppressTotal', true);
         $cnf->suppressResults   = $request->get('suppressResults', false);
         list(
             $requestedFields,
@@ -505,6 +505,9 @@ class DataProvider
         $max = $queryConfig->rowsPerPage
                 + $queryConfig->cachePages * $queryConfig->rowsPerPage;
 
+        if($offset > 0) {
+            $offset--;
+        }
         $this->queryBuilder->setFirstResult($offset);
         $this->queryBuilder->setMaxResults($max);
     }
