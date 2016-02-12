@@ -8,7 +8,7 @@ use CTLib\Util\Util;
  *
  * @author Mike Turoff <mturoff@celltrak.com>
  */
-class ObjectWalker
+class ObjectWalker implements \JsonSerializable
 {
     /**
      * @var \stdClass
@@ -199,6 +199,14 @@ class ObjectWalker
             }
             return true;
         });
+    }
+
+    /**
+     * Simply calls hasArray to support getArrayRaw.
+     */
+    public function hasArrayRaw($property, $validItemCallback=null)
+    {
+        return $this->hasArray($property, $validItemCallback);
     }
 
     /**
@@ -447,6 +455,9 @@ class ObjectWalker
             if (! call_user_func_array(array($this, $hasMethodName), $args)) {
                 return null;
             }
+            if(stripos($methodName, 'Raw') > 0) {
+                return $this->getRawValue($args[0]);
+            }
             return $this->getValue($args[0]);
         }
 
@@ -538,7 +549,7 @@ class ObjectWalker
         if (is_object($value)) {
             return new self($value, $this->qualifyProperty($property));
         } elseif (is_array($value)) {
-            $values = array();
+            $values = [];
             $property = $this->qualifyProperty($property);
             foreach ($value as $i => $item) {
                 if (is_object($item)) {
@@ -550,6 +561,24 @@ class ObjectWalker
         } else {
             return $value;
         }
+    }
+
+    /**
+     * Returns raw json value for $property.
+     *
+     * @param string $property
+     * @return mixed
+     */
+    protected function getRawValue($property)
+    {
+        if (!isset($this->object->{$property})) {
+            $property = $this->qualifyProperty($property);
+            throw new MalformedObjectException(
+                "Missing property: {$property}",
+                $this->object
+            );
+        }
+        return $this->object->{$property};
     }
 
     /**
@@ -571,6 +600,16 @@ class ObjectWalker
     public function __toString()
     {
         return json_encode($this->object);
+    }
+
+    /**
+     * Returns JSON-encoded source object.
+     *
+     * @return string
+     */
+    public function jsonSerialize()
+    {
+        return $this->object;
     }
 
     /**
