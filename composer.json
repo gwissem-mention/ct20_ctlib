@@ -3,5 +3,8 @@
     "description": "Shared library incorporated by several CellTrak projects",
     "require": {
         "php": ">=5.4.0"
+    },
+    "autoload": {
+        "psr-0": { "CTLib": "" }
     }
 }
