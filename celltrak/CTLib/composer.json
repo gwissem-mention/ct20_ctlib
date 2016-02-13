@@ -1,0 +1,7 @@
+{
+    "name": "celltrak/CTLib",
+    "description": "Shared library incorporated by several CellTrak projects",
+    "require": {
+        "php": ">=5.4.0"
+    }
+}
