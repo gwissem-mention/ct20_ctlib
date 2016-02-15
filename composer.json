@@ -1,0 +1,11 @@
+{
+    "name": "celltrak/CTLib",
+    "type": "symfony-bundle",
+    "description": "Shared library incorporated by several CellTrak projects",
+    "require": {
+        "php": ">=5.4.0"
+    },
+    "autoload": {
+        "psr-4": { "CTLib\\": "" }
+    }
+}
