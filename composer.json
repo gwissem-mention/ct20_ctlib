@@ -1,7 +1,7 @@
 {
     "name": "celltrak/CTLib",
     "type": "symfony-bundle",
-    "description": "Shared library incorporated by several CellTrak projects",
+    "description": "Shared library incorporated by many CellTrak projects",
     "require": {
         "php": ">=5.4.0"
     },
