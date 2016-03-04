@@ -30,6 +30,7 @@ class CTLibExtension extends Extension
         $this->loadMutexServices($config['mutex'], $container);
         $this->loadUrlsServices($config['urls'], $container);
         $this->loadViewServices($config['view'], $container);
+        $this->loadCTAPIServices($config['ct_api'], $container);
     }
 
     protected function loadLoggingServices($config, $container)
@@ -486,5 +487,16 @@ class CTLibExtension extends Extension
 
     }
 
+    protected function loadCTAPIServices($config, $container)
+    {
+        if (! $config['enabled']) { return; }
+
+        $args = array(
+            new Reference('logger'),
+            $config['url']
+        );
+        $def = new Definition('CTLib\Component\CtApi\CtApiCaller', $args);
+        $container->setDefinition('ct_api.caller', $def);
+    }
 
 }
