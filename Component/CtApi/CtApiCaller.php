@@ -1,6 +1,8 @@
 <?php
 namespace CTLib\Component\CtApi;
 
+use CTLib\Util\Curl;
+use CTLib\Component\CtApi\CTApiCallerException;
 
 /**
  * calling methods for ct api.
@@ -42,68 +44,49 @@ class CtApiCaller
      * @param string $patialURL
      * @param string $body
      * @param array $headers     
-     * @return string http code 
+     * @return string http response code 
      */
     public function post(
         $activityId,        
         $partialUrl,
-        $body = '',
+        $body = NULL,
         $headers = array()
     ) {
 
-        try {
 
-            $requiredHeaders = array(
-                "Accept: application/json",
-                "Content-Type: application/json"
-                );
+        $requiredHeaders = array(
+            "Accept: application/json",
+            "Content-Type: application/json"
+            );
 
-            if (is_array($headers)) {
-                $requiredHeaders = array_merge($requiredHeaders, $headers);
-            }
-
-            $this->logger->debug("ct_api_caller: started posting for activityId $activityId");
-
-            $url = rtrim($this->url, '/') . '/' . ltrim($partialUrl, '/');
-            $ch = curl_init();
-    
-            curl_setopt ( $ch , CURLOPT_URL, $url);
-            curl_setopt ( $ch , CURLOPT_RETURNTRANSFER , 1 );
-            curl_setopt ( $ch , CURLOPT_FAILONERROR, 1);
-            curl_setopt ( $ch , CURLOPT_VERBOSE , 0 );
-            curl_setopt ( $ch , CURLOPT_HEADER , 1 );
-    
-            curl_setopt ( $ch , CURLOPT_HTTPHEADER, $requiredHeaders );
-            curl_setopt ( $ch , CURLOPT_POST, true );
-            curl_setopt ( $ch , CURLOPT_POSTFIELDS, $body );
-    
-            $response = curl_exec($ch);
-            $httpCode = $this->getHttpCode($response);
-
-            $this->logger->debug("ct_api_caller: finish posting for activityId $activityId. returned response: $response");
-            return $httpCode;
-
-        } catch (\Exception $e) {
-            $this->logger->error("ct_api_caller: failed posting for activityId $activityId. curl exception: " . $e->getMessage());
-            return self::CURL_EXCEPTION;
-
+        if (is_array($headers)) {
+            $requiredHeaders = array_merge($requiredHeaders, $headers);
         }
-    }
 
+        $this->logger->debug("ct_api_caller: started posting for activityId $activityId");
 
-    /**
-     * parse curl response http code
-     * @param string $response  
-     * @return string http code 
-     */
-    private function getHttpCode($response)
-    {
-        $position = strpos($response, "HTTP/1.1");
-        $httpStatus = substr($response, $position, 100);
-        $httpInfo = explode(' ', $httpStatus);
+        $url = rtrim($this->url, '/') . '/' . ltrim($partialUrl, '/');
 
-        $httpCode = $httpInfo[1];
-        return $httpCode;
-    }    
+        $request = new Curl($url);
+        $request->httpheader = $requiredHeaders;
+
+        if ($body) {
+            $request->postfields = $body;
+        }
+
+        $response = $request->exec();
+
+        if ($errorNum = $request->errno()) {
+            throw new \Exception("ct_api_caller: Failed sending request to '{$url}' with error '{$request->error()}' ({$errorNum})");
+        }
+
+        $httpResponseCode = $request->info(CURLINFO_HTTP_CODE);
+
+        if ($httpResponseCode != 200) {
+            throw new CTApiCallerException($httpResponseCode, $response, (string) $request);
+        }
+
+        return $httpResponseCode;
+    }  
 
 }
