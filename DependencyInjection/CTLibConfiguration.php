@@ -33,6 +33,7 @@ class CTLibConfiguration implements ConfigurationInterface
                 ->append($this->addMutexNode())
                 ->append($this->addUrlsNode())
                 ->append($this->addViewNode())
+                ->append($this->addCTAPINode())                
             ->end();
 
         return $tb;
@@ -697,4 +698,21 @@ class CTLibConfiguration implements ConfigurationInterface
 
         return $node;
     }
+
+    protected function addCTAPINode()
+    {
+        $tb = new TreeBuilder;
+        $node = $tb->root('ct_api');
+
+        $node
+            ->canBeEnabled()
+            ->children()
+                ->scalarNode('url')
+                    ->isRequired()
+                ->end()
+            ->end()
+        ->end();
+
+        return $node;
+    }      
 }
