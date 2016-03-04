@@ -7,8 +7,10 @@ namespace CTLib\Component\CtApi;
  *
  * @author Li Gao <lgao@celltrak.com>
  */
-class ApiCaller
+class CtApiCaller
 {
+
+    const CURL_EXCEPTION = 'Curl_Exception';
 
     /**
      * @var Logger
@@ -28,7 +30,7 @@ class ApiCaller
     public function __construct(
         $logger,
         $url
-        ) {
+    ) {
 
         $this->logger = $logger;  
         $this->url = $url;
@@ -40,14 +42,14 @@ class ApiCaller
      * @param string $patialURL
      * @param string $body
      * @param array $headers     
-     * @return boolean 
+     * @return string http code 
      */
     public function post(
         $activityId,        
         $partialUrl,
         $body = '',
         $headers = array()
-        ) {
+    ) {
 
         try {
 
@@ -58,12 +60,9 @@ class ApiCaller
 
             if (is_array($headers)) {
                 $requiredHeaders = array_merge($requiredHeaders, $headers);
-
             }
 
-            $this->logger->info("ct_api_caller: started posting for activityId $activityId");     
-
-            $postedSuccessful = false;
+            $this->logger->debug("ct_api_caller: started posting for activityId $activityId");
 
             $url = rtrim($this->url, '/') . '/' . ltrim($partialUrl, '/');
             $ch = curl_init();
@@ -79,23 +78,32 @@ class ApiCaller
             curl_setopt ( $ch , CURLOPT_POSTFIELDS, $body );
     
             $response = curl_exec($ch);
-            $position = strpos($response,"HTTP/1.1 200 OK");
-            if ($position!==false) {
-                $postedSuccessful = true;
-            }    
+            $httpCode = $this->getHttpCode($response);
 
-            if ($postedSuccessful) {
-                $this->logger->info("ct_api_caller: finished posting for activityId $activityId");  
-                return true;
-            } else {
-                $this->logger->info("ct_api_caller: failed posting for activityId $activityId. returned response: $response");
-                return false;
-            }
+            $this->logger->debug("ct_api_caller: finish posting for activityId $activityId. returned response: $response");
+            return $httpCode;
+
         } catch (\Exception $e) {
             $this->logger->error("ct_api_caller: failed posting for activityId $activityId. curl exception: " . $e->getMessage());
-            return false;
+            return self::CURL_EXCEPTION;
 
         }
     }
+
+
+    /**
+     * parse curl response http code
+     * @param string $response  
+     * @return string http code 
+     */
+    private function getHttpCode($response)
+    {
+        $position = strpos($response, "HTTP/1.1");
+        $httpStatus = substr($response, $position, 100);
+        $httpInfo = explode(' ', $httpStatus);
+
+        $httpCode = $httpInfo[1];
+        return $httpCode;
+    }    
 
 }
