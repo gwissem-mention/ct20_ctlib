@@ -50,14 +50,14 @@ class CtApiCaller
         $activityId,        
         $partialUrl,
         $body = NULL,
-        $headers = array()
+        $headers = []
     ) {
 
 
-        $requiredHeaders = array(
+        $requiredHeaders = [
             "Accept: application/json",
             "Content-Type: application/json"
-            );
+            ];
 
         if (is_array($headers)) {
             $requiredHeaders = array_merge($requiredHeaders, $headers);
