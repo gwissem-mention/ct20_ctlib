@@ -83,10 +83,11 @@ class CtApiCaller
         $httpResponseCode = $request->info(CURLINFO_HTTP_CODE);
 
         if ($httpResponseCode != 200) {
-            throw new CTApiCallerException($httpResponseCode, $response, (string) $request);
+            throw new CTApiCallerException($httpResponseCode, $response, json_encode($request));
         }
 
         return $httpResponseCode;
-    }  
+    }
+
 
 }
