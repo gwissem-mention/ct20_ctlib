@@ -2,7 +2,7 @@
 namespace CTLib\Component\Pdf;
 
 use CanGelis\PDF\PDF;
-use League\Flysystem\Adapter\Local as LocaleFileAdapter;
+use League\Flysystem\Adapter\Local as LocalFileAdapter;
 
 
 /**
