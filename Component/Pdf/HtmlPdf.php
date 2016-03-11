@@ -1,63 +1,80 @@
 <?php
 namespace CTLib\Component\Pdf;
 
+use CanGelis\PDF\PDF;
+use League\Flysystem\Adapter\Local as LocaleFileAdapter;
+
+
 /**
  * CellTrak wrapper class to convert Html to PDF
- * using third party DOMPDF solution.
+ * using third party CanGelis PDF solution.
  *
+ * NOTE: This API isn't very well designed. Primarily, there's a disconnect
+ * between the render and save methods, despite save requiring render to have
+ * been called first. Right now (Mar 11, 2016), I'm just updating to use the
+ * CanGelis PDF library. I don't want to have to update all the callers to use
+ * a new API. We can come back "later" and polish this.
+ *
+ * @author Shuang Liu
+ * @author Mike Turoff
  */
 class HtmlPdf
 {
 
-    protected $domPdf = null;
+    const WKHTMLTOPDF_BIN_PATH = '/usr/local/bin/wkhtmltopdf';
 
+
+    /**
+     * CanGelis\PDF\PDF
+     * @var $pdf
+     */
+    protected $pdf;
+
+
+    /**
+     * @param AppKernel $kernel
+     */
     public function __construct($kernel)
     {
-        $rootDir = $kernel->getRootDir();
-        require_once $rootDir . '/../vendor/dompdf/dompdf_config.inc.php';
-        global $_dompdf_warnings, $_dompdf_show_warnings, $_dompdf_debug, $_DOMPDF_DEBUG_TYPES, $memusage;
-        $_dompdf_warnings = array();
-        $this->domPdf = new \DOMPDF;
+        $this->pdf = new PDF(self::WKHTMLTOPDF_BIN_PATH);        
     }
 
     /**
      * Genereates PDF Using third party html-to-pdf solution
      *
      * @return string PDF string
-     *
      */
     public function render($html)
     {
-        $this->domPdf->load_html($html);
-        $this->domPdf->render();
-        return $this->domPdf->output();
+        $this->pdf->loadHTML($html);
+        $this->pdf->pageSize('Letter');
+
+        return $this->pdf->get();
     }
 
     /**
-     * Stream PDF file to client
+     * Saves PDF to file on local filesystem.
      *
-     * @param string $filename
-     *
+     * @param string $savePath
      */
-    public function save($filename)
+    public function save($savePath)
     {
-        $this->domPdf->stream($filename);
+        $fileInfo = new \SPLFileInfo($savePath);
+        $path = $fileInfo->getPath();
+        $filename = $fileInfo->getFilename();
+
+        $saveAdapter = new LocalFileAdapter($path);
+        $this->pdf->save($filename, $saveAdapter);
     }
 
     /**
-     * conver to pdf string
+     * Outputs rendered PDF.
      *
      * @return string PDF string
-     *
      */
     public function __toString()
     {
-        return $this->render();
-    }
-    
-    
-    public function __destruct()
-    {
-        unset($this->domPdf);
-    }
+        return $this->pdf->get();
+    }   
+
 }
