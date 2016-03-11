@@ -502,6 +502,10 @@ class CTLibExtension extends Extension
 
     protected function loadHtmlToPdfServices($config, $container)
     {
+        if (!$config['enabled']) {
+            return;
+        }
+
         $wkhtmltopdfBinPath = $config['wkhtmltopdf_path'];
         $args = [$wkhtmltopdfBinPath];
         $def = new Definition('CTLib\Component\Pdf\HtmlToPdf', $args);
