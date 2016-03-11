@@ -723,6 +723,7 @@ class CTLibConfiguration implements ConfigurationInterface
         $node = $tb->root('html_to_pdf');
 
         $node
+            ->canBeEnabled()
             ->children()
                 ->scalarNode('wkhtmltopdf_path')
                     ->isRequired()
