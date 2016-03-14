@@ -33,7 +33,8 @@ class CTLibConfiguration implements ConfigurationInterface
                 ->append($this->addMutexNode())
                 ->append($this->addUrlsNode())
                 ->append($this->addViewNode())
-                ->append($this->addCTAPINode())                
+                ->append($this->addCTAPINode()) 
+                ->append($this->addHtmlToPdfNode())               
             ->end();
 
         return $tb;
@@ -714,5 +715,23 @@ class CTLibConfiguration implements ConfigurationInterface
         ->end();
 
         return $node;
-    }      
+    }
+
+    protected function addHtmlToPdfNode()
+    {
+        $tb = new TreeBuilder;
+        $node = $tb->root('html_to_pdf');
+
+        $node
+            ->canBeEnabled()
+            ->children()
+                ->scalarNode('wkhtmltopdf_path')
+                    ->isRequired()
+                ->end()
+            ->end()
+        ->end();
+
+        return $node;
+    }   
+
 }

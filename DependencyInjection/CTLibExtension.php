@@ -31,6 +31,7 @@ class CTLibExtension extends Extension
         $this->loadUrlsServices($config['urls'], $container);
         $this->loadViewServices($config['view'], $container);
         $this->loadCTAPIServices($config['ct_api'], $container);
+        $this->loadHtmlToPdfServices($config['html_to_pdf'], $container);
     }
 
     protected function loadLoggingServices($config, $container)
@@ -499,4 +500,15 @@ class CTLibExtension extends Extension
         $container->setDefinition('ct_api.caller', $def);
     }
 
+    protected function loadHtmlToPdfServices($config, $container)
+    {
+        if (!$config['enabled']) {
+            return;
+        }
+
+        $wkhtmltopdfBinPath = $config['wkhtmltopdf_path'];
+        $args = [$wkhtmltopdfBinPath];
+        $def = new Definition('CTLib\Component\Pdf\HtmlToPdf', $args);
+        $container->setDefinition('htmltopdf', $def);
+    }
 }

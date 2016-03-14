@@ -1,13 +1,11 @@
 <?php
-
 namespace CTLib\Controller;
 
-use Symfony\Bundle\FrameworkBundle\Controller\Controller,
-    CTLib\Component\HttpFoundation\JsonResponse,
-    CTLib\Component\HttpFoundation\PdfResponse,
-    CTLib\Component\HttpFoundation\CsvResponse,
-    CTLib\Util\Util,
-    CTLib\Component\Pdf\HtmlPdf;
+use Symfony\Bundle\FrameworkBundle\Controller\Controller;
+use CTLib\Component\HttpFoundation\JsonResponse;
+use CTLib\Component\HttpFoundation\PdfResponse;
+use CTLib\Component\HttpFoundation\CsvResponse;
+use CTLib\Util\Util;
 
 /**
  * BaseController
@@ -554,9 +552,9 @@ abstract class BaseController extends Controller
             $parameters
         );
 
-        $htmlPdf = new HtmlPdf($this->get("kernel"));
+        $pdf = $this->get('htmltopdf')->renderPdf($html);
 
-        return new PdfResponse($htmlPdf->render($html), $fileName, $destination);
+        return new PdfResponse($pdf, $fileName, $destination);
     }
 
     /**
