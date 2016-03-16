@@ -711,6 +711,11 @@ class CTLibConfiguration implements ConfigurationInterface
                 ->scalarNode('url')
                     ->isRequired()
                 ->end()
+                ->arrayNode('authenticators')
+                    ->useAttributeAsKey('authenticationId')
+                    ->prototype('scalar')
+                    ->end()
+                ->end()               
             ->end()
         ->end();
 

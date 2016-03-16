@@ -498,6 +498,11 @@ class CTLibExtension extends Extension
         );
         $def = new Definition('CTLib\Component\CtApi\CtApiCaller', $args);
         $container->setDefinition('ct_api.caller', $def);
+
+        foreach ($config['authenticators'] as $ctApiAuthenticatorName => $ctApiAuthenticator) {
+            $args = [$ctApiAuthenticatorName, $ctApiAuthenticator];
+            $def->addMethodCall('addAuthenticators', $args);
+        }          
     }
 
     protected function loadHtmlToPdfServices($config, $container)
