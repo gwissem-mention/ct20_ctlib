@@ -12,7 +12,7 @@ interface CtApiCallerAuthenticator
     /**
      * get Api credentials.
      *
-     * @return array [siteId=>siteId, auth=>authentication]
+     * @return array authentication
      */
     public function getCredentials();
 
