@@ -62,7 +62,7 @@ class CtApiCaller
         $method = 'post';
         $url = rtrim($this->url, '/') . '/' . ltrim($path, '/');
 
-        $result = $this->send($url, $body, $parameters, $ctApiAuthenticatorName);
+        $result = $this->send($url, $body, $parameters, $method, $ctApiAuthenticatorName);
 
         return $result['code'];
     }
