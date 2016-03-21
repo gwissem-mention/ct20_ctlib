@@ -45,6 +45,21 @@ class CtApiCaller
     }
 
     /**
+     * add ctApiAuthenticator
+     *
+     * @param string $ctApiAuthenticatorName
+     * @param string $ctApiAuthenticator
+     * @return void 
+     */
+    public function addAuthenticator(
+        $ctApiAuthenticatorName,
+        $ctApiAuthenticator
+    ) {
+
+        $this->ctApiAuthenticators[$authenticatorName] = $authenticator;
+    }
+
+    /**
      * post to Api
      * @param string $path
      * @param string $body
@@ -60,11 +75,10 @@ class CtApiCaller
     ) {
 
         $method = 'post';
-        $url = rtrim($this->url, '/') . '/' . ltrim($path, '/');
 
-        $result = $this->send($url, $body, $parameters, $method, $ctApiAuthenticatorName);
+        $result = $this->send($path, $body, $parameters, $method, $ctApiAuthenticatorName);
 
-        return $result['code'];
+        return $result;
     }
 
     /**
@@ -83,32 +97,28 @@ class CtApiCaller
     ) {
 
         $method = 'put';
-        $url = rtrim($this->url, '/') . '/' . ltrim($path, '/');
 
-        $result = $this->send($url, $body, $parameters, $method, $ctApiAuthenticatorName);
+        $result = $this->send($path, $body, $parameters, $method, $ctApiAuthenticatorName);
 
-        return $result['code'];
+        return $result;
     }
 
     /**
      * get from Api
      * @param string $path
-     * @param string $body
      * @param array $parameters
      * @param string $ctApiAuthenticatorName 
      * @return array 
      */
     public function get(        
         $path,
-        $body = NULL,
         $parameters = [],
         $ctApiAuthenticatorName = 'default'
     ) {
 
         $method = 'get';
-        $url = rtrim($this->url, '/') . '/' . ltrim($path, '/');
 
-        $result = $this->send($url, $body, $parameters, $method, $ctApiAuthenticatorName);
+        $result = $this->send($path, NULL, $parameters, $method, $ctApiAuthenticatorName);
 
         return $result;
     }
@@ -116,29 +126,26 @@ class CtApiCaller
     /**
      * delete from Api
      * @param string $path
-     * @param string $body
      * @param array $parameters
      * @param string $ctApiAuthenticatorName 
      * @return string http response code 
      */
     public function delete(        
         $path,
-        $body = NULL,
         $parameters = [],
         $ctApiAuthenticatorName = 'default'
     ) {
 
         $method = 'delete';
-        $url = rtrim($this->url, '/') . '/' . ltrim($path, '/');
+        
+        $responseBody = $this->send($path, NULL, $parameters, $method, $ctApiAuthenticatorName);
 
-        $result = $this->send($url, $body, $parameters, $method, $ctApiAuthenticatorName);
-
-        return $result['code'];
+        return $responseBody;
     }
 
     /*
      * send data to API
-     * @param string $url        
+     * @param string $path        
      * @param string $body
      * @param array $parameters
      * @param string $method
@@ -146,7 +153,7 @@ class CtApiCaller
      * @return array  
     */
     private function send(
-        $url,
+        $path,
         $body,
         $parameters,
         $method,
@@ -161,13 +168,11 @@ class CtApiCaller
             "Authorization: $token"
             ];
 
+        $url = rtrim($this->url, '/') . '/' . ltrim($path, '/');
         $queryString = '';
-        foreach ($parameters as $key => $value) {
-            $queryString .= "&$key=" . urlencode($value); 
-        }
 
         if (count($parameters) > 0) {
-            $queryString = '?' . ltrim($queryString, '&');
+            $queryString = '?' . http_build_query($parameters);
             $url .= $queryString;
         }
 
@@ -189,13 +194,18 @@ class CtApiCaller
 
             $httpResponseCode = $request->info(CURLINFO_HTTP_CODE);
 
-            if ($httpResponseCode == 401) {
+            switch ($httpResponseCode) {
+                case 401:
+                    $token = $this->getToken($ctApiAuthenticatorName, true);
+                    $headers['Authorization'] = $token;
+                    $attempts++;
+                    break;
+                
+                case 200:
+                    break;
+            }
 
-                $token = $this->getToken($ctApiAuthenticatorName, true);
-                $headers['Authorization'] = $token;
-                $attempts++;
-                continue;
-            } else if ($httpResponseCode == 200) {
+            if ($httpResponseCode == 200) {
                 break;
             }
         }
@@ -204,9 +214,7 @@ class CtApiCaller
             throw new CTApiCallerException($httpResponseCode, $response, json_encode($request));
         }         
       
-        return ['code' => $httpResponseCode,
-                'body' => $response
-            ];
+        return $response;
     }
 
     /**
@@ -230,6 +238,11 @@ class CtApiCaller
             }
 
             $token = $this->ctApiAuthenticators[$ctApiAuthenticatorName]->getToken();
+            
+            if ($token == NULL) {
+                $token = $this->requestToken($ctApiAuthenticatorName);
+                $this->setToken($ctApiAuthenticatorName, $token);                 
+            }
         }
 
         return $token;
@@ -293,19 +306,6 @@ class CtApiCaller
         return $responseDetail->token;       
     }
 
-    /**
-     * add ctApiAuthenticators
-     *
-     * @param string $ctApiAuthenticatorName
-     * @param string $ctApiAuthenticator
-     * @return void 
-     */
-    public function addAuthenticators(
-        $ctApiAuthenticatorName,
-        $ctApiAuthenticator
-    ) {
 
-        $this->ctApiAuthenticators[$authenticatorName] = $authenticator;
-    }
 
 }
