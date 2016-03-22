@@ -226,7 +226,7 @@ class CtApiCaller
      */
     private function getToken(
         $ctApiAuthenticatorName,
-        $getNewOne
+        $getNewOne = false
     ) {
 
         if ($getNewOne) {
@@ -282,13 +282,9 @@ class CtApiCaller
         }
 
         $credentials = $this->ctApiAuthenticators[$ctApiAuthenticatorName]->getCredentials();
-        $requiredHeaders = [
-                        'siteId' => $credentials['siteId'],
-                        'serviceAuth' => $credentials['auth']
-                    ];
 
         $request = new Curl($url);
-        $request->httpheader = $requiredHeaders;
+        $request->httpheader = $credentials;
 
         $response = $request->exec();
 

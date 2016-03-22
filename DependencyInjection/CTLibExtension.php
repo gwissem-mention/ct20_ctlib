@@ -501,7 +501,7 @@ class CTLibExtension extends Extension
 
         foreach ($config['authenticators'] as $ctApiAuthenticatorName => $ctApiAuthenticator) {
             $args = [$ctApiAuthenticatorName, $ctApiAuthenticator];
-            $def->addMethodCall('addAuthenticators', $args);
+            $def->addMethodCall('addAuthenticator', $args);
         }          
     }
 
