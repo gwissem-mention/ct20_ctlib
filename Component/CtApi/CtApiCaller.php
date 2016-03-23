@@ -56,7 +56,7 @@ class CtApiCaller
         $ctApiAuthenticator
     ) {
 
-        $this->ctApiAuthenticators[$authenticatorName] = $authenticator;
+        $this->ctApiAuthenticators[$ctApiAuthenticatorName] = $ctApiAuthenticator;
     }
 
     /**
