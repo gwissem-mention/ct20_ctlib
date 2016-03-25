@@ -359,7 +359,7 @@ class NoSqlDataProvider implements DataAccessInterface, DataOutputInterface
         $fields = rtrim($fields, ',').'}';
 
         // Contruct filters param
-        $filters = 'filters={';
+        $filters = 'criteria={';
         foreach ($this->filters as $filter) {
             $filters .= $filter.',';
         }
@@ -432,17 +432,10 @@ class NoSqlDataProvider implements DataAccessInterface, DataOutputInterface
      */
     protected function retrieveData()
     {
-        $result = [];
-
-        //TODO:
         // Call API using ApiCaller to retrieve results (array of documents).
-        // Something along the lines of...
-
         $queryString = $this->constructQueryString();
 
-        $result = $this->apiCaller->get($this->endpoint, $queryString);
-
-        return $result;
+        return $this->apiCaller->get($this->endpoint, [$queryString]);
     }
 
     /**
