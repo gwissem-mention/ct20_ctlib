@@ -2,9 +2,10 @@
 
 namespace CTLib\Component\DataProvider;
 
+use CTLib\Component\CtApi\CtApiCaller;
 use Symfony\Component\HttpFoundation\Response;
 use CTLib\Util\Arr;
-use CTLib\Component\CtApi\CtApiCaller;
+use CTLib\Component\HttpFoundation\JsonResponse;
 
 /**
  * Facilitates retrieving and processing nosql
@@ -12,7 +13,7 @@ use CTLib\Component\CtApi\CtApiCaller;
  *
  * @author David McLean <dmclean@celltrak.com>
  */
-class NoSqlDataProvider implements DataAccessInterface
+class NoSqlDataProvider implements DataAccessInterface, DataOutputInterface
 {
     /**
      * @var string
@@ -51,10 +52,11 @@ class NoSqlDataProvider implements DataAccessInterface
 
 
     /**
-     * @param CtApiCaller $apiCaller
-     * @param string      $endpoint
+     * @param CtApiCaller   $apiCaller
+     * @param string        $endpoint
      */
-    public function __construct($apiCaller, $endpoint) {
+    public function __construct($apiCaller, $endpoint)
+    {
         $this->apiCaller    = $apiCaller;
         $this->endpoint     = $endpoint;
         $this->fields       = [];
@@ -65,21 +67,35 @@ class NoSqlDataProvider implements DataAccessInterface
     }
 
     /**
-     * Reset the endpoint we will be hitting
+     * Returns formatted data based on Request.
      *
-     * @param $endpoint
+     * @param $request
+     *
+     * @return JsonResponse
      */
-    public function setEndpoint($endpoint)
+    public function getResults($request)
     {
-        $this->endpoint = $endpoint;
+        $results = [];
+
+        // Retrieve the data
+        $data = $this->getData($request);
+
+        // Flatten out our data
+        foreach ($data as $document) {
+            $result[] = $this->transform($document);
+        }
+
+        return new JsonResponse($results);
     }
 
     /**
+     * {@inheritdoc}
+     *
      * Returns data based on Request.
      *
      * @param Request $request
      *
-     * @return array  array('data' => array)
+     * @return array
      */
     public function getData($request)
     {
@@ -89,6 +105,8 @@ class NoSqlDataProvider implements DataAccessInterface
     }
 
     /**
+     * {@inheritdoc}
+     *
      * Adds field that will have its value returned in data record.
      *
      * @param string $field
@@ -108,6 +126,8 @@ class NoSqlDataProvider implements DataAccessInterface
     }
 
     /**
+     * {@inheritdoc}
+     *
      * Adds default filter for field.
      *
      * @param string $field
@@ -137,6 +157,8 @@ class NoSqlDataProvider implements DataAccessInterface
     }
 
     /**
+     * {@inheritdoc}
+     *
      * Add a sort that will be applied when the data is retrieved.
      *
      * @param string $field
@@ -146,12 +168,14 @@ class NoSqlDataProvider implements DataAccessInterface
      */
     public function addSort($field, $order)
     {
-        $this->sorts[] = '{'.$field.':'.$order.'}';
+        $this->sorts[] = $field.':'.$order;
 
         return $this;
     }
 
     /**
+     * {@inheritdoc}
+     *
      * Add a limit that will be applied when the data is retrieved.
      *
      * @param integer $maxResults
@@ -175,10 +199,11 @@ class NoSqlDataProvider implements DataAccessInterface
     protected function getQueryConfig($request)
     {
         $cnf = new \stdClass;
-        $cnf->maxResults        = $request->get('maxResults', -1);
-        $cnf->offset            = $request->get('offset', 1);
+        $cnf->maxResults        = $request->get('rowsPerPage', -1);
+        $cnf->offset            = $request->get('currentPage', 1);
         $cnf->filters           = $request->get('filters', []);
-        $cnf->sort              = $request->get('sort', []);
+        $cnf->sort              = $request->get('sorts', []);
+        $cnf->cachePages        = $request->get('cachedPage', 0);
 
         list(
             $cnf->fields,
@@ -255,8 +280,11 @@ class NoSqlDataProvider implements DataAccessInterface
             return;
         }
 
+        $max = $queryConfig->maxResults
+            + $queryConfig->cachePages * $queryConfig->maxResults;
+
         $this->offset = ($queryConfig->offset - 1) * $queryConfig->maxResults;
-        $this->maxResults = $queryConfig->maxResults;
+        $this->maxResults = $max;
     }
 
     /**
@@ -283,10 +311,30 @@ class NoSqlDataProvider implements DataAccessInterface
 
         switch ($operator) {
             case 'eq':  // Equals
-                $this->filters[$field] = '{'.$field.':'.$operator.':'.$value.'}';
+            case 'gt':  // Greater than
+            case 'gte': // Greater than equal to
+            case 'lt':  // Less than
+            case 'lte': // Less than equal to
+                $this->filters[$field] = $field.'{$'.$operator.':'.$value.'}';
                 break;
 
-            //TODO: add support for other operators
+            case 'neq': // Not equal to
+                $this->filters[$field] = $field.'{$ne:'.$value.'}';
+                break;
+
+            case 'in':  // in
+                $this->filters[$field] = $field.'{$in:['.$value.']}';
+                break;
+
+            case 'nin':  // not in
+                $this->filters[$field] = $field.'{$nin:['.$value.']}';
+                break;
+
+            case 'like%':
+            case '%like':
+            case '%like%':
+                $this->filters[$field] = $field.'{$regex: /^'.$value.'$/}';
+                break;
 
             default:
                 throw new \Exception("Invalid operator: $operator.");
@@ -301,54 +349,34 @@ class NoSqlDataProvider implements DataAccessInterface
     protected function constructQueryString()
     {
         // Formulate query string from $this->fields,
-        // $this->filters, $this->sorts, $this->maxResults
+        // $this->filters, $this->sorts, $this->offset, $this->maxResults
 
-        $queryString = '';
+        // Contruct fields param
+        $fields = 'fields={';
+        foreach ($this->fields as $field) {
+            $fields .= $field.':1,';
+        }
+        $fields = rtrim($fields, ',').'}';
+
+        // Contruct filters param
+        $filters = 'filters={';
+        foreach ($this->filters as $filter) {
+            $filters .= $filter.',';
+        }
+        $filters = rtrim($filters, ',').'}';
+
+        // Contruct sort param
+        $sorts = 'sort={';
+        foreach ($this->sorts as $sort) {
+            $sorts .= $sort.',';
+        }
+        $sorts = rtrim($sorts, ',').'}';
+
+        $queryString = $fields.'&'.$filters.'&'.$sorts
+            .'&offset='.strval($this->offset)
+            .'&numRecords='.strval($this->maxResults);
 
         return $queryString;
-    }
-
-    /**
-     * Execute call to API and builds processed result set.
-     *
-     * @return array    Enumerated array of records (each as their own
-     *                  enumerated array of column values).
-     */
-    protected function retrieveData()
-    {
-        $result = [];
-
-        // Call API using ApiCaller to retrieve results (array of documents).
-        // Once results are retrieved, loop through all records
-        // and call $this->processRecord for each.
-        // Something along the lines of...
-
-        //$queryString = $this->constructQueryString();
-        //$documents = $this->apiCaller->get($this->endpoint, []);
-
-        //foreach ($documents as $document) {
-        //    $result[] = $this->processRecord($document);
-        //}
-
-        return $result;
-    }
-
-    /**
-     * Perform iteration on each Record
-     *
-     * @param mixed $document record data retrieved from API
-     *
-     * @return array
-     */
-    protected function processRecord($document)
-    {
-        $processedRecord = [];
-
-        foreach ($this->fields as $field) {
-            $processedRecord[] = Arr::mustGet($field, $document);
-        }
-
-        return $processedRecord;
     }
 
     /**
@@ -394,5 +422,60 @@ class NoSqlDataProvider implements DataAccessInterface
         }
 
         return [$fields, $aliases];
+    }
+
+    /**
+     * Execute call to API and builds processed result set.
+     *
+     * @return array    Enumerated array of records (each as their own
+     *                  enumerated array of column values).
+     */
+    protected function retrieveData()
+    {
+        $result = [];
+
+        //TODO:
+        // Call API using ApiCaller to retrieve results (array of documents).
+        // Something along the lines of...
+
+        $queryString = $this->constructQueryString();
+
+        $result = $this->apiCaller->get($this->endpoint, $queryString);
+
+        return $result;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * Perform the necessary processing to create a flat
+     * Record of field values.
+     *
+     * @param mixed $document   Document data retrieved from API
+     *
+     * @return array
+     */
+    public function transform($document)
+    {
+        $processedRecord = [];
+
+        //TODO:
+
+        foreach ($this->fields as $field) {
+
+            // Do whatever we gotta do here...
+
+            // Perhaps...
+            //$value = Arr::mustGet($field, $document);
+            // or
+            //$value = $document->{$field};
+
+            // And/or whatever else...
+
+
+            //$processedRecord[] = $value;
+        }
+
+        return $processedRecord;
     }
 }
