@@ -67,7 +67,7 @@ class NoSqlDataProvider implements DataAccessInterface, DataOutputInterface
     }
 
     /**
-     * Returns formatted data based on Request.
+     * This provider returns data results as a JSON response.
      *
      * @param $request
      *
@@ -109,15 +109,25 @@ class NoSqlDataProvider implements DataAccessInterface, DataOutputInterface
      *
      * Adds field that will have its value returned in data record.
      *
-     * @param string $field
-     * @param string $alias
+     * @param string|callable   $field
+     * @param string            $alias
      *
      * @return DataAccessInterface
+     *
+     * @throws \Exception
      */
     public function addField($field, $alias=null)
     {
+        if (is_callable($field) && !$alias) {
+            throw new \Exception('alias is required for callback');
+        }
+
         if (!$alias) {
             $alias = $field;
+        }
+
+        if (array_key_exists($alias, $this->fields)) {
+            throw new \Exception('Ambiguous field name given');
         }
 
         $this->fields[$alias] = $field;
@@ -337,7 +347,7 @@ class NoSqlDataProvider implements DataAccessInterface, DataOutputInterface
                 break;
 
             default:
-                throw new \Exception("Invalid operator: $operator.");
+                throw new \Exception("Invalid filter operator: $operator.");
         }
     }
 
@@ -351,21 +361,21 @@ class NoSqlDataProvider implements DataAccessInterface, DataOutputInterface
         // Formulate query string from $this->fields,
         // $this->filters, $this->sorts, $this->offset, $this->maxResults
 
-        // Contruct fields param
+        // Construct fields param
         $fields = 'fields={';
         foreach ($this->fields as $field) {
             $fields .= $field.':1,';
         }
         $fields = rtrim($fields, ',').'}';
 
-        // Contruct filters param
+        // Construct filters param
         $filters = 'criteria={';
         foreach ($this->filters as $filter) {
             $filters .= $filter.',';
         }
         $filters = rtrim($filters, ',').'}';
 
-        // Contruct sort param
+        // Construct sort param
         $sorts = 'sort={';
         foreach ($this->sorts as $sort) {
             $sorts .= $sort.',';
@@ -456,15 +466,24 @@ class NoSqlDataProvider implements DataAccessInterface, DataOutputInterface
 
         foreach ($this->fields as $field) {
 
-            // Do whatever we gotta do here...
+            // Do whatever we gotta do here (read values from
+            // JSON activity document, or hand-off to callback)...
 
-            // Perhaps...
-            //$value = Arr::mustGet($field, $document);
-            // or
-            //$value = $document->{$field};
+            if (is_callable($field)) {
+                // Hand-off to callback to get field value.
+                $value = call_user_func_array(
+                    $field,
+                    []
+                );
+            } else {
 
-            // And/or whatever else...
+                // Perhaps...
+                //$value = Arr::mustGet($field, $document);
+                // or
+                //$value = $document->{$field};
 
+                // And/or whatever else...
+            }
 
             //$processedRecord[] = $value;
         }
