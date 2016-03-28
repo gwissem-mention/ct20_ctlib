@@ -333,11 +333,11 @@ class NoSqlDataProvider implements DataAccessInterface, DataOutputInterface
                 break;
 
             case 'in':  // in
-                $this->filters[$field] = $field.':in:['.explode(',',$value).']';
+                $this->filters[$field] = $field.':in:['.implode(',',$value).']';
                 break;
 
             case 'nin':  // not in
-                $this->filters[$field] = $field.':nin:['.explode(',',$value).']';
+                $this->filters[$field] = $field.':nin:['.implode(',',$value).']';
                 break;
 
             case 'like%':
