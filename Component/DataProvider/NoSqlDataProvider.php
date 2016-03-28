@@ -130,7 +130,7 @@ class NoSqlDataProvider implements DataAccessInterface, DataOutputInterface
             throw new \Exception('Ambiguous field name given');
         }
 
-        $this->fields[$alias] = $field;
+        $this->fields[$alias] = [$field => 1];
 
         return $this;
     }
