@@ -325,25 +325,25 @@ class NoSqlDataProvider implements DataAccessInterface, DataOutputInterface
             case 'gte': // Greater than equal to
             case 'lt':  // Less than
             case 'lte': // Less than equal to
-                $this->filters[$field] = $field.':'.$operator.':'.$value;
+                $this->filters[$field] = ['$'.$operator => $value];
                 break;
 
             case 'neq': // Not equal to
-                $this->filters[$field] = $field.':ne:'.$value;
+                $this->filters[$field] = ['$ne' => $value];
                 break;
 
             case 'in':  // in
-                $this->filters[$field] = $field.':in:['.implode(',',$value).']';
+                $this->filters[$field] = ['$in:['.implode(',',$value).']'];
                 break;
 
             case 'nin':  // not in
-                $this->filters[$field] = $field.':nin:['.implode(',',$value).']';
+                $this->filters[$field] = ['$nin:['.implode(',',$value).']'];
                 break;
 
             case 'like%':
             case '%like':
             case '%like%':
-                $this->filters[$field] = $field.':regex: /^'.$value.'$/';
+                $this->filters[$field] = [':regex: /^'.$value.'$/'];
                 break;
 
             default:
@@ -360,31 +360,12 @@ class NoSqlDataProvider implements DataAccessInterface, DataOutputInterface
     {
         // Formulate query string from $this->fields,
         // $this->filters, $this->sorts, $this->offset, $this->maxResults
-
-        // Construct fields param
-        $fields = 'fields=';
-        foreach ($this->fields as $field) {
-            $fields .= $field.',';
-        }
-        $fields = rtrim($fields, ',');
-
-        // Construct filters param
-        $filters = 'criteria=';
-        foreach ($this->filters as $filter) {
-            $filters .= $filter.',';
-        }
-        $filters = rtrim($filters, ',');
-
-        // Construct sort param
-        $sorts = 'sort=';
-        foreach ($this->sorts as $field => $sort) {
-            $sorts .= $field.':'.$sort.',';
-        }
-        $sorts = rtrim($sorts, ',');
-
-        $queryString = $fields.'&'.$filters.'&'.$sorts
-            .'&offset='.strval($this->offset)
-            .'&numRecords='.strval($this->maxResults);
+        $queryString                = [];
+        $queryString['fields']      = $this->fields;
+        $queryString['criteria']    = $this->filters;
+        $queryString['sort']        = $this->sorts;
+        $queryString['offset']      = $this->offset;
+        $queryString['numRecords']  = $this->maxResults;
 
         return $queryString;
     }
