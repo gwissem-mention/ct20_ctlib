@@ -377,8 +377,8 @@ class NoSqlDataProvider implements DataAccessInterface, DataOutputInterface
 
         // Construct sort param
         $sorts = 'sort=';
-        foreach ($this->sorts as $sort) {
-            $sorts .= $sort.',';
+        foreach ($this->sorts as $field => $sort) {
+            $sorts .= $field.':'.$sort.',';
         }
         $sorts = rtrim($sorts, ',');
 
