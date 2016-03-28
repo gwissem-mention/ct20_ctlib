@@ -178,7 +178,7 @@ class NoSqlDataProvider implements DataAccessInterface, DataOutputInterface
      */
     public function addSort($field, $order)
     {
-        $this->sorts[] = $field.':'.$order;
+        $this->sorts[$field] = $order;
 
         return $this;
     }
@@ -362,25 +362,25 @@ class NoSqlDataProvider implements DataAccessInterface, DataOutputInterface
         // $this->filters, $this->sorts, $this->offset, $this->maxResults
 
         // Construct fields param
-        $fields = 'fields={';
+        $fields = 'fields=';
         foreach ($this->fields as $field) {
-            $fields .= $field.':1,';
+            $fields .= $field.',';
         }
-        $fields = rtrim($fields, ',').'}';
+        $fields = rtrim($fields, ',');
 
         // Construct filters param
-        $filters = 'criteria={';
+        $filters = 'criteria=';
         foreach ($this->filters as $filter) {
             $filters .= $filter.',';
         }
-        $filters = rtrim($filters, ',').'}';
+        $filters = rtrim($filters, ',');
 
         // Construct sort param
-        $sorts = 'sort={';
+        $sorts = 'sort=';
         foreach ($this->sorts as $sort) {
             $sorts .= $sort.',';
         }
-        $sorts = rtrim($sorts, ',').'}';
+        $sorts = rtrim($sorts, ',');
 
         $queryString = $fields.'&'.$filters.'&'.$sorts
             .'&offset='.strval($this->offset)
