@@ -325,25 +325,25 @@ class NoSqlDataProvider implements DataAccessInterface, DataOutputInterface
             case 'gte': // Greater than equal to
             case 'lt':  // Less than
             case 'lte': // Less than equal to
-                $this->filters[$field] = $field.'{$'.$operator.':'.$value.'}';
+                $this->filters[$field] = $field.':'.$operator.':'.$value;
                 break;
 
             case 'neq': // Not equal to
-                $this->filters[$field] = $field.'{$ne:'.$value.'}';
+                $this->filters[$field] = $field.':ne:'.$value;
                 break;
 
             case 'in':  // in
-                $this->filters[$field] = $field.'{$in:['.$value.']}';
+                $this->filters[$field] = $field.':in:['.$value.']';
                 break;
 
             case 'nin':  // not in
-                $this->filters[$field] = $field.'{$nin:['.$value.']}';
+                $this->filters[$field] = $field.':nin:['.$value.']';
                 break;
 
             case 'like%':
             case '%like':
             case '%like%':
-                $this->filters[$field] = $field.'{$regex: /^'.$value.'$/}';
+                $this->filters[$field] = $field.':regex: /^'.$value.'$/';
                 break;
 
             default:
