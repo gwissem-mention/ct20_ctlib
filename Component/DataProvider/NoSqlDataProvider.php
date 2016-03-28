@@ -212,7 +212,7 @@ class NoSqlDataProvider implements DataAccessInterface, DataOutputInterface
         $cnf->maxResults        = $request->get('rowsPerPage', -1);
         $cnf->offset            = $request->get('currentPage', 1);
         $cnf->filters           = $request->get('filters', []);
-        $cnf->sort              = $request->get('sorts', []);
+        $cnf->sorts             = $request->get('sorts', []);
         $cnf->cachePages        = $request->get('cachedPage', 0);
 
         list(
