@@ -362,7 +362,7 @@ class NoSqlDataProvider implements DataAccessInterface, DataOutputInterface
     /**
      * Build the final query string
      *
-     * @return string
+     * @return array
      */
     protected function constructQueryString()
     {
@@ -434,7 +434,7 @@ class NoSqlDataProvider implements DataAccessInterface, DataOutputInterface
         // Call API using ApiCaller to retrieve results (array of documents).
         $queryString = $this->constructQueryString();
 
-        return $this->apiCaller->get($this->endpoint, [$queryString]);
+        return $this->apiCaller->get($this->endpoint, $queryString);
     }
 
     /**
