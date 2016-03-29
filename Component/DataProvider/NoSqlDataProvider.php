@@ -130,7 +130,11 @@ class NoSqlDataProvider implements DataAccessInterface, DataOutputInterface
             throw new \Exception('Ambiguous field name given');
         }
 
-        $this->fields[$alias] = ["$field" => 1];
+        if (is_callable($field)) {
+            $this->fields[$alias] = $field;
+        } else {
+            $this->fields[$alias] = 1;
+        }
 
         return $this;
     }
@@ -310,6 +314,10 @@ class NoSqlDataProvider implements DataAccessInterface, DataOutputInterface
      */
     protected function applyFilter($field, $value, $operator)
     {
+        if (!$value) {
+            return;
+        }
+
         if (is_array($value)) {
             if (!in_array($operator, ['eq', 'in', "notIn"])) {
                 throw new \Exception("Array value only supports 'eq' or 'in' operator.");
