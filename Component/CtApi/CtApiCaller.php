@@ -282,8 +282,10 @@ class CtApiCaller
 
         $credentials = $this->ctApiAuthenticators[$ctApiAuthenticatorName]->getCredentials();
 
+        $queryString = '?' . http_build_query($credentials);
+        $url .= $queryString;
+
         $request = new Curl($url);
-        $request->httpheader = $credentials;
         $request->__set('post' , 1);
 
         $response = $request->exec();
