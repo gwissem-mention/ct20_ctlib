@@ -6,6 +6,7 @@ use CTLib\Component\HttpFoundation\JsonResponse;
 use CTLib\Component\HttpFoundation\PdfResponse;
 use CTLib\Component\HttpFoundation\CsvResponse;
 use CTLib\Util\Util;
+use CTLib\Util\Arr;
 
 /**
  * BaseController
@@ -704,4 +705,57 @@ abstract class BaseController extends Controller
             . ':' . $view;
     }
 
+    /**
+     * Returns query configuration from Request.
+     *
+     * @param Request $request
+     *
+     * @return \stdClass
+     */
+    public function getRequestQueryConfig($request)
+    {
+        $cnf = new \stdClass;
+        $cnf->maxResults        = $request->get('rowsPerPage', -1);
+        $cnf->offset            = $request->get('currentPage', 1);
+        $cnf->filters           = $request->get('filters', []);
+        $cnf->sorts             = $request->get('sorts', []);
+        $cnf->cachePages        = $request->get('cachedPage', 0);
+
+        list(
+            $cnf->fields,
+            $cnf->aliases
+        ) = $this->parseFieldsAndAliases($request->get("fields"));
+
+        return $cnf;
+    }
+
+    /**
+     * Get requested fields and alias that are configured
+     * in the javascript
+     *
+     * @param \stdClass $fieldsConfig
+     *
+     * @return array array of fields and aliases
+     *
+     */
+    protected function parseFieldsAndAliases($fieldsConfig)
+    {
+        if (empty($fieldsConfig) || !is_array($fieldsConfig)) {
+            return [null, null];
+        }
+
+        $fields = $aliases = [];
+
+        foreach ($fieldsConfig as $config) {
+            if (is_array($config)) {
+                $fields[] = $config[0];
+                $aliases[] = Arr::get(1, $config, $config[0]);
+            } elseif (is_string($config)) {
+                $fields[] = $config;
+                $aliases[] = $config;
+            }
+        }
+
+        return [$fields, $aliases];
+    }
 }
