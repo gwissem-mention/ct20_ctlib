@@ -159,14 +159,13 @@ class CtApiCaller
         $method,
         $ctApiAuthenticatorName
     ) {
-
         $token = $this->getToken($ctApiAuthenticatorName, false);
 
         $headers = [
             "Accept: application/json",
             "Content-Type: application/json",
-            "Authorization: $token"
-            ];
+            "Authorization: Bearer $token"
+        ];
 
         $url = rtrim($this->url, '/') . '/' . ltrim($path, '/');
         $queryString = '';
@@ -197,7 +196,7 @@ class CtApiCaller
             switch ($httpResponseCode) {
                 case 401:
                     $token = $this->getToken($ctApiAuthenticatorName, true);
-                    $headers['Authorization'] = $token;
+                    $headers[2] = "Authorization: Bearer $token";
                     $attempts++;
                     break;
                 
