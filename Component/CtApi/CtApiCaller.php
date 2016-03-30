@@ -180,6 +180,7 @@ class CtApiCaller
         while ($attempts <= 1) {
             $request = new Curl($url);        
             $request->__set($method , 1);
+            $request->__set('HTTPHEADER', $headers);
 
             if ($body) {
                 $request->postfields = $body;
@@ -282,9 +283,15 @@ class CtApiCaller
 
         $credentials = $this->ctApiAuthenticators[$ctApiAuthenticatorName]->getCredentials();
 
+        $headers = [
+            "Accept: application/json",
+            "Content-Type: application/json"
+        ];
+
         $request = new Curl($url);
-        $request->httpheader = $credentials;
-        $request->__set('post' , 1);
+        $request->__set('POST' , 1);
+        $request->__set('POSTFIELDS', json_encode($credentials));
+        $request->__set('HTTPHEADER', $headers);
 
         $response = $request->exec();
 
