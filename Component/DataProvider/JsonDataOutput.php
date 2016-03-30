@@ -37,15 +37,12 @@ class JsonDataOutput implements DataOutputInterface
      * Record of field values.
      *
      * @param array $record   Document data retrieved from API
-     *
-     * @return array
      */
     public function addRecord(array $record)
     {
-        $processedRecord = [];
 
 
-        return $processedRecord;
+        $this->records[] = $record;
     }
 
     /**

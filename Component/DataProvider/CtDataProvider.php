@@ -10,10 +10,10 @@ use CTLib\Util\Arr;
  *
  * @author David McLean <dmclean@celltrak.com>
  */
-class DataProvider2
+class CtDataProvider
 {
     /**
-     * @var DataAccessInterface
+     * @var DataInputInterface
      */
     protected $input;
 
@@ -22,14 +22,19 @@ class DataProvider2
      */
     protected $output;
 
+    /**
+     * @var array
+     */
+    protected $transforms;
+
 
     public function __construct(
-        DataAccessInterface $input,
+        DataInputInterface $input,
         DataOutputInterface $output
     ) {
-        $this->input = $input;
-        $this->output = $output;
-        $this->transforms = [];
+        $this->input         = $input;
+        $this->output        = $output;
+        $this->transforms    = [];
         $this->onRecordAdded = null;
     }
 
@@ -51,7 +56,6 @@ class DataProvider2
             if ($this->onRecordAdded) {
                 call_user_func($this->onRecordAdded($record, $this->output));
             }
-
         }
 
         return $this->output->end($this->input);
