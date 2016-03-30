@@ -10,6 +10,7 @@ use CTLib\Component\HttpFoundation\JsonResponse;
  * results into structured data.
  *
  * @author David McLean <dmclean@celltrak.com>
+ * @author Sean Hunter <shunter@celltrak.com>
  */
 class JsonDataOutput implements DataOutputInterface
 {
@@ -18,6 +19,10 @@ class JsonDataOutput implements DataOutputInterface
      */
     protected $records = [];
 
+    /**
+     * @var array
+     */
+    protected $model = [];
 
     /**
      * {@inheritdoc}
@@ -27,7 +32,7 @@ class JsonDataOutput implements DataOutputInterface
      */
     public function start(DataInputInterface $input)
     {
-
+        $this->model = $input->getModel();
     }
 
     /**
@@ -42,7 +47,7 @@ class JsonDataOutput implements DataOutputInterface
     {
 
 
-        $this->records[] = $record;
+        $this->records[] = $this->transform($record);
     }
 
     /**
@@ -55,6 +60,104 @@ class JsonDataOutput implements DataOutputInterface
     public function end(DataInputInterface $input)
     {
 
-        return $this->records;
+        return new JsonResponse(
+                array(  'data' => $this->records,
+                        'model' => $this->getModelAliases()));
     }
+
+    /**
+     * {@inheritdoc}
+     *
+     * Perform the necessary processing to create a flat
+     * Record of field values.
+     *
+     * @param mixed $document   Document data retrieved from API
+     *
+     * @return array
+     */
+    public function transform($document)
+    {
+        $processedRecord = [];
+
+        foreach ($this->model as $fieldKey => $fieldValue) {
+
+            // Do whatever we gotta do here (read values from
+            // JSON activity document, or hand-off to callback)...
+            if (is_callable($fieldValue)) {
+                // Hand-off to callback to get field value.
+                $value = call_user_func_array(
+                    $fieldValue,
+                    [
+                        $document
+                    ]
+                );
+            } else {
+                $value = $this->documentDrillDown($fieldValue, $document);
+            }
+
+            $processedRecord[] = $value;
+        }
+
+        return $processedRecord;
+    }
+
+    /**
+     *
+     * Based on the field token pull the end value from the nested objects.
+     * Record of field values.
+     *
+     * @param string $field
+     * @param mixed $document   Document data retrieved from API
+     *
+     * @return mixed
+     */
+    private function documentDrillDown($field, $document)
+    {
+        if (!strpos($field, '.')) {
+            // get top level attribute
+            return Arr::mustGet($field, $document);
+        }
+
+        // find attribute in child objects.
+        $value = null;
+
+        $fieldTokens    = explode('.', $field);
+        $fieldTokenId = 0;
+
+        $parentDocObject = null;
+        // loop into child objects
+        foreach ($fieldTokens as $docObjectName) {
+            if ($fieldTokenId == count($fieldTokens)){
+                // hit bottom, get value
+                $value = Arr::mustGet($field, $parentDocObject);
+                break;
+            }
+            if (!$parentDocObject) {
+                $parentDocObject = $document[$docObjectName];
+            } else {
+                $parentDocObject = $parentDocObject[$docObjectName];
+            }
+            $fieldTokenId ++;
+        }
+
+        return $value;
+
+    }
+
+    /**
+     *
+     * Build data model return using the alias values expected at the UI level.
+     *
+     *
+     * @return array
+     */
+    private function getModelAliases()
+    {
+        $aliases = [];
+        foreach ($this->model as $fieldKey => $fieldValue) {
+            $aliases[] = $fieldKey;
+        }
+        return $aliases;
+    }
+
 }

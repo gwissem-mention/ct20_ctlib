@@ -9,6 +9,7 @@ use CTLib\Util\Arr;
  * results into structured data.
  *
  * @author David McLean <dmclean@celltrak.com>
+ * @author Sean Hunter <shunter@celltrak.com>
  */
 class CtNoSqlDataAccess implements DataInputInterface
 {
@@ -47,6 +48,11 @@ class CtNoSqlDataAccess implements DataInputInterface
      */
     protected $maxResults;
 
+    /**
+     * @var array
+     */
+    protected $model;
+
 
     /**
      * @param CtApiCaller   $apiCaller
@@ -57,6 +63,7 @@ class CtNoSqlDataAccess implements DataInputInterface
         $this->apiCaller    = $apiCaller;
         $this->endpoint     = $endpoint;
         $this->fields       = [];
+        $this->model        = [];
         $this->filters      = [];
         $this->sorts        = null;
         $this->offset       = 0;
@@ -76,6 +83,19 @@ class CtNoSqlDataAccess implements DataInputInterface
         $queryString = $this->constructQueryString();
 
         return $this->apiCaller->get($this->endpoint, $queryString);
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * return alias/field list as Model array.
+     *
+     *
+     * @return array
+     */
+    public function getModel()
+    {
+        return $this->model;
     }
 
     /**
@@ -101,7 +121,7 @@ class CtNoSqlDataAccess implements DataInputInterface
         }
 
         $this->fields[$alias] = 1;
-
+        $this->model[$alias] = $field;
         return $this;
     }
 

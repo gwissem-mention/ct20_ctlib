@@ -7,6 +7,7 @@ namespace CTLib\Component\DataProvider;
  * that will retrieve data from a data source.
  *
  * @author David McLean <dmclean@celltrak.com>
+ * @author Sean Hunter <shunter@celltrak.com>
  */
 interface DataInputInterface
 {
@@ -41,4 +42,9 @@ interface DataInputInterface
      * @param integer $offset
      */
     public function setOffset($offset);
+    /**
+     * @param array $model
+     */
+    public function getModel();
+
 }
