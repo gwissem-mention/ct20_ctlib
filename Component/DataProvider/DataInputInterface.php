@@ -8,12 +8,11 @@ namespace CTLib\Component\DataProvider;
  *
  * @author David McLean <dmclean@celltrak.com>
  */
-interface DataAccessInterface
+interface DataInputInterface
 {
     /**
-     * @param Request $request
      */
-    public function getData($request);
+    public function getData();
 
     /**
      * @param string $field
@@ -38,4 +37,8 @@ interface DataAccessInterface
      */
     public function setMaxResults($maxResults);
 
+    /**
+     * @param integer $offset
+     */
+    public function setOffset($offset);
 }

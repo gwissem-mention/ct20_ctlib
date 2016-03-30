@@ -12,8 +12,17 @@ namespace CTLib\Component\DataProvider;
 interface DataOutputInterface
 {
     /**
-     * @param mixed $data
+     * @param DataInputInterface $input
      */
-    public function transform($data);
+    public function start(DataInputInterface $input);
 
+    /**
+     * @param array $record
+     */
+    public function addRecord(array $record);
+
+    /**
+     * @param DataInputInterface $input
+     */
+    public function end(DataInputInterface $input);
 }
