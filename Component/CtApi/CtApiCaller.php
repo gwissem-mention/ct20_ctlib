@@ -284,6 +284,7 @@ class CtApiCaller
 
         $request = new Curl($url);
         $request->httpheader = $credentials;
+        $request->__set('post' , 1);
 
         $response = $request->exec();
 
