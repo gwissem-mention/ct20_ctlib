@@ -10,13 +10,13 @@ use CTLib\Util\Arr;
  *
  * @author David McLean <dmclean@celltrak.com>
  */
-class CtNoSqlDataAccess implements DataAccessInterface
+class CtApiDocumentDataAccess implements DataAccessInterface
 {
     /**
      * Constants for sort order
      */
-    const SORT_ASC  = 1;
-    const SORT_DESC = -1;
+    const SORT_ASC  = 'ASC';
+    const SORT_DESC = 'DESC';
 
     /**
      * @var string
@@ -98,7 +98,7 @@ class CtNoSqlDataAccess implements DataAccessInterface
      */
     public function addField($field, $alias=null)
     {
-        $this->fields[$field] = 1;
+        $this->fields[] = $field;
 
         return $this;
     }
@@ -132,36 +132,11 @@ class CtNoSqlDataAccess implements DataAccessInterface
             }
         }
 
-        switch ($operator) {
-            case 'eq':  // Equals
-            case 'gt':  // Greater than
-            case 'gte': // Greater than equal to
-            case 'lt':  // Less than
-            case 'lte': // Less than equal to
-                $this->filters[$field] = ['$'.$operator => $value];
-                break;
-
-            case 'neq': // Not equal to
-                $this->filters[$field] = ['$ne' => $value];
-                break;
-
-            case 'in':  // in
-                $this->filters[$field] = ['$in:['.implode(',',$value).']'];
-                break;
-
-            case 'nin':  // not in
-                $this->filters[$field] = ['$nin:['.implode(',',$value).']'];
-                break;
-
-            case 'like%':
-            case '%like':
-            case '%like%':
-                $this->filters[$field] = [':regex: /^'.$value.'$/'];
-                break;
-
-            default:
-                throw new \Exception("Invalid filter operator: $operator.");
-        }
+        $this->filters[] = [
+            'field' => $field,
+            'op'    => $operator,
+            'value' => $value
+        ];
 
         return $this;
     }
@@ -178,10 +153,9 @@ class CtNoSqlDataAccess implements DataAccessInterface
      */
     public function addSort($field, $order)
     {
-        if ($order != 1 && $order != -1
-            && strtoupper($order) != 'ASC'
-            && strtoupper($order) !== 'DESC') {
-            throw new \Exception('Invalid sort value - must be one of (1, -1, ASC, DESC)');
+        if (strtoupper($order) != self::SORT_ASC
+            && strtoupper($order) != self::SORT_DESC) {
+            throw new \Exception('Invalid sort value - must be one of (ASC, DESC)');
         }
 
         $this->sorts[$field] = $order;
