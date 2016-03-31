@@ -500,7 +500,7 @@ class CTLibExtension extends Extension
         $container->setDefinition('ct_api.caller', $def);
 
         foreach ($config['authenticators'] as $ctApiAuthenticatorName => $ctApiAuthenticator) {
-            $args = [$ctApiAuthenticatorName, $ctApiAuthenticator];
+            $args = [$ctApiAuthenticatorName, new Reference($ctApiAuthenticator)];
             $def->addMethodCall('addAuthenticator', $args);
         }          
     }
