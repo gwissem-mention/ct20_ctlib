@@ -91,8 +91,10 @@ class JsonDataOutput implements DataOutputInterface
                         $document
                     ]
                 );
+
             } else {
                 $value = $this->documentDrillDown($fieldValue, $document);
+
             }
 
             $processedRecord[] = $value;
@@ -122,22 +124,22 @@ class JsonDataOutput implements DataOutputInterface
         $value = null;
 
         $fieldTokens    = explode('.', $field);
-        $fieldTokenId = 0;
 
         $parentDocObject = null;
         // loop into child objects
         foreach ($fieldTokens as $docObjectName) {
-            if ($fieldTokenId == count($fieldTokens)){
+            if ($docObjectName == end($fieldTokens)){
                 // hit bottom, get value
-                $value = Arr::mustGet($field, $parentDocObject);
+                $value = Arr::mustGet($docObjectName, $parentDocObject);
                 break;
             }
             if (!$parentDocObject) {
                 $parentDocObject = $document[$docObjectName];
+
             } else {
                 $parentDocObject = $parentDocObject[$docObjectName];
+
             }
-            $fieldTokenId ++;
         }
 
         return $value;
