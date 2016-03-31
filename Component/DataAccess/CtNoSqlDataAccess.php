@@ -1,6 +1,6 @@
 <?php
 
-namespace CTLib\Component\DataProvider;
+namespace CTLib\Component\DataAccess;
 
 use CTLib\Util\Arr;
 
@@ -10,8 +10,14 @@ use CTLib\Util\Arr;
  *
  * @author David McLean <dmclean@celltrak.com>
  */
-class CtNoSqlDataAccess implements DataInputInterface
+class CtNoSqlDataAccess implements DataAccessInterface
 {
+    /**
+     * Constants for sort order
+     */
+    const SORT_ASC  = 1;
+    const SORT_DESC = -1;
+
     /**
      * @var string
      */
@@ -73,7 +79,7 @@ class CtNoSqlDataAccess implements DataInputInterface
     public function getData()
     {
         // Call API using ApiCaller to retrieve results (array of documents).
-        $queryString = $this->constructQueryString();
+        $queryString = $this->constructQueryParams();
 
         return $this->apiCaller->get($this->endpoint, $queryString);
     }
@@ -86,21 +92,13 @@ class CtNoSqlDataAccess implements DataInputInterface
      * @param string|callable   $field
      * @param string            $alias
      *
-     * @return DataInputInterface
+     * @return DataAccessInterface
      *
      * @throws \Exception
      */
     public function addField($field, $alias=null)
     {
-        if (!$alias) {
-            $alias = $field;
-        }
-
-        if (array_key_exists($alias, $this->fields)) {
-            throw new \Exception('Ambiguous field name given');
-        }
-
-        $this->fields[$alias] = 1;
+        $this->fields[$field] = 1;
 
         return $this;
     }
@@ -111,26 +109,16 @@ class CtNoSqlDataAccess implements DataInputInterface
      * Adds default filter for field.
      *
      * @param string $field
-     * @param mixed $filter         Either default filter value or explicit
+     * @param mixed $value          Either default filter value or explicit
      *                              filter definition:
      *                                  array('value' => mixed, 'op' => string)
+     *                              or callback
+     * @param string $operator
      *
-     * @return DataInputInterface
+     * @return DataAccessInterface
      */
-    public function addFilter($field, $filter)
+    public function addFilter($field, $value, $operator='eq')
     {
-        if (!is_array($filter) || !isset($filter['value'])) {
-            $filter = ['value' => $filter];
-        }
-
-        list($value, $operator, $cacheOnly) = $this->extractFilter($filter);
-
-        if ($cacheOnly) {
-            // This filter doesn't need to be applied.
-            // It's just used to preserve the front-end filter UI.
-            return $this;
-        }
-
         if (!$value) {
             return $this;
         }
@@ -183,13 +171,19 @@ class CtNoSqlDataAccess implements DataInputInterface
      *
      * Add a sort that will be applied when the data is retrieved.
      *
-     * @param string $field
-     * @param string $order
+     * @param string      $field
+     * @param int|string  $order
      *
-     * @return DataInputInterface
+     * @return DataAccessInterface
      */
     public function addSort($field, $order)
     {
+        if ($order != 1 && $order != -1
+            && strtoupper($order) != 'ASC'
+            && strtoupper($order) !== 'DESC') {
+            throw new \Exception('Invalid sort value - must be one of (1, -1, ASC, DESC)');
+        }
+
         $this->sorts[$field] = $order;
 
         return $this;
@@ -202,10 +196,14 @@ class CtNoSqlDataAccess implements DataInputInterface
      *
      * @param integer $maxResults
      *
-     * @return DataInputInterface
+     * @return DataAccessInterface
      */
     public function setMaxResults($maxResults)
     {
+        if ($maxResults < 0) {
+            $maxResults = 0;
+        }
+
         $this->maxResults = $maxResults;
 
         return $this;
@@ -218,10 +216,14 @@ class CtNoSqlDataAccess implements DataInputInterface
      *
      * @param integer $offset
      *
-     * @return DataInputInterface
+     * @return DataAccessInterface
      */
     public function setOffset($offset)
     {
+        if ($offset < 0) {
+            $offset = 0;
+        }
+
         $this->offset = $offset;
 
         return $this;
@@ -232,7 +234,7 @@ class CtNoSqlDataAccess implements DataInputInterface
      *
      * @return array
      */
-    protected function constructQueryString()
+    protected function constructQueryParams()
     {
         // Formulate query string from $this->fields,
         // $this->filters, $this->sorts, $this->offset, $this->maxResults
@@ -244,20 +246,5 @@ class CtNoSqlDataAccess implements DataInputInterface
         $queryString['numRecords']  = $this->maxResults;
 
         return $queryString;
-    }
-
-    /**
-     * Extracts filter into its individual components.
-     *
-     * @param array $filter
-     *
-     * @return array
-     */
-    protected function extractFilter($filter)
-    {
-        $value      = Arr::mustGet('value', $filter);
-        $operator   = Arr::get('op', $filter, 'eq');
-        $cacheOnly  = Arr::get('cacheOnly', $filter, false);
-        return [$value, $operator, $cacheOnly];
     }
 }

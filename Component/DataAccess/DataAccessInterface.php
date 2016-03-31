@@ -1,6 +1,6 @@
 <?php
 
-namespace CTLib\Component\DataProvider;
+namespace CTLib\Component\DataAccess;
 
 /**
  * Interface used to implement a data provider
@@ -8,7 +8,7 @@ namespace CTLib\Component\DataProvider;
  *
  * @author David McLean <dmclean@celltrak.com>
  */
-interface DataInputInterface
+interface DataAccessInterface
 {
     /**
      */
@@ -22,9 +22,10 @@ interface DataInputInterface
 
     /**
      * @param string $field
-     * @param mixed  $filter
+     * @param mixed  $value
+     * @param string $operator
      */
-    public function addFilter($field, $filter);
+    public function addFilter($field, $value, $operator);
 
     /**
      * @param string $field

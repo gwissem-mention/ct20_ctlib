@@ -1,6 +1,6 @@
 <?php
 
-namespace CTLib\Component\DataProvider;
+namespace CTLib\Component\DataAccess;
 
 use CTLib\Util\Arr;
 use CTLib\Component\HttpFoundation\JsonResponse;
@@ -22,12 +22,12 @@ class JsonDataOutput implements DataOutputInterface
     /**
      * {@inheritdoc}
      *
-     * @param DataInputInterface $input
+     * @param DataAccessInterface $input
      *
      */
-    public function start(DataInputInterface $input)
+    public function start(DataAccessInterface $input)
     {
-
+        $this->records = [];
     }
 
     /**
@@ -48,13 +48,13 @@ class JsonDataOutput implements DataOutputInterface
     /**
      * {@inheritdoc}
      *
-     * @param DataInputInterface $input
+     * @param DataAccessInterface $input
      *
-     * @return array
+     * @return JsonResponse
      */
-    public function end(DataInputInterface $input)
+    public function end(DataAccessInterface $input)
     {
 
-        return $this->records;
+        return new JsonResponse($this->records);
     }
 }
