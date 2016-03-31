@@ -77,20 +77,15 @@ class DataProvider
         DataAccessInterface $dataAccess,
         DataOutputInterface $output
     ) {
-        $dataSourceFields = $dataAccess->getFields();
-        // Merge fields from data access with data provider's
-        // additional fields (aliases) to hand over to output.
-        $allFields = array_merge(
-            $dataSourceFields,
+        $output->start(
             array_keys($this->fields)
         );
-
-        $output->start($allFields);
 
         $data = $dataAccess->getData();
 
         foreach ($data as $rawRecord) {
-            $record = [];
+            $record  = [];
+            $context = [];
 
             foreach ($this->fields as $alias => $field) {
                 if (is_string($field)) {
@@ -98,7 +93,7 @@ class DataProvider
                     $value = Arr::findByKeyChain($rawRecord, $field);
                 } else {
                     // Hand off to callback to get value
-                    $value = call_user_func($field, $rawRecord);
+                    $value = call_user_func($field, $rawRecord, $context);
                 }
                 $record[$alias] = $value;
             }
