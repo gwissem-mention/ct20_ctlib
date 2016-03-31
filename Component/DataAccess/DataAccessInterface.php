@@ -11,21 +11,26 @@ namespace CTLib\Component\DataAccess;
 interface DataAccessInterface
 {
     /**
+     * Constants for sort order
+     */
+    const SORT_ASC  = 'ASC';
+    const SORT_DESC = 'DESC';
+
+    /**
      */
     public function getData();
 
     /**
      * @param string $field
-     * @param string $alias
      */
-    public function addField($field, $alias=null);
+    public function addField($field);
 
     /**
-     * @param string $field
-     * @param mixed  $value
-     * @param string $operator
+     * @param string|callable   $field
+     * @param mixed|null        $value
+     * @param string|null       $operator
      */
-    public function addFilter($field, $value, $operator);
+    public function addFilter($field, $value=null, $operator='eq');
 
     /**
      * @param string $field
@@ -42,4 +47,9 @@ interface DataAccessInterface
      * @param integer $offset
      */
     public function setOffset($offset);
+
+    /**
+     * @return array
+     */
+    public function getFields();
 }

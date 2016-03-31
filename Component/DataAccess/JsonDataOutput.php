@@ -11,7 +11,7 @@ use CTLib\Component\HttpFoundation\JsonResponse;
  *
  * @author David McLean <dmclean@celltrak.com>
  */
-class RecordsetJsonDataOutput implements DataOutputInterface
+class JsonDataOutput implements DataOutputInterface
 {
     /**
      * @var array
@@ -40,8 +40,6 @@ class RecordsetJsonDataOutput implements DataOutputInterface
      */
     public function addRecord(array $record)
     {
-
-
         $this->records[] = $record;
     }
 
@@ -52,9 +50,8 @@ class RecordsetJsonDataOutput implements DataOutputInterface
      *
      * @return string
      */
-    public function end(array $fields)
+    public function end()
     {
-
         return json_encode($this->records);
     }
 }

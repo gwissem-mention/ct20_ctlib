@@ -13,12 +13,6 @@ use CTLib\Util\Arr;
 class CtApiDocumentDataAccess implements DataAccessInterface
 {
     /**
-     * Constants for sort order
-     */
-    const SORT_ASC  = 'ASC';
-    const SORT_DESC = 'DESC';
-
-    /**
      * @var string
      */
     protected $endpoint;
@@ -89,14 +83,13 @@ class CtApiDocumentDataAccess implements DataAccessInterface
      *
      * Adds field that will have its value returned in data record.
      *
-     * @param string|callable   $field
-     * @param string            $alias
+     * @param string   $field
      *
      * @return DataAccessInterface
      *
      * @throws \Exception
      */
-    public function addField($field, $alias=null)
+    public function addField($field)
     {
         $this->fields[] = $field;
 
@@ -108,24 +101,24 @@ class CtApiDocumentDataAccess implements DataAccessInterface
      *
      * Adds default filter for field.
      *
-     * @param string $field
-     * @param mixed $value          Either default filter value or explicit
-     *                              filter definition:
+     * @param string|callable $field
+     * @param mixed|null      $value  Either default filter value or explicit
+     *                                filter definition:
      *                                  array('value' => mixed, 'op' => string)
-     *                              or callback
-     * @param string $operator
+     *                                or callback
+     * @param string|null     $operator
      *
      * @return DataAccessInterface
      */
-    public function addFilter($field, $value, $operator='eq')
+    public function addFilter($field, $value=null, $operator='eq')
     {
-        if (!$value) {
-            return $this;
+        if (!is_callable($field) && !$value) {
+            throw new \InvalidArgumentException('Invalid filter value');
         }
 
         if (is_array($value)) {
             if (!in_array($operator, ['eq', 'in', "notIn"])) {
-                throw new \Exception("Array value only supports 'eq' or 'in' operator.");
+                throw new \InvalidArgumentException("Array value only supports 'eq' or 'in' operator.");
             }
             if ($operator == 'eq') {
                 $operator = 'in';
@@ -155,7 +148,7 @@ class CtApiDocumentDataAccess implements DataAccessInterface
     {
         if (strtoupper($order) != self::SORT_ASC
             && strtoupper($order) != self::SORT_DESC) {
-            throw new \Exception('Invalid sort value - must be one of (ASC, DESC)');
+            throw new \InvalidArgumentException('Invalid sort value - must be one of (ASC, DESC)');
         }
 
         $this->sorts[$field] = $order;
@@ -175,7 +168,7 @@ class CtApiDocumentDataAccess implements DataAccessInterface
     public function setMaxResults($maxResults)
     {
         if ($maxResults < 0) {
-            $maxResults = 0;
+            throw new \InvalidArgumentException('maxResults cannot be negative');
         }
 
         $this->maxResults = $maxResults;
@@ -195,12 +188,24 @@ class CtApiDocumentDataAccess implements DataAccessInterface
     public function setOffset($offset)
     {
         if ($offset < 0) {
-            $offset = 0;
+            throw new \InvalidArgumentException('offset cannot be negative');
         }
 
         $this->offset = $offset;
 
         return $this;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * Return field names
+     *
+     * @return array
+     */
+    public function getFields()
+    {
+        return $this->fields;
     }
 
     /**

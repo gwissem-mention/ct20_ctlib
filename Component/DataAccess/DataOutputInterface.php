@@ -12,9 +12,9 @@ namespace CTLib\Component\DataAccess;
 interface DataOutputInterface
 {
     /**
-     * @param array $input
+     * @param array $fields
      */
-    public function start(array $input);
+    public function start(array $fields);
 
     /**
      * @param array $record
@@ -22,7 +22,6 @@ interface DataOutputInterface
     public function addRecord(array $record);
 
     /**
-     * @param array $input
      */
-    public function end(array $input);
+    public function end();
 }
