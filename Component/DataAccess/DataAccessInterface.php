@@ -1,31 +1,36 @@
 <?php
 
-namespace CTLib\Component\DataProvider;
+namespace CTLib\Component\DataAccess;
 
 /**
  * Interface used to implement a data provider
  * that will retrieve data from a data source.
  *
  * @author David McLean <dmclean@celltrak.com>
- * @author Sean Hunter <shunter@celltrak.com>
  */
-interface DataInputInterface
+interface DataAccessInterface
 {
+    /**
+     * Constants for sort order
+     */
+    const SORT_ASC  = 'ASC';
+    const SORT_DESC = 'DESC';
+
     /**
      */
     public function getData();
 
     /**
      * @param string $field
-     * @param string $alias
      */
-    public function addField($field, $alias=null);
+    public function addField($field);
 
     /**
-     * @param string $field
-     * @param mixed  $filter
+     * @param string|callable   $field
+     * @param mixed|null        $value
+     * @param string|null       $operator
      */
-    public function addFilter($field, $filter);
+    public function addFilter($field, $value=null, $operator='eq');
 
     /**
      * @param string $field
@@ -42,9 +47,9 @@ interface DataInputInterface
      * @param integer $offset
      */
     public function setOffset($offset);
-    /**
-     * @param array $model
-     */
-    public function getModel();
 
+    /**
+     * @return array
+     */
+    public function getFields();
 }

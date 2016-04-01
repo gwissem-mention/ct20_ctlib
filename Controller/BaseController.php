@@ -712,7 +712,7 @@ abstract class BaseController extends Controller
      *
      * @return \stdClass
      */
-    public function getRequestQueryConfig($request)
+    public function getDataProviderQueryConfig($request)
     {
         $cnf = new \stdClass;
         $cnf->maxResults        = $request->get('rowsPerPage', -1);

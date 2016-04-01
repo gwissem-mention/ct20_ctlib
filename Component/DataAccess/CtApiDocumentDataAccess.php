@@ -1,6 +1,6 @@
 <?php
 
-namespace CTLib\Component\DataProvider;
+namespace CTLib\Component\DataAccess;
 
 use CTLib\Util\Arr;
 
@@ -9,9 +9,8 @@ use CTLib\Util\Arr;
  * results into structured data.
  *
  * @author David McLean <dmclean@celltrak.com>
- * @author Sean Hunter <shunter@celltrak.com>
  */
-class CtNoSqlDataAccess implements DataInputInterface
+class CtApiDocumentDataAccess implements DataAccessInterface
 {
     /**
      * @var string
@@ -48,11 +47,6 @@ class CtNoSqlDataAccess implements DataInputInterface
      */
     protected $maxResults;
 
-    /**
-     * @var array
-     */
-    protected $model;
-
 
     /**
      * @param CtApiCaller   $apiCaller
@@ -63,7 +57,6 @@ class CtNoSqlDataAccess implements DataInputInterface
         $this->apiCaller    = $apiCaller;
         $this->endpoint     = $endpoint;
         $this->fields       = [];
-        $this->model        = [];
         $this->filters      = [];
         $this->sorts        = null;
         $this->offset       = 0;
@@ -80,7 +73,7 @@ class CtNoSqlDataAccess implements DataInputInterface
     public function getData()
     {
         // Call API using ApiCaller to retrieve results (array of documents).
-        $queryString = $this->constructQueryString();
+        $queryString = $this->constructQueryParams();
 
         return $this->apiCaller->get($this->endpoint, $queryString);
     }
@@ -88,40 +81,18 @@ class CtNoSqlDataAccess implements DataInputInterface
     /**
      * {@inheritdoc}
      *
-     * return alias/field list as Model array.
-     *
-     *
-     * @return array
-     */
-    public function getModel()
-    {
-        return $this->model;
-    }
-
-    /**
-     * {@inheritdoc}
-     *
      * Adds field that will have its value returned in data record.
      *
-     * @param string|callable   $field
-     * @param string            $alias
+     * @param string   $field
      *
-     * @return DataInputInterface
+     * @return DataAccessInterface
      *
      * @throws \Exception
      */
-    public function addField($field, $alias=null)
+    public function addField($field)
     {
-        if (!$alias) {
-            $alias = $field;
-        }
+        $this->fields[] = $field;
 
-        if (array_key_exists($alias, $this->fields)) {
-            throw new \Exception('Ambiguous field name given');
-        }
-
-        $this->fields[$alias] = 1;
-        $this->model[$alias] = $field;
         return $this;
     }
 
@@ -130,70 +101,35 @@ class CtNoSqlDataAccess implements DataInputInterface
      *
      * Adds default filter for field.
      *
-     * @param string $field
-     * @param mixed $filter         Either default filter value or explicit
-     *                              filter definition:
+     * @param string|callable $field
+     * @param mixed|null      $value  Either default filter value or explicit
+     *                                filter definition:
      *                                  array('value' => mixed, 'op' => string)
+     *                                or callback
+     * @param string|null     $operator
      *
-     * @return DataInputInterface
+     * @return DataAccessInterface
      */
-    public function addFilter($field, $filter)
+    public function addFilter($field, $value=null, $operator='eq')
     {
-        if (!is_array($filter) || !isset($filter['value'])) {
-            $filter = ['value' => $filter];
-        }
-
-        list($value, $operator, $cacheOnly) = $this->extractFilter($filter);
-
-        if ($cacheOnly) {
-            // This filter doesn't need to be applied.
-            // It's just used to preserve the front-end filter UI.
-            return $this;
-        }
-
-        if (!$value) {
-            return $this;
+        if (!is_callable($field) && !$value) {
+            throw new \InvalidArgumentException('Invalid filter value');
         }
 
         if (is_array($value)) {
             if (!in_array($operator, ['eq', 'in', "notIn"])) {
-                throw new \Exception("Array value only supports 'eq' or 'in' operator.");
+                throw new \InvalidArgumentException("Array value only supports 'eq' or 'in' or 'notIn' operator.");
             }
             if ($operator == 'eq') {
                 $operator = 'in';
             }
         }
 
-        switch ($operator) {
-            case 'eq':  // Equals
-            case 'gt':  // Greater than
-            case 'gte': // Greater than equal to
-            case 'lt':  // Less than
-            case 'lte': // Less than equal to
-                $this->filters[$field] = ['$'.$operator => $value];
-                break;
-
-            case 'neq': // Not equal to
-                $this->filters[$field] = ['$ne' => $value];
-                break;
-
-            case 'in':  // in
-                $this->filters[$field] = ['$in:['.implode(',',$value).']'];
-                break;
-
-            case 'nin':  // not in
-                $this->filters[$field] = ['$nin:['.implode(',',$value).']'];
-                break;
-
-            case 'like%':
-            case '%like':
-            case '%like%':
-                $this->filters[$field] = [':regex: /^'.$value.'$/'];
-                break;
-
-            default:
-                throw new \Exception("Invalid filter operator: $operator.");
-        }
+        $this->filters[] = [
+            'field' => $field,
+            'op'    => $operator,
+            'value' => $value
+        ];
 
         return $this;
     }
@@ -203,13 +139,18 @@ class CtNoSqlDataAccess implements DataInputInterface
      *
      * Add a sort that will be applied when the data is retrieved.
      *
-     * @param string $field
-     * @param string $order
+     * @param string      $field
+     * @param int|string  $order
      *
-     * @return DataInputInterface
+     * @return DataAccessInterface
      */
     public function addSort($field, $order)
     {
+        if (strtoupper($order) != self::SORT_ASC
+            && strtoupper($order) != self::SORT_DESC) {
+            throw new \InvalidArgumentException('Invalid sort value - must be one of (ASC, DESC)');
+        }
+
         $this->sorts[$field] = $order;
 
         return $this;
@@ -222,10 +163,14 @@ class CtNoSqlDataAccess implements DataInputInterface
      *
      * @param integer $maxResults
      *
-     * @return DataInputInterface
+     * @return DataAccessInterface
      */
     public function setMaxResults($maxResults)
     {
+        if ($maxResults < 0) {
+            throw new \InvalidArgumentException('maxResults cannot be negative');
+        }
+
         $this->maxResults = $maxResults;
 
         return $this;
@@ -238,13 +183,29 @@ class CtNoSqlDataAccess implements DataInputInterface
      *
      * @param integer $offset
      *
-     * @return DataInputInterface
+     * @return DataAccessInterface
      */
     public function setOffset($offset)
     {
+        if ($offset < 0) {
+            throw new \InvalidArgumentException('offset cannot be negative');
+        }
+
         $this->offset = $offset;
 
         return $this;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * Return field names
+     *
+     * @return array
+     */
+    public function getFields()
+    {
+        return $this->fields;
     }
 
     /**
@@ -252,7 +213,7 @@ class CtNoSqlDataAccess implements DataInputInterface
      *
      * @return array
      */
-    protected function constructQueryString()
+    protected function constructQueryParams()
     {
         // Formulate query string from $this->fields,
         // $this->filters, $this->sorts, $this->offset, $this->maxResults
@@ -264,20 +225,5 @@ class CtNoSqlDataAccess implements DataInputInterface
         $queryString['numRecords']  = $this->maxResults;
 
         return $queryString;
-    }
-
-    /**
-     * Extracts filter into its individual components.
-     *
-     * @param array $filter
-     *
-     * @return array
-     */
-    protected function extractFilter($filter)
-    {
-        $value      = Arr::mustGet('value', $filter);
-        $operator   = Arr::get('op', $filter, 'eq');
-        $cacheOnly  = Arr::get('cacheOnly', $filter, false);
-        return [$value, $operator, $cacheOnly];
     }
 }

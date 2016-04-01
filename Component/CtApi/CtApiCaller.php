@@ -183,7 +183,7 @@ class CtApiCaller
             $request->__set('HTTPHEADER', $headers);
 
             if ($body) {
-                $request->postfields = $body;
+                $request->__set('POSTFIELDS', json_encode($body));
             }
 
             $response = $request->exec();
@@ -203,9 +203,12 @@ class CtApiCaller
                 
                 case 200:
                     break;
+
+                default:
+                    break;
             }
 
-            if ($httpResponseCode == 200) {
+            if ($httpResponseCode != 401) {
                 break;
             }
         }

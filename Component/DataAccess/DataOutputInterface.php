@@ -1,6 +1,6 @@
 <?php
 
-namespace CTLib\Component\DataProvider;
+namespace CTLib\Component\DataAccess;
 
 /**
  * Interface used to implement a data provider
@@ -12,9 +12,9 @@ namespace CTLib\Component\DataProvider;
 interface DataOutputInterface
 {
     /**
-     * @param DataInputInterface $input
+     * @param array $fields
      */
-    public function start(DataInputInterface $input);
+    public function start(array $fields);
 
     /**
      * @param array $record
@@ -22,7 +22,6 @@ interface DataOutputInterface
     public function addRecord(array $record);
 
     /**
-     * @param DataInputInterface $input
      */
-    public function end(DataInputInterface $input);
+    public function end();
 }
