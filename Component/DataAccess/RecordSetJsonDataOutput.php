@@ -18,6 +18,11 @@ class RecordSetJsonDataOutput implements DataOutputInterface
      */
     protected $records = [];
 
+    /**
+     * @var array
+     */
+    protected $fields = [];
+
 
     /**
      * {@inheritdoc}
@@ -28,6 +33,7 @@ class RecordSetJsonDataOutput implements DataOutputInterface
     public function start(array $fields)
     {
         $this->records = [];
+        $this->fields = $fields;
     }
 
     /**
@@ -52,9 +58,17 @@ class RecordSetJsonDataOutput implements DataOutputInterface
      */
     public function end()
     {
-        return json_encode( array(  'data' => $this->records,
-                                    'model' => $this->getModelAliases()));
+        // convert to enumerted list to work with recorset set Model
+        $data = [];
+        foreach($this->records as $record){
+            $enumData = [];
+            foreach($record as $item){
+                $enumData[] = $item;
+            }
+            $data[] = $enumData;
+        }
 
-      //  return json_encode($this->records);
+        return json_encode( array(  'data' => $data,
+                                    'model' => $this->fields));
     }
 }
