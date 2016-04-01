@@ -196,6 +196,8 @@ class CtApiCaller
 
             switch ($httpResponseCode) {
                 case 401:
+                case 403:
+                case 500:
                     $token = $this->getToken($ctApiAuthenticatorName, true);
                     $headers[2] = "Authorization: Bearer $token";
                     $attempts++;
@@ -208,7 +210,7 @@ class CtApiCaller
                     break;
             }
 
-            if ($httpResponseCode != 401) {
+            if ($httpResponseCode == 200) {
                 break;
             }
         }
@@ -216,7 +218,7 @@ class CtApiCaller
         if ($httpResponseCode != 200) {
             throw new CTApiCallerException($httpResponseCode, $response, json_encode($request));
         }         
-      
+
         return $response;
     }
 
