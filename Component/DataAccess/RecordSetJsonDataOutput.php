@@ -9,7 +9,6 @@
 namespace CTLib\Component\DataAccess;
 
 use CTLib\Util\Arr;
-use CTLib\Component\HttpFoundation\JsonResponse;
 
 class RecordSetJsonDataOutput implements DataOutputInterface
 {
@@ -52,23 +51,18 @@ class RecordSetJsonDataOutput implements DataOutputInterface
     /**
      * {@inheritdoc}
      *
-     * @param array $fields
      *
-     * @return string
+     * @return array json_encoded
      */
     public function end()
     {
         // convert to enumerted list to work with recorset set Model
         $data = [];
-        foreach($this->records as $record){
-            $enumData = [];
-            foreach($record as $item){
-                $enumData[] = $item;
-            }
-            $data[] = $enumData;
+        foreach ($this->records as $record) {
+            $data[] = array_values($record);
         }
 
-        return json_encode( array(  'data' => $data,
-                                    'model' => $this->fields));
+        return json_encode(['data' => $data,
+                            'model' => $this->fields]);
     }
 }
