@@ -100,6 +100,10 @@ class CtApiDocumentDataAccess implements DataAccessInterface
      */
     public function addField($field)
     {
+        if (isset($this->fields[$field])) {
+            throw new \Exception("Field has already been added");
+        }
+
         $this->fields[] = $field;
 
         return $this;
