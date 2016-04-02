@@ -45,7 +45,8 @@ class RecordSetJsonDataOutput implements DataOutputInterface
      */
     public function addRecord(array $record)
     {
-        $this->records[] = $record;
+        // convert to enumerted list to work with recorset set Model
+        $this->records[] = array_values($record);
     }
 
     /**
@@ -56,13 +57,8 @@ class RecordSetJsonDataOutput implements DataOutputInterface
      */
     public function end()
     {
-        // convert to enumerted list to work with recorset set Model
-        $data = [];
-        foreach ($this->records as $record) {
-            $data[] = array_values($record);
-        }
-
-        return json_encode(['data' => $data,
+        // return in format of Data / Model 
+        return json_encode(['data' => $this->records,
                             'model' => $this->fields]);
     }
 }
