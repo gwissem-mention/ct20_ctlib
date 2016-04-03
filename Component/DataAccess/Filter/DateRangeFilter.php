@@ -77,7 +77,7 @@ class DateRangeFilter implements DataAccessFilterInterface
                 $dac->addFilter(
                     $this->dateField,
                     $this->formatStopTime($today),
-                    '$lte'
+                    'lte'
                 );
                 break;
 
@@ -86,12 +86,12 @@ class DateRangeFilter implements DataAccessFilterInterface
                 $dac->addFilter(
                     $this->dateField,
                     $this->formatStartTime($yesterday),
-                    '$gte'
+                    'gte'
                 );
                 $dac->addFilter(
                     $this->dateField,
                     $this->formatStopTime($yesterday),
-                    '$lte'
+                    'lte'
                 );
                 break;
 
@@ -101,12 +101,12 @@ class DateRangeFilter implements DataAccessFilterInterface
                 $dac->addFilter(
                     $this->dateField,
                     $this->formatStartTime($weekStart),
-                    '$gte'
+                    'gte'
                 );
                 $dac->addFilter(
                     $this->dateField,
                     $this->formatStopTime($weekEnd),
-                    '$lte'
+                    'lte'
                 );
                 break;
 
@@ -115,7 +115,7 @@ class DateRangeFilter implements DataAccessFilterInterface
                 $dac->addFilter(
                     $this->dateField,
                     $this->formatStartTime($weekStart),
-                    '$lte'
+                    'lte'
                 );
                 break;
 
@@ -130,12 +130,12 @@ class DateRangeFilter implements DataAccessFilterInterface
                 $dac->addFilter(
                     $this->dateField,
                     $this->formatStartTime($dateFromDateTime),
-                    '$gte'
+                    'gte'
                 );
                 $dac->addFilter(
                     $this->dateField,
                     $this->formatStopTime($dateToDateTime),
-                    '$lte'
+                    'lte'
                 );
                 break;
 
