@@ -72,19 +72,14 @@ class CtApiDocumentDataAccess implements DataAccessInterface
      */
     public function getData()
     {
-        $data = null;
+        $data = [];
 
         // Call API using ApiCaller to retrieve results (array of documents).
         $queryString = $this->constructQueryParams();
 
-        $result = $this->apiCaller->get($this->endpoint, $queryString);
+        $documents = $this->apiCaller->get($this->endpoint, $queryString);
 
-        if ($result) {
-            $data = json_decode($result);
-            $data = json_decode($data, true);
-        }
-
-        return $data;
+        return json_decode($documents, true);
     }
 
     /**
