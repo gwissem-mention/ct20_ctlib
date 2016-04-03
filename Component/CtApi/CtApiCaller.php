@@ -176,6 +176,7 @@ class CtApiCaller
         }
 
         $attempts = 0;
+        $httpResponseCode = 200;
 
         while ($attempts <= 1) {
             $request = new Curl($url);        
@@ -196,16 +197,11 @@ class CtApiCaller
 
             switch ($httpResponseCode) {
                 case 401:
-                case 403:
-                case 500:
                     $token = $this->getToken($ctApiAuthenticatorName, true);
                     $headers[2] = "Authorization: Bearer $token";
                     $attempts++;
                     break;
                 
-                case 200:
-                    break;
-
                 default:
                     break;
             }
