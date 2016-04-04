@@ -93,9 +93,9 @@ class DataProvider
         $fields = array_keys($this->fields);
         $output->start($fields);
 
-        $documents = $dataAccess->getData();
+        $data = $dataAccess->getData();
 
-        foreach ($documents as $rawRecord) {
+        foreach ($data as $rawRecord) {
             $record  = [];
             $context = [];
 
