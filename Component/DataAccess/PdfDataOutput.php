@@ -2,15 +2,16 @@
 
 namespace CTLib\Component\DataAccess;
 
-use CTLib\Component\HttpFoundation\CsvResponse;
+use CTLib\Component\HttpFoundation\PdfResponse;
+use CTLib\Component\Pdf\HtmlToPdf;
 
 /**
  * Facilitates retrieving and processing nosql
- * results into csv output.
+ * results into pdf output.
  *
  * @author David McLean <dmclean@celltrak.com>
  */
-class CsvDataOutput implements DataOutputInterface
+class PdfDataOutput implements DataOutputInterface
 {
     /**
      * @var array
@@ -23,6 +24,11 @@ class CsvDataOutput implements DataOutputInterface
     protected $template;
 
     /**
+     * @var HtmlToPdf
+     */
+    protected $htmlToPdf;
+
+    /**
      * @var Templating Engine
      */
     protected $templating;
@@ -30,11 +36,13 @@ class CsvDataOutput implements DataOutputInterface
 
     /**
      * @param string         $template
+     * @param HtmlToPdf      $htmlToPdf
      * @param Templating     $templating
      */
     public function __construct($template, $htmlToPdf, $templating)
     {
         $this->template   = $template;
+        $this->htmlToPdf  = $htmlToPdf;
         $this->templating = $templating;
     }
 
@@ -70,12 +78,14 @@ class CsvDataOutput implements DataOutputInterface
      */
     public function end()
     {
-        $content = $this->templating->render($this->template, $this->records);
+        $html = $this->templating->render($this->template, $this->records);
 
-        return new CsvResponse(
+        $content = $this->htmlToPdf->renderPdf($html);
+
+        return new PdfResponse(
             $content,
-            "celltrak".date("YmdHis").".csv",
-            CsvResponse::DESTINATION_ATTACHMENT
+            "celltrak".date("YmdHis").".pdf",
+            PdfResponse::DESTINATION_ATTACHMENT
         );
     }
 }
