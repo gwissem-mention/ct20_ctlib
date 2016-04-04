@@ -2,7 +2,7 @@
 namespace CTLib\Component\CtApi;
 
 use CTLib\Util\Curl;
-use CTLib\Component\CtApi\CTApiCallerException;
+use CTLib\Component\CtApi\CtApiCallerException;
 
 /**
  * calling methods for ct api.
@@ -12,8 +12,16 @@ use CTLib\Component\CtApi\CTApiCallerException;
 class CtApiCaller
 {
 
-    const CURL_EXCEPTION = 'Curl_Exception';
+    /**
+     * Path used to authenticate caller and retrieve a persistent API token.
+     */
     const API_AUTHENTICATE_PATH = '/authenticate';
+
+
+    /**
+     * @var string
+     */
+    protected $apiUrl;
 
     /**
      * @var Logger
@@ -21,270 +29,262 @@ class CtApiCaller
     protected $logger;
 
     /**
-     * @var string
+     * @var array
      */
-    protected $url;
-
-    /**
-     * @var CtApiAuthenticators
-     */
-    protected $ctApiAuthenticators;
+    protected $authenticators;
     
     /**
+     * @param string $apiUrl
      * @param Logger logger
-     * @param string $url
      */
-    public function __construct(
-        $logger,
-        $url
-    ) {
-
-        $this->logger = $logger;  
-        $this->url = $url;
-        $this->ctApiAuthenticators = [];
+    public function __construct($apiUrl, $logger)
+    {
+        $this->apiUrl           = rtrim($apiUrl, '/');
+        $this->logger           = $logger;          
+        $this->authenticators   = [];
     }
 
     /**
-     * add ctApiAuthenticator
+     * Adds API Authenticator.
      *
-     * @param string $ctApiAuthenticatorName
-     * @param string $ctApiAuthenticator
+     * @param string $authenticatorName
+     * @param CtApiCallerAuthenticator $authenticator
      * @return void 
      */
     public function addAuthenticator(
-        $ctApiAuthenticatorName,
-        $ctApiAuthenticator
+        $authenticatorName,
+        CtApiCallerAuthenticator $authenticator
     ) {
-
-        $this->ctApiAuthenticators[$ctApiAuthenticatorName] = $ctApiAuthenticator;
+        $this->authenticators[$authenticatorName] = $authenticator;
     }
 
     /**
-     * post to Api
+     * Sends GET requests.
      * @param string $path
-     * @param string $body
+     * @param array $parameters
+     * @param string $authenticatorName 
+     * @return string Response body.
+     */
+    public function get(        
+        $path,
+        array $parameters = [],
+        $authenticatorName = 'default'
+    ) {
+        $method = 'GET';
+        $response = $this->send($path, NULL, $parameters, $method, $authenticatorName);
+        return $response;
+    }
+
+    /**
+     * Sends POST request.
+     * @param string $path
+     * @param mixed $body
      * @param array $parameters     
-     * @param string $ctApiAuthenticatorName 
-     * @return string http response code 
+     * @param string $authenticatorName 
+     * @return string Response body.
      */
     public function post(        
         $path,
         $body = NULL,
-        $parameters = [],        
-        $ctApiAuthenticatorName = 'default'
+        array $parameters = [],        
+        $authenticatorName = 'default'
     ) {
-
-        $method = 'post';
-
-        $result = $this->send($path, $body, $parameters, $method, $ctApiAuthenticatorName);
-
-        return $result;
+        $method = 'POST';
+        $response = $this->send($path, $body, $parameters, $method, $authenticatorName);
+        return $response;
     }
 
     /**
-     * put to Api
+     * Sends PUT request.
      * @param string $path
-     * @param string $body
+     * @param mixed $body
      * @param array $parameters     
-     * @param string $ctApiAuthenticatorName 
-     * @return string http response code 
+     * @param string $authenticatorName 
+     * @return string Response body.
      */
     public function put(        
         $path,
         $body = NULL,
-        $parameters = [],
-        $ctApiAuthenticatorName = 'default'
+        array $parameters = [],
+        $authenticatorName = 'default'
     ) {
-
-        $method = 'put';
-
-        $result = $this->send($path, $body, $parameters, $method, $ctApiAuthenticatorName);
-
-        return $result;
+        $method = 'PUT';
+        $response = $this->send($path, $body, $parameters, $method, $authenticatorName);
+        return $response;
     }
 
     /**
-     * get from Api
+     * Sends PATCH request.
      * @param string $path
-     * @param array $parameters
-     * @param string $ctApiAuthenticatorName 
-     * @return array 
+     * @param mixed $body
+     * @param array $parameters     
+     * @param string $authenticatorName 
+     * @return string Response body.
      */
-    public function get(        
+    public function patch(        
         $path,
-        $parameters = [],
-        $ctApiAuthenticatorName = 'default'
+        $body = NULL,
+        array $parameters = [],
+        $authenticatorName = 'default'
     ) {
-
-        $method = 'get';
-
-        $result = $this->send($path, NULL, $parameters, $method, $ctApiAuthenticatorName);
-
-        return $result;
+        $method = 'PATCH';
+        $response = $this->send($path, $body, $parameters, $method, $authenticatorName);
+        return $response;
     }
 
     /**
-     * delete from Api
+     * Sends DELETE request.
      * @param string $path
      * @param array $parameters
-     * @param string $ctApiAuthenticatorName 
-     * @return string http response code 
+     * @param string $authenticatorName 
+     * @return string Response body.
      */
     public function delete(        
         $path,
-        $parameters = [],
-        $ctApiAuthenticatorName = 'default'
+        array $parameters = [],
+        $authenticatorName = 'default'
     ) {
-
-        $method = 'delete';
-        
-        $responseBody = $this->send($path, NULL, $parameters, $method, $ctApiAuthenticatorName);
-
-        return $responseBody;
+        $method = 'DELETE';
+        $response = $this->send($path, NULL, $parameters, $method, $authenticatorName);
+        return $response;
     }
 
-    /*
-     * send data to API
+    /**
+     * Helper method to send all API requests.
      * @param string $path        
-     * @param string $body
+     * @param mixed $body
      * @param array $parameters
      * @param string $method
-     * @param string $ctApiAuthenticatorName       
-     * @return array  
-    */
-    private function send(
+     * @param string $authenticatorName       
+     * @return string Response body.
+     */
+    protected function send(
         $path,
         $body,
-        $parameters,
+        array $parameters,
         $method,
-        $ctApiAuthenticatorName
+        $authenticatorName
     ) {
-        $token = $this->getToken($ctApiAuthenticatorName, false);
+        // All API requests need to have a valid token. Use the specified
+        // CtApiCallerAuthenticator to facilitate the retrieval of this token.
+        $authenticator = $this->getAuthenticator($authenticatorName);
+        
+        // Get the API token from the authenticator.
+        $token = $authenticator->getToken();
 
+        if (!$token) {
+            // No API token set, yet. Need to request a new one.
+            $this->logger->debug("CtApiCaller: no API token set; requesting a new one");
+
+            // Use this authenticator's credentials to request a new token.
+            $credentials = $authenticator->getCredentials();
+            $token = $this->requestApiToken($credentials);
+
+            $this->logger->debug("CtApiCaller: new API token = {$token}");
+
+            // Save token for future requests.
+            $authenticator->setToken($token);
+        }
+
+        $request = $this->buildRequest($path, $body, $parameters, $method, $token);
+        $response = $request->exec();
+
+        if ($errorNum = $request->errno()) {
+            throw new \Exception("ct_api_caller: Failed sending request to '{$url}' with error '{$request->error()}' ({$errorNum})");
+        }
+
+        $httpResponseCode = $request->info(CURLINFO_HTTP_CODE);
+
+        switch ($httpResponseCode) {
+            case 200:
+                return $response;
+
+            case 401:
+                // Token expired. Invalidate existing token so next attempt will
+                // request a new one.
+                $this->logger->debug("CtApiCaller: API token has expired; invaliding and resending request");
+
+                $authenticator->setToken(null);
+                return $this->send($path, $body, $parameters, $method, $authenticatorName);
+            
+            default:
+                // Any other response code is an exception case.
+                throw new CtApiCallerException($httpResponseCode, $response, $request);
+        }
+    }
+
+    /**
+     * Builds API request.
+     * @param  string $path       
+     * @param  mixed $body       
+     * @param  array $parameters 
+     * @param  string $method     
+     * @param  string $token      
+     * @return Curl             
+     */
+    protected function buildRequest(
+        $path,
+        $body,
+        array $parameters,
+        $method,
+        $token
+    ) {
         $headers = [
             "Accept: application/json",
             "Content-Type: application/json",
             "Authorization: Bearer $token"
         ];
 
-        $url = rtrim($this->url, '/') . '/' . ltrim($path, '/');
-        $queryString = '';
-
-        if (count($parameters) > 0) {
+        $url = $this->apiUrl . '/' . ltrim($path, '/');
+        
+        if ($parameters) {
             $queryString = '?' . http_build_query($parameters);
             $url .= $queryString;
         }
 
-        $attempts = 0;
+        $request = new Curl($url);
+        $request->httpheader = $headers;
 
-        while ($attempts <= 1) {
-            $request = new Curl($url);        
-            $request->__set($method , 1);
-            $request->__set('HTTPHEADER', $headers);
-
-            if ($body) {
-                $request->__set('POSTFIELDS', json_encode($body));
-            }
-
-            $response = $request->exec();
-
-            if ($errorNum = $request->errno()) {
-                throw new \Exception("ct_api_caller: Failed sending request to '{$url}' with error '{$request->error()}' ({$errorNum})");
-            }
-
-            $httpResponseCode = $request->info(CURLINFO_HTTP_CODE);
-
-            switch ($httpResponseCode) {
-                case 401:
-                    $token = $this->getToken($ctApiAuthenticatorName, true);
-                    $headers[2] = "Authorization: Bearer $token";
-                    $attempts++;
-                    break;
-                
-                case 200:
-                    break;
-
-                default:
-                    break;
-            }
-
-            if ($httpResponseCode != 401) {
+        switch (strtoupper($method)) {
+            case 'GET':
+                $request->httpget = true;
                 break;
-            }
+            case 'POST':
+                $request->post = true;
+                break;
+            case 'PUT':
+                $request->customrequest = 'PUT';
+                break;
+            case 'PATCH':
+                $request->customrequest = 'PATCH';
+                break;
+            case 'DELETE':
+                $request->customrequest = 'DELETE';
+                break;
+            default:
+                throw new \InvalidArgumentException("'{$method}' is not a supported request method");
         }
 
-        if ($httpResponseCode != 200) {
-            throw new CTApiCallerException($httpResponseCode, $response, json_encode($request));
-        }         
-      
-        return $response;
+        if ($body) {
+            if (!is_string($body)) {
+                $body = json_encode($body);
+            }
+
+            $request->postfields = $body;
+        }
+
+        return $request;
     }
 
     /**
-     * get given ctApiAuthenticator's token
+     * Sends authentication request to API to retrieve new API token.
      *
-     * @param string ctApiAuthenticatorName
-     * @param boolean $getNewOne
+     * @param array $credentials
      * @return string $token 
      */
-    private function getToken(
-        $ctApiAuthenticatorName,
-        $getNewOne = false
-    ) {
-
-        if ($getNewOne) {
-            $token = $this->requestToken($ctApiAuthenticatorName);
-            $this->setToken($ctApiAuthenticatorName, $token);            
-        } else {
-            if (!array_key_exists($ctApiAuthenticatorName, $this->ctApiAuthenticators)) {
-                throw new \Exception("ct_api_caller: authenticator {$ctApiAuthenticatorName} not exists");
-            }
-
-            $token = $this->ctApiAuthenticators[$ctApiAuthenticatorName]->getToken();
-            
-            if ($token == NULL) {
-                $token = $this->requestToken($ctApiAuthenticatorName);
-                $this->setToken($ctApiAuthenticatorName, $token);                 
-            }
-        }
-
-        return $token;
-    }
-
-    /**
-     * set given ctApiAuthenticator's token
-     *
-     * @param string ctApiAuthenticatorName
-     * @param string $token 
-     */
-    private function setToken(
-        $ctApiAuthenticatorName,
-        $token
-    ) {
-
-        if (!array_key_exists($ctApiAuthenticatorName, $this->ctApiAuthenticators)) {
-            throw new \Exception("ct_api_caller: authenticator {$ctApiAuthenticatorName} not exists");
-        }
-
-        $this->ctApiAuthenticators[$ctApiAuthenticatorName]->setToken($token);
-    }
-
-    /**
-     * get request token for ctApiAuthenticator
-     *
-     * @param string ctApiAuthenticatorName
-     * @return string $token 
-     */
-    private function requestToken($ctApiAuthenticatorName) 
+    protected function requestApiToken($credentials) 
     {
-
-        $url = rtrim($this->url, '/') . self::API_AUTHENTICATE_PATH;
-
-        if (!array_key_exists($ctApiAuthenticatorName, $this->ctApiAuthenticators)) {
-            throw new \Exception("ct_api_caller: authenticator {$ctApiAuthenticatorName} not exists");
-        }
-
-        $credentials = $this->ctApiAuthenticators[$ctApiAuthenticatorName]->getCredentials();
+        $url = $this->apiUrl . self::API_AUTHENTICATE_PATH;
 
         $headers = [
             "Accept: application/json",
@@ -292,10 +292,10 @@ class CtApiCaller
         ];
 
         $request = new Curl($url);
-        $request->__set('POST' , 1);
-        $request->__set('POSTFIELDS', json_encode($credentials));
-        $request->__set('HTTPHEADER', $headers);
-
+        $request->httpheader = $headers;
+        $request->post = true;
+        $request->postfields = json_encode($credentials);
+        
         $response = $request->exec();
 
         if ($errorNum = $request->errno()) {
@@ -304,14 +304,26 @@ class CtApiCaller
 
         $httpResponseCode = $request->info(CURLINFO_HTTP_CODE);
 
-        if ($httpResponseCode !=200) {
-            throw new CTApiCallerException($httpResponseCode, $response, json_encode($request));
+        if ($httpResponseCode != 200) {
+            throw new CtApiCallerException($httpResponseCode, $response, $request);
         }
 
-        $responseDetail = json_decode($response);
-        return $responseDetail->token;       
+        $decodedResponse = json_decode($response);
+        return $decodedResponse->token;       
     }
 
+    /**
+     * Returns caller authenticator registered to name.
+     * @param  string $authenticatorName 
+     * @return CtApiCallerAuthenticator                         
+     */
+    protected function getAuthenticator($authenticatorName)
+    {
+        if (!isset($this->authenticators[$authenticatorName])) {
+            throw new \InvalidArgumentException("ct_api_caller: authenticator '{$authenticatorName}' does not exist");
+        }
 
+        return $this->authenticators[$authenticatorName];
+    }
 
 }

@@ -1,6 +1,7 @@
 <?php
 namespace CTLib\Component\CtApi;
 
+use CTLib\Util\Curl;
 
 /**
  * Captures Api caller execeptions.
@@ -13,14 +14,11 @@ class CtApiCallerException extends \Exception
     /**
      * @param integer $errorCode  // http response error code.
      * @param Response $response
-     * @param string $request
+     * @param Curl $request
      */
-    public function __construct(
-        $errorCode, 
-        $response, 
-        $request
-    ) {
-        $message = (string) $response . $request; 
+    public function __construct($errorCode, $response, Curl $request)
+    {
+        $message = "Request: " . print_r($request, true) . "\nResponse: {$response}";
         parent::__construct($message, $errorCode);
     }
 
