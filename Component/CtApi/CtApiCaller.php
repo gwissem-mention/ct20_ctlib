@@ -2,7 +2,7 @@
 namespace CTLib\Component\CtApi;
 
 use CTLib\Util\Curl;
-use CTLib\Component\CtApi\CTApiCallerException;
+use CTLib\Component\CtApi\CtApiCallerException;
 
 /**
  * calling methods for ct api.
@@ -209,7 +209,7 @@ class CtApiCaller
             
             default:
                 // Any other response code is an exception case.
-                throw new CTApiCallerException($httpResponseCode, $response, $request);
+                throw new CtApiCallerException($httpResponseCode, $response, $request);
         }
     }
 
@@ -305,7 +305,7 @@ class CtApiCaller
         $httpResponseCode = $request->info(CURLINFO_HTTP_CODE);
 
         if ($httpResponseCode != 200) {
-            throw new CTApiCallerException($httpResponseCode, $response, $request);
+            throw new CtApiCallerException($httpResponseCode, $response, $request);
         }
 
         $decodedResponse = json_decode($response);
