@@ -2,7 +2,7 @@
 
 namespace CTLib\Component\DataAccess\Filter;
 
-interface DataProviderFilterInterface
+interface DataAccessFilterInterface
 {
 
     /**
