@@ -492,10 +492,10 @@ class CTLibExtension extends Extension
     {
         if (! $config['enabled']) { return; }
 
-        $args = array(
-            new Reference('logger'),
-            $config['url']
-        );
+        $args = [
+            $config['url'],
+            new Reference('logger')
+        ];
         $def = new Definition('CTLib\Component\CtApi\CtApiCaller', $args);
         $container->setDefinition('ct_api.caller', $def);
 
