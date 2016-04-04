@@ -2,6 +2,7 @@
 
 namespace CTLib\Component\DataAccess;
 
+use CTLib\Component\DataAccess\Filter\DataAccessFilterInterface;
 use CTLib\Util\Arr;
 
 /**
@@ -72,19 +73,21 @@ class CtApiDocumentDataAccess implements DataAccessInterface
      */
     public function getData()
     {
-        $data = null;
+        $data = [];
 
         // Call API using ApiCaller to retrieve results (array of documents).
         $queryString = $this->constructQueryParams();
 
-        $result = $this->apiCaller->get($this->endpoint, $queryString);
+        foreach ($this->filters as $filter) {
+            list(
+                $field, $value) = $this->extractFilter($filter);
 
-        if ($result) {
-            $data = json_decode($result);
-            $data = json_decode($data, true);
+            $this->applyFilterHandler($field, $value);
         }
 
-        return $data;
+        $documents = $this->apiCaller->get($this->endpoint, $queryString);
+
+        return json_decode($documents, true);
     }
 
     /**
@@ -115,10 +118,7 @@ class CtApiDocumentDataAccess implements DataAccessInterface
      * Adds default filter for field.
      *
      * @param string|callable $field
-     * @param mixed|null      $value  Either default filter value or explicit
-     *                                filter definition:
-     *                                  array('value' => mixed, 'op' => string)
-     *                                or callback
+     * @param mixed|null      $value
      * @param string|null     $operator
      *
      * @return DataAccessInterface
@@ -219,6 +219,38 @@ class CtApiDocumentDataAccess implements DataAccessInterface
     public function getFields()
     {
         return $this->fields;
+    }
+
+    /**
+     * Applies filter handler.
+     *
+     * @param DataAccessFilterInterface|callable $handler
+     * @param mixed $value
+     *
+     * @return void
+     */
+    protected function applyFilterHandler($handler, $value)
+    {
+        if (is_callable($handler)) {
+            call_user_func($handler, $this, $value);
+        } elseif ($handler instanceof DataAccessFilterInterface) {
+            $handler->apply($this, $value);
+        }
+    }
+
+    /**
+     * Extracts filter into its individual components.
+     *
+     * @param array $filter
+     *
+     * @return array
+     */
+    protected function extractFilter($filter)
+    {
+        $field      = Arr::mustGet('field', $filter);
+        $value      = Arr::get('value', $filter);
+        $operator   = Arr::get('op', $filter, 'eq');
+        return [$field, $value, $operator];
     }
 
     /**
