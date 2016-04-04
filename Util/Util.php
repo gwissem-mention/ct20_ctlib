@@ -119,6 +119,19 @@ class Util
     }
 
     /**
+     * Convert and round duration from secs into minutes
+     *
+     * @param integer $startTime start time.
+     * @param integer $stopTime stop time.
+     *
+     * @return integer
+     */
+    public function calcDurationInMins($startTime, $stopTime)
+    {
+        return floor($stopTime / 60) - floor($startTime / 60);
+    }
+
+    /**
      * Converts meteres to kilometers.
      *
      * @param float|integer $meters
