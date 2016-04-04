@@ -78,7 +78,11 @@ class PdfDataOutput implements DataOutputInterface
      */
     public function end()
     {
-        $html = $this->templating->render($this->template, $this->records);
+        $html = '';
+
+        foreach ($this->records as $record) {
+            $html .= $this->templating->render($this->template, $record);
+        }
 
         $content = $this->htmlToPdf->renderPdf($html);
 
