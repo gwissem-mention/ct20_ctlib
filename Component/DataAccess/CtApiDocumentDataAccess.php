@@ -13,6 +13,11 @@ use CTLib\Util\Arr;
  */
 class CtApiDocumentDataAccess implements DataAccessInterface
 {
+    const REQUEST_TYPE_NOTIFY = "notify";
+    const REQUEST_TYPE_JSON   = "json";
+    const REQUEST_TYPE_CSV    = "csv";
+    const REQUEST_TYPE_PDF    = "pdf";
+    
     /**
      * @var string
      */
@@ -270,5 +275,31 @@ class CtApiDocumentDataAccess implements DataAccessInterface
         $queryString['numRecords']  = $this->maxResults;
 
         return $queryString;
+    }
+
+    /**
+     * Get recordset ajax request type. It could be any of
+     * these: REQUEST_TYPE_NOTIFY, REQUEST_TYPE_JSON,
+     * REQUEST_TYPE_CSV, REQUEST_TYPE_PDF
+     *
+     * @param Request $request
+     * @return string
+     *
+     */
+    public function getRequestType($request)
+    {
+        $requestType = $request->get("requestType");
+        if ($requestType != static::REQUEST_TYPE_NOTIFY
+            && $requestType != static::REQUEST_TYPE_JSON
+            && $requestType != static::REQUEST_TYPE_CSV
+            && $requestType != static::REQUEST_TYPE_PDF
+        ) {
+            // MT @ 9/23/13; Default to JSON even though $requestType should
+            // match one of the valid types. Sometimes the front-end doesn't
+            // properly send so defaulting to JSON is very much a band-aid.
+            $requestType = static::REQUEST_TYPE_JSON;
+        }
+
+        return $requestType;
     }
 }

@@ -32,7 +32,7 @@ class CsvDataOutput implements DataOutputInterface
      * @param string         $template
      * @param Templating     $templating
      */
-    public function __construct($template, $htmlToPdf, $templating)
+    public function __construct($template, $templating)
     {
         $this->template   = $template;
         $this->templating = $templating;
@@ -70,7 +70,7 @@ class CsvDataOutput implements DataOutputInterface
      */
     public function end()
     {
-        $content = $this->templating->render($this->template, $this->records);
+        $content = $this->templating->render($this->template, ['data' => $this->records]);
 
         return new CsvResponse(
             $content,
