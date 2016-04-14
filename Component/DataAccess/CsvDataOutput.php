@@ -70,12 +70,6 @@ class CsvDataOutput implements DataOutputInterface
      */
     public function end()
     {
-        $content = $this->templating->render($this->template, $this->records);
-
-        return new CsvResponse(
-            $content,
-            "celltrak".date("YmdHis").".csv",
-            CsvResponse::DESTINATION_ATTACHMENT
-        );
+        return $this->templating->render($this->template, $this->records);
     }
 }
