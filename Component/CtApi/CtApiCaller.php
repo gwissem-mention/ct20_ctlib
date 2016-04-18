@@ -190,7 +190,7 @@ class CtApiCaller
         $response = $request->exec();
 
         if ($errorNum = $request->errno()) {
-            throw new \Exception("ct_api_caller: Failed sending request to '{$url}' with error '{$request->error()}' ({$errorNum})");
+            throw new \Exception("ct_api_caller: Failed sending request to '{$path}' with error '{$request->error()}' ({$errorNum})");
         }
 
         $httpResponseCode = $request->info(CURLINFO_HTTP_CODE);
