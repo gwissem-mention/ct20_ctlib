@@ -72,7 +72,7 @@ class DateRangeFilter implements DataAccessFilterInterface
                 $dac->addFilter(
                     $this->dateField,
                     $this->formatStartTime($today),
-                    '$gte'
+                    'gte'
                 );
                 $dac->addFilter(
                     $this->dateField,
