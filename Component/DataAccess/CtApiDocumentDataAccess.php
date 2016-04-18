@@ -13,10 +13,6 @@ use CTLib\Util\Arr;
  */
 class CtApiDocumentDataAccess implements DataAccessInterface
 {
-    const REQUEST_TYPE_NOTIFY = "notify";
-    const REQUEST_TYPE_JSON   = "json";
-    const REQUEST_TYPE_CSV    = "csv";
-    const REQUEST_TYPE_PDF    = "pdf";
     
     /**
      * @var string
