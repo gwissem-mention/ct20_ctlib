@@ -13,6 +13,7 @@ use CTLib\Util\Arr;
  */
 class CtApiDocumentDataAccess implements DataAccessInterface
 {
+
     /**
      * @var string
      */
@@ -73,11 +74,8 @@ class CtApiDocumentDataAccess implements DataAccessInterface
      */
     public function getData()
     {
-        $data = [];
-
-        // Call API using ApiCaller to retrieve results (array of documents).
-        $queryString = $this->constructQueryParams();
-
+        // process filters for any further handling required
+        // build query string
         foreach ($this->filters as $filter) {
             list(
                 $field, $value) = $this->extractFilter($filter);
@@ -85,6 +83,9 @@ class CtApiDocumentDataAccess implements DataAccessInterface
             $this->applyFilterHandler($field, $value);
         }
 
+        $queryString = $this->constructQueryParams();
+
+        // Call API using ApiCaller to retrieve results (array of documents).
         $documents = $this->apiCaller->get($this->endpoint, $queryString);
 
         return json_decode($documents, true);
@@ -271,4 +272,5 @@ class CtApiDocumentDataAccess implements DataAccessInterface
 
         return $queryString;
     }
+    
 }
