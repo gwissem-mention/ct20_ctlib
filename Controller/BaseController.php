@@ -716,10 +716,14 @@ abstract class BaseController extends Controller
     {
         $cnf = new \stdClass;
         $cnf->maxResults        = $request->get('rowsPerPage', -1);
-        $cnf->offset            = $request->get('currentPage', 1);
         $cnf->filters           = $request->get('filters', []);
         $cnf->sorts             = $request->get('sorts', []);
         $cnf->cachePages        = $request->get('cachedPage', 0);
+
+        // for current page = 1, we want the offset to be Zero
+        // offset should be current_page - 1, but result in 0 or greater.
+        $currentPage = $request->get('currentPage', 1);
+        $cnf->offset            = ($currentPage - 1) >= 0 ? ($currentPage - 1) : 0;
 
         list(
             $cnf->fields,
