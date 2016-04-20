@@ -196,7 +196,7 @@ class DateRangeFilter implements DataAccessFilterInterface
         }
 
         if ($this->fieldType == static::TYPE_TIMESTAMP) {
-            return $datetime->format("U");
+            return (int) $datetime->format("U");
         }
 
         throw new \Exception("type can not be found");
