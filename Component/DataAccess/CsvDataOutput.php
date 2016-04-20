@@ -2,6 +2,7 @@
 
 namespace CTLib\Component\DataAccess;
 
+use CTLib\Component\HttpFoundation\CsvFileResponse;
 
 /**
  * Facilitates retrieving and processing nosql
@@ -17,24 +18,41 @@ class CsvDataOutput implements DataOutputInterface
     protected $records = [];
 
     /**
-     * @var $template
+     * @var array
      */
-    protected $template;
+    protected $columns = [];
 
     /**
-     * @var Templating Engine
+     * store csv file handler
+     * @var mixed
      */
-    protected $templating;
-
+    protected $fileHandle;
 
     /**
-     * @param string         $template
-     * @param Templating     $templating
+     * stores csv temporary file name
+     * @var string
      */
-    public function __construct($template, $templating)
+    protected $fileName;
+
+    /**
+     * @var Request
+     */
+    protected $request;
+
+    /**
+     * @param Request $request
+     */
+    public function setRequest($request)
     {
-        $this->template   = $template;
-        $this->templating = $templating;
+        $this->request = $request;
+    }
+
+    /**
+     * @param Array $columns
+     */
+    public function setColumns($columns = null)
+    {
+        $this->columns = $columns;
     }
 
     /**
@@ -46,6 +64,21 @@ class CsvDataOutput implements DataOutputInterface
     public function start(array $fields)
     {
         $this->records = [];
+
+        $this->fileName   = $this->createTempFileName("rst");
+        $this->fileHandle = fopen($this->fileName, "w");
+
+        if (!$this->fileHandle) {
+            throw new \Exception("CSV file creation failed");
+        }
+
+        if ($this->columns) {
+            // Write csv header row with customized columns
+            fputcsv($this->fileHandle, $this->columns);
+        } else {
+            // Write csv header row as default
+            fputcsv($this->fileHandle, $fields);
+        }
     }
 
     /**
@@ -58,6 +91,8 @@ class CsvDataOutput implements DataOutputInterface
      */
     public function addRecord(array $record)
     {
+        fputcsv($this->fileHandle, $record);
+
         $this->records[] = $record;
     }
 
@@ -69,6 +104,29 @@ class CsvDataOutput implements DataOutputInterface
      */
     public function end()
     {
-        return $this->templating->render($this->template, ['data' => $this->records]);
+        fclose($this->fileHandle);
+
+        return new CsvFileResponse(
+            $this->request,
+            $this->fileName,
+            "celltrak" . date("YmdHis") . ".csv"
+        );
+    }
+
+    /**
+     * create Temp File
+     *
+     * @return string the name of created temporary file
+     *
+     */
+    protected function createTempFileName($prefix)
+    {
+        $tempDir = '';
+
+        if (!is_dir($tempDir)) {
+            @mkdir($tempDir);
+        }
+
+        return tempnam($tempDir, $prefix);
     }
 }
