@@ -2,7 +2,6 @@
 
 namespace CTLib\Component\DataAccess;
 
-use CTLib\Component\HttpFoundation\CsvResponse;
 
 /**
  * Facilitates retrieving and processing nosql
