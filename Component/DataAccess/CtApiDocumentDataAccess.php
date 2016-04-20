@@ -76,11 +76,22 @@ class CtApiDocumentDataAccess implements DataAccessInterface
     {
         // process filters for any further handling required
         // build query string
+        $foundDacFilterIndexes = [];
+        $filterIndex = 0;
         foreach ($this->filters as $filter) {
             list(
-                $field, $value) = $this->extractFilter($filter);
+                $field, $value,) = $this->extractFilter($filter);
 
             $this->applyFilterHandler($field, $value);
+            if ($field instanceof DataAccessFilterInterface){
+                $foundDacFilterIndexes[] = $filterIndex;
+            }
+            $filterIndex++;
+        }
+
+        // remove DAC objects
+        foreach ($foundDacFilterIndexes as $index) {
+            unset($this->filters[$index]);
         }
 
         $queryString = $this->constructQueryParams();

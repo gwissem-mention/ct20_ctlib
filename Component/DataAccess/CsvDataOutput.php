@@ -2,7 +2,6 @@
 
 namespace CTLib\Component\DataAccess;
 
-use CTLib\Component\HttpFoundation\CsvResponse;
 
 /**
  * Facilitates retrieving and processing nosql
@@ -70,6 +69,6 @@ class CsvDataOutput implements DataOutputInterface
      */
     public function end()
     {
-        return $this->templating->render($this->template, $this->records);
+        return $this->templating->render($this->template, ['data' => $this->records]);
     }
 }
