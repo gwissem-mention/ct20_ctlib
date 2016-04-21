@@ -2,8 +2,6 @@
 
 namespace CTLib\Component\DataAccess;
 
-use CTLib\Component\HttpFoundation\CsvFileResponse;
-
 /**
  * Facilitates retrieving and processing nosql
  * results into csv output.
@@ -12,11 +10,6 @@ use CTLib\Component\HttpFoundation\CsvFileResponse;
  */
 class CsvDataOutput implements DataOutputInterface
 {
-    /**
-     * @var array
-     */
-    protected $records = [];
-
     /**
      * @var array
      */
@@ -34,17 +27,9 @@ class CsvDataOutput implements DataOutputInterface
      */
     protected $fileName;
 
-    /**
-     * @var Request
-     */
-    protected $request;
-
-    /**
-     * @param Request $request
-     */
-    public function setRequest($request)
+    public function setFileName($fileName)
     {
-        $this->request = $request;
+        $this->fileName = $fileName;
     }
 
     /**
@@ -63,9 +48,6 @@ class CsvDataOutput implements DataOutputInterface
      */
     public function start(array $fields)
     {
-        $this->records = [];
-
-        $this->fileName   = $this->createTempFileName("rst");
         $this->fileHandle = fopen($this->fileName, "w");
 
         if (!$this->fileHandle) {
@@ -92,8 +74,6 @@ class CsvDataOutput implements DataOutputInterface
     public function addRecord(array $record)
     {
         fputcsv($this->fileHandle, $record);
-
-        $this->records[] = $record;
     }
 
     /**
@@ -104,29 +84,10 @@ class CsvDataOutput implements DataOutputInterface
      */
     public function end()
     {
+        rewind($this->fileHandle);
+        $content = stream_get_contents($this->fileHandle);
         fclose($this->fileHandle);
 
-        return new CsvFileResponse(
-            $this->request,
-            $this->fileName,
-            "celltrak" . date("YmdHis") . ".csv"
-        );
-    }
-
-    /**
-     * create Temp File
-     *
-     * @return string the name of created temporary file
-     *
-     */
-    protected function createTempFileName($prefix)
-    {
-        $tempDir = '';
-
-        if (!is_dir($tempDir)) {
-            @mkdir($tempDir);
-        }
-
-        return tempnam($tempDir, $prefix);
+        return $content;
     }
 }
