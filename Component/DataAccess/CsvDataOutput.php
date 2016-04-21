@@ -22,17 +22,6 @@ class CsvDataOutput implements DataOutputInterface
     protected $fileHandle;
 
     /**
-     * stores csv temporary file name
-     * @var string
-     */
-    protected $fileName;
-
-    public function setFileName($fileName)
-    {
-        $this->fileName = $fileName;
-    }
-
-    /**
      * @param Array $columns
      */
     public function setColumns($columns = null)
@@ -48,10 +37,11 @@ class CsvDataOutput implements DataOutputInterface
      */
     public function start(array $fields)
     {
-        $this->fileHandle = fopen($this->fileName, "w");
+        //allocate file output buffer in memory, max is 1M
+        $this->fileHandle = fopen('php://temp/maxmemory:1048576', 'w');
 
         if (!$this->fileHandle) {
-            throw new \Exception("CSV file creation failed");
+            throw new \Exception("CSV file buffer creation failed");
         }
 
         if ($this->columns) {

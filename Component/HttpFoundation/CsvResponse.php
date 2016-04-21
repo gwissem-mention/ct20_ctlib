@@ -8,7 +8,7 @@ namespace CTLib\Component\HttpFoundation;
 class CsvResponse extends DownloadableResponse
 {
 
-    public function __construct($csvContent, $fileName, $destination)
+    public function __construct($csvContent, $fileName, $destination = null)
     {
         try {
             if (is_array($csvContent)) {
@@ -40,7 +40,7 @@ class CsvResponse extends DownloadableResponse
             $fileName,
             mb_strlen($csvContent),
             'text/csv',
-            $destination
+            $destination ?: DownloadableResponse::DESTINATION_ATTACHMENT
         );
     }
 
