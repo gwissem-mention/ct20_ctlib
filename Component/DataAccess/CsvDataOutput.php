@@ -13,7 +13,7 @@ class CsvDataOutput implements DataOutputInterface
     /**
      * default maximum memory buffer size 1 Megabyte
      */
-    const DEFAULT_BUFFER_SIZE = 1048576;
+    const DEFAULT_BUFFER_SIZE = 1;
 
     /**
      * store column header names
@@ -43,8 +43,7 @@ class CsvDataOutput implements DataOutputInterface
         $bufferSize = null)
     {
         $this->columns = $columns;
-        $this->bufferSize = $bufferSize ?
-            $bufferSize * self::DEFAULT_BUFFER_SIZE : self::DEFAULT_BUFFER_SIZE;
+        $this->bufferSize = $bufferSize ?: self::DEFAULT_BUFFER_SIZE;
     }
 
     /**
@@ -55,8 +54,10 @@ class CsvDataOutput implements DataOutputInterface
      */
     public function start(array $fields)
     {
+        //memory size needs to be in bytes
+        $memorySize = $this->bufferSize * 1048576;
         //allocate file output buffer in memory
-        $this->fileHandle = fopen('php://temp/maxmemory:' . $this->bufferSize, 'w');
+        $this->fileHandle = fopen('php://temp/maxmemory:' . $memorySize, 'w');
 
         if (!$this->fileHandle) {
             throw new \Exception("CSV file buffer creation failed");
