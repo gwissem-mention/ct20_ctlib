@@ -32,7 +32,7 @@ class CtApiCaller
      * @var array
      */
     protected $authenticators;
-
+    
     /**
      * @param string $apiUrl
      * @param Logger logger
@@ -40,7 +40,7 @@ class CtApiCaller
     public function __construct($apiUrl, $logger)
     {
         $this->apiUrl           = rtrim($apiUrl, '/');
-        $this->logger           = $logger;
+        $this->logger           = $logger;          
         $this->authenticators   = [];
     }
 
@@ -49,7 +49,7 @@ class CtApiCaller
      *
      * @param string $authenticatorName
      * @param CtApiCallerAuthenticator $authenticator
-     * @return void
+     * @return void 
      */
     public function addAuthenticator(
         $authenticatorName,
@@ -62,10 +62,10 @@ class CtApiCaller
      * Sends GET requests.
      * @param string $path
      * @param array $parameters
-     * @param string $authenticatorName
+     * @param string $authenticatorName 
      * @return string Response body.
      */
-    public function get(
+    public function get(        
         $path,
         array $parameters = [],
         $authenticatorName = 'default'
@@ -79,14 +79,14 @@ class CtApiCaller
      * Sends POST request.
      * @param string $path
      * @param mixed $body
-     * @param array $parameters
-     * @param string $authenticatorName
+     * @param array $parameters     
+     * @param string $authenticatorName 
      * @return string Response body.
      */
-    public function post(
+    public function post(        
         $path,
         $body = NULL,
-        array $parameters = [],
+        array $parameters = [],        
         $authenticatorName = 'default'
     ) {
         $method = 'POST';
@@ -98,11 +98,11 @@ class CtApiCaller
      * Sends PUT request.
      * @param string $path
      * @param mixed $body
-     * @param array $parameters
-     * @param string $authenticatorName
+     * @param array $parameters     
+     * @param string $authenticatorName 
      * @return string Response body.
      */
-    public function put(
+    public function put(        
         $path,
         $body = NULL,
         array $parameters = [],
@@ -117,11 +117,11 @@ class CtApiCaller
      * Sends PATCH request.
      * @param string $path
      * @param mixed $body
-     * @param array $parameters
-     * @param string $authenticatorName
+     * @param array $parameters     
+     * @param string $authenticatorName 
      * @return string Response body.
      */
-    public function patch(
+    public function patch(        
         $path,
         $body = NULL,
         array $parameters = [],
@@ -136,10 +136,10 @@ class CtApiCaller
      * Sends DELETE request.
      * @param string $path
      * @param array $parameters
-     * @param string $authenticatorName
+     * @param string $authenticatorName 
      * @return string Response body.
      */
-    public function delete(
+    public function delete(        
         $path,
         array $parameters = [],
         $authenticatorName = 'default'
@@ -151,11 +151,11 @@ class CtApiCaller
 
     /**
      * Helper method to send all API requests.
-     * @param string $path
+     * @param string $path        
      * @param mixed $body
      * @param array $parameters
      * @param string $method
-     * @param string $authenticatorName
+     * @param string $authenticatorName       
      * @return string Response body.
      */
     protected function send(
@@ -168,7 +168,7 @@ class CtApiCaller
         // All API requests need to have a valid token. Use the specified
         // CtApiCallerAuthenticator to facilitate the retrieval of this token.
         $authenticator = $this->getAuthenticator($authenticatorName);
-
+        
         // Get the API token from the authenticator.
         $token = $authenticator->getToken();
 
@@ -206,7 +206,7 @@ class CtApiCaller
 
                 $authenticator->setToken(null);
                 return $this->send($path, $body, $parameters, $method, $authenticatorName);
-
+            
             default:
                 // Any other response code is an exception case.
                 throw new CtApiCallerException($httpResponseCode, $response, $request);
@@ -215,12 +215,12 @@ class CtApiCaller
 
     /**
      * Builds API request.
-     * @param  string $path
-     * @param  mixed $body
-     * @param  array $parameters
-     * @param  string $method
-     * @param  string $token
-     * @return Curl
+     * @param  string $path       
+     * @param  mixed $body       
+     * @param  array $parameters 
+     * @param  string $method     
+     * @param  string $token      
+     * @return Curl             
      */
     protected function buildRequest(
         $path,
@@ -236,7 +236,7 @@ class CtApiCaller
         ];
 
         $url = $this->apiUrl . '/' . ltrim($path, '/');
-
+        
         if ($parameters) {
             $queryString = '?' . http_build_query($parameters);
             $url .= $queryString;
@@ -280,9 +280,9 @@ class CtApiCaller
      * Sends authentication request to API to retrieve new API token.
      *
      * @param array $credentials
-     * @return string $token
+     * @return string $token 
      */
-    protected function requestApiToken($credentials)
+    protected function requestApiToken($credentials) 
     {
         $url = $this->apiUrl . self::API_AUTHENTICATE_PATH;
 
@@ -295,7 +295,7 @@ class CtApiCaller
         $request->httpheader = $headers;
         $request->post = true;
         $request->postfields = json_encode($credentials);
-
+        
         $response = $request->exec();
 
         if ($errorNum = $request->errno()) {
@@ -309,13 +309,13 @@ class CtApiCaller
         }
 
         $decodedResponse = json_decode($response);
-        return $decodedResponse->token;
+        return $decodedResponse->token;       
     }
 
     /**
      * Returns caller authenticator registered to name.
-     * @param  string $authenticatorName
-     * @return CtApiCallerAuthenticator
+     * @param  string $authenticatorName 
+     * @return CtApiCallerAuthenticator                         
      */
     protected function getAuthenticator($authenticatorName)
     {
