@@ -11,9 +11,21 @@ namespace CTLib\Component\DataAccess;
 class CsvDataOutput implements DataOutputInterface
 {
     /**
+     * default maximum memory buffer size 1 Megabyte
+     */
+    const DEFAULT_BUFFER_SIZE = 1048576;
+
+    /**
+     * store column header names
      * @var array
      */
     protected $columns = [];
+
+    /**
+     * store buffer size in megabyte
+     * @var integer
+     */
+    protected $bufferSize;
 
     /**
      * store csv file handler
@@ -22,11 +34,17 @@ class CsvDataOutput implements DataOutputInterface
     protected $fileHandle;
 
     /**
-     * @param Array $columns
+     * CsvDataOutput constructor.
+     * @param null $columns
+     * @param null $bufferSize
      */
-    public function setColumns($columns = null)
+    public function __construct(
+        $columns = null,
+        $bufferSize = null)
     {
         $this->columns = $columns;
+        $this->bufferSize = $bufferSize ?
+            $bufferSize * self::DEFAULT_BUFFER_SIZE : self::DEFAULT_BUFFER_SIZE;
     }
 
     /**
@@ -37,8 +55,8 @@ class CsvDataOutput implements DataOutputInterface
      */
     public function start(array $fields)
     {
-        //allocate file output buffer in memory, max is 1M
-        $this->fileHandle = fopen('php://temp/maxmemory:1048576', 'w');
+        //allocate file output buffer in memory
+        $this->fileHandle = fopen('php://temp/maxmemory:' . $this->bufferSize, 'w');
 
         if (!$this->fileHandle) {
             throw new \Exception("CSV file buffer creation failed");
