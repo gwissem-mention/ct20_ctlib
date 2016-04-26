@@ -154,7 +154,7 @@ class Util
     }
 
     /**
-     * Converts kilometers to meteres.
+     * Converts kilometers to meters.
      *
      * @param float|integer $kilometers
      * @return float
