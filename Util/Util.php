@@ -154,6 +154,28 @@ class Util
     }
 
     /**
+     * Converts kilometers to meters.
+     *
+     * @param float|integer $kilometers
+     * @return float
+     */
+    public static function kilometersToMeters($kilometers)
+    {
+        return $kilometers / .001;
+    }
+
+    /**
+     * Converts miles to meters.
+     *
+     * @param float|integer $miles
+     * @return float
+     */
+    public static function milesToMeters($miles)
+    {
+        return $miles / .000621371;
+    }
+
+    /**
      * Returns class name without namespacing.
      *
      * @param mixed $object
