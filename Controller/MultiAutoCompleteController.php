@@ -3,20 +3,25 @@ namespace CTLib\Controller;
 
 use CTLib\Util\Arr;
 
-
-class AutoCompleteController extends DynaPartController
+/**
+ * @author: Joe Imhoff, bother me if you have questions, I guess.
+ *
+ * This class includes the necessary parts to a twig file to include all the
+ * necessary JavaScript files, CSS Files, inline JavaScript and the basic DOM
+ * elements in order to install and initialize a $.multiautocomplete instrumentation
+ * on the front end.
+ *
+ * EXAMPLE: :
+ *   {% dynapart MultiAutoComplete : member_lookup_provider |
+ *      id="message_compose_dialog_member" name="toMemberId"
+ *      class="lookup" placeholder="member_lookup_placeholder"|trans %}
+ *
+ * EXPLANATION:
+ *   {% dynapart MultiAutoComplete : <route shortcut> | id="<DOMelement ID>"
+ *   name="<name for input>" class="<option class>" placeholder="<placeholder text>"|trans %}
+ */
+class MultiAutoCompleteController extends AutoCompleteController
 {
-    /**
-     * Returns cached JavaScript configuration options.
-     *
-     * @param string $cacheId    Unique ID of DynaPart.
-     * @param string $domId configured in dom attribute
-     * @return array
-     */
-    protected function getDynaPartCachedOptions($id, $domId)
-    {
-        return array();
-    }
 
     /**
      * Adds assets and JS pass-thrus required by DynaPart.
@@ -31,8 +36,8 @@ class AutoCompleteController extends DynaPartController
     protected function addDynaPartDependencies($domId, $json, $assetLoader, $jsHelper)
     {
         $assetLoader
-            ->addAppJs('autocomplete.plugin.js')
-            ->addInlineJs('$("#'.$domId.'").autocomplete('.$json.');')
+            ->addAppJs('autocomplete.multiple.extension.js')
+            ->addInlineJs('$("#'.$domId.'").multiautocomplete('.$json.');')
             ->addAppCss('autocomplete.css');
     }
 
@@ -61,10 +66,6 @@ class AutoCompleteController extends DynaPartController
         return
             '<input type="text" ' .
             $this->compileDomAttributes($domAttributes) .
-            ' />' .
-            '<input type="hidden" name="'. $domName .'" ' . ($isCacheOnly?'class="cache_only"':'') . '/>';
+            ' />';
     }
-
-
-
 }
