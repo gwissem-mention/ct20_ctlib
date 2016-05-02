@@ -119,6 +119,18 @@ class Util
     }
 
     /**
+     * Converts days to seconds.
+     *
+     * @param integer $days
+     *
+     * @return integer
+     */
+    public static function daysToSecs($days)
+    {
+        return $days*24*60*60;
+    }
+
+    /**
      * Convert and round duration from secs into minutes
      *
      * @param integer $startTime start time.
