@@ -131,15 +131,9 @@ class DateRangeFilter implements DataAccessFilterInterface
 
         if ($this->includeWeekIds
             && ($startTime && $stopTime)) {
-            $weekIdList = [];
-            if ($date["value"] == self::THIS_WEEK) {
-                $weekIdList = $this->getWeekIds($stopTime, $stopTime);
-            } else {
-                $weekIdList = $this->getWeekIds($startTime, $stopTime);
-            }
             $dac->addFilter(
                 'startDateWeek',
-                $weekIdList,
+                $this->getWeekIds($startTime, $stopTime),
                 'in'
             );
         }
