@@ -77,30 +77,25 @@ class DateRangeFilter implements DataAccessFilterInterface
 
         switch ($date["value"]) {
             case self::TODAY:
-                $today = new \DateTime('today', $this->timezone);
-                $startTime = $this->formatStartTime($today);
-                $stopTime = $this->formatStopTime($today);
+                $startTime = new \DateTime('today', $this->timezone);
+                $stopTime = $startTime;
 
                 break;
 
             case self::YESTERDAY:
-                $yesterday = new \DateTime('yesterday', $this->timezone);
-                $startTime = $this->formatStartTime($yesterday);
-                $stopTime = $this->formatStopTime($yesterday);
+                $startTime = new \DateTime('yesterday', $this->timezone);
+                $stopTime = $startTime;
 
                 break;
 
             case self::THIS_WEEK:
-                $weekEnd = new \DateTime('next Saturday', $this->timezone);
-                $weekStart = new \DateTime('Sunday last week', $this->timezone);
-                $startTime = $this->formatStartTime($weekStart);  //end of last week
-                $stopTime = $this->formatStopTime($weekEnd); // end of this week
+                $startTime = new \DateTime('Sunday last week', $this->timezone);
+                $stopTime = new \DateTime('next Saturday', $this->timezone);
 
                 break;
 
             case self::EARLIER_THAN_THIS_WEEK:
                 $stopTime = new \DateTime('Sunday last week', $this->timezone);
-                // NO list of week ids needed
 
                 break;
 
@@ -110,8 +105,8 @@ class DateRangeFilter implements DataAccessFilterInterface
                     Arr::findByKeyChain($value, "dateFrom.value"),
                     Arr::findByKeyChain($value, "dateTo.value")
                 );
-                $startTime = $this->formatStartTime($dateFromDateTime);
-                $stopTime = $this->formatStopTime($dateToDateTime);
+                $startTime = $dateFromDateTime;
+                $stopTime = $dateToDateTime;
 
                 break;
 
@@ -122,33 +117,31 @@ class DateRangeFilter implements DataAccessFilterInterface
         if ($startTime) {
             $dac->addFilter(
                 $this->dateField,
-                $startTime,
+                $this->formatStopTime($startTime),
                 'gte'
             );
         }
         if ($stopTime) {
             $dac->addFilter(
                 $this->dateField,
-                $stopTime,
+                $this->formatStopTime($stopTime),
                 'lte'
             );
         }
 
         if ($this->includeWeekIds
             && ($startTime && $stopTime)) {
-            $weekIdList = null;
+            $weekIdList = [];
             if ($date["value"] == self::THIS_WEEK) {
                 $weekIdList = $this->getWeekIds($stopTime, $stopTime);
             } else {
                 $weekIdList = $this->getWeekIds($startTime, $stopTime);
             }
-            if ($weekIdList) {
-                $dac->addFilter(
-                    'startDateWeek',
-                    $weekIdList,
-                    'in'
-                );
-            }
+            $dac->addFilter(
+                'startDateWeek',
+                $weekIdList,
+                'in'
+            );
         }
     }
 
@@ -191,7 +184,6 @@ class DateRangeFilter implements DataAccessFilterInterface
      * Format DateTime By Type
      *
      * @param \DateTime $datetime This is a description
-     * @param string $type This is a description
      *
      * @return mixed
      *
@@ -214,7 +206,6 @@ class DateRangeFilter implements DataAccessFilterInterface
      * Format DateTime By Type
      *
      * @param \DateTime $datetime This is a description
-     * @param string $type This is a description
      *
      * @return mixed
      *
@@ -241,28 +232,21 @@ class DateRangeFilter implements DataAccessFilterInterface
      *
      * @return array | empty array
      *
-     * @throws \Exception
      */
     protected function getWeekIds($startDateTime, $endDateTime)
     {
-        if ($this->fieldType == static::TYPE_DATETIME) {
-            // convert string to int date value
-            $startDateTime = strtotime($startDateTime);
-            $endDateTime = strtotime($endDateTime);
-        }
-
         //get year of date for 'same vs. future' check
-        $sYear = date('Y', $startDateTime);
-        $eYear = date('Y', $endDateTime);
+        $startYear = date('Y', $startDateTime->getTimestamp());
+        $endYear = date('Y', $endDateTime->getTimestamp());
 
         //get ISO Week Id
-        $startWeekId = idate('W', $startDateTime);
-        $endWeekId = idate('W', $endDateTime);
+        $startWeekId = idate('W', $startDateTime->getTimestamp());
+        $endWeekId = idate('W', $endDateTime->getTimestamp());
 
         $weekIds = [];
-        if ($sYear == $eYear) {
+        if ($startYear == $endYear) {
             // same year, get weeks from/including start to end
-            $weekIds = range($startWeekId,$endWeekId);
+            $weekIds = range($startWeekId, $endWeekId);
 
         } else {
             // EndYear is greater than StartYear -> range spans into 'next' year
@@ -270,11 +254,11 @@ class DateRangeFilter implements DataAccessFilterInterface
             // $End backtracks to start of end year
 
             // the EndWeek is in the future (range spans into next year), roll back to start of year (week 1)
-            $endWeekIds = range(1,$endWeekId);
+            $endWeekIds = range(1, $endWeekId);
 
             // $using startWeekId, loop to end of Start Year
-            $endOfStartYear = idate('W', strtotime($sYear . '-12-31 23:59:59'));
-            $startWeekIds = range($startWeekId,$endOfStartYear);
+            $endOfStartYear = idate('W', strtotime($startYear . '-12-31 23:59:59'));
+            $startWeekIds = range($startWeekId, $endOfStartYear);
 
             $weekIds = array_unique(array_merge($startWeekIds, $endWeekIds));
         }
