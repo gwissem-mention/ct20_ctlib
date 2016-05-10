@@ -262,18 +262,15 @@ class DateRangeFilter implements DataAccessFilterInterface
         $weekIds = [];
         if ($sYear == $eYear) {
             // same year, get weeks from/including start to end
-            for ($weekId = $startWeekId; $weekId <= $endWeekId; $weekId++) {
-                $weekIds[] = $weekId;
-            }
+            $weekIds[] = range($startWeekId,$endWeekId);
+
         } else {
             // EndYear is greater than StartYear -> range spans into 'next' year
             // $Start goes to end of start year
             // $End backtracks to start of end year
 
             // the EndWeek is in the future (range spans into next year), roll back to start of year (week 1)
-            for ($weekId = $endWeekId; $weekId >= 1; $weekId--) {
-                $weekIds[] = $weekId;
-            }
+            $weekIds[] = range(1,$endWeekId);
 
             // $using startWeekId, loop to end of Start Year
             $endOfStartYear = idate('W', strtotime($sYear . '-12-31 23:59:59'));
