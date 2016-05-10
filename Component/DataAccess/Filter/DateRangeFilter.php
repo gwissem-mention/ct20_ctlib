@@ -276,8 +276,7 @@ class DateRangeFilter implements DataAccessFilterInterface
             $endOfStartYear = idate('W', strtotime($sYear . '-12-31 23:59:59'));
             $startWeekIds = range($startWeekId,$endOfStartYear);
 
-            $weekIds = array_merge($startWeekIds, $endWeekIds);
-
+            $weekIds = array_unique(array_merge($startWeekIds, $endWeekIds));
         }
 
         return $weekIds;
