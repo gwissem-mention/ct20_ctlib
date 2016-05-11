@@ -115,7 +115,7 @@ class DateRangeFilter implements DataAccessFilterInterface
         }
 
         if (!$startTime) {
-            $startTime = new \DateTime('1-1-1970', $this->timezone);
+            $startTime = new \DateTime('01/01/2000', $this->timezone);
         }
 
         $dac->addFilter(
