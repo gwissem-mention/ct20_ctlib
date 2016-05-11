@@ -114,23 +114,23 @@ class DateRangeFilter implements DataAccessFilterInterface
                 throw new \Exception("date can not be found");
         }
 
-        if ($startTime) {
-            $dac->addFilter(
-                $this->dateField,
-                $this->formatStopTime($startTime),
-                'gte'
-            );
-        }
-        if ($stopTime) {
-            $dac->addFilter(
-                $this->dateField,
-                $this->formatStopTime($stopTime),
-                'lte'
-            );
+        if (!$startTime) {
+            $startTime = new \DateTime('1-1-1970', $this->timezone);
         }
 
-        if ($this->includeWeekIds
-            && ($startTime && $stopTime)) {
+        $dac->addFilter(
+            $this->dateField,
+            $this->formatStartTime($startTime),
+            'gte'
+        );
+
+        $dac->addFilter(
+            $this->dateField,
+            $this->formatStopTime($stopTime),
+            'lte'
+        );
+
+        if ($this->includeWeekIds) {
             $dac->addFilter(
                 'startDateWeek',
                 $this->getWeekIds($startTime, $stopTime),
