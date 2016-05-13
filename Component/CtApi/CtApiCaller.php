@@ -206,6 +206,11 @@ class CtApiCaller
 
                 $authenticator->setToken(null);
                 return $this->send($path, $body, $parameters, $method, $authenticatorName);
+
+            case 409:
+                // duplicate key
+                $this->logger->error("CtApiCaller: duplicate key voilation for $body");
+                return $response;
             
             default:
                 // Any other response code is an exception case.
