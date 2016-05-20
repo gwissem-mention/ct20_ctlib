@@ -63,12 +63,16 @@ class MemoryUsageMonitor
     {
         $memoryLimit = $this->getMemoryLimit();
 
+        print("\nMemoryUsageMonitor: memoryLimit = {$memoryLimit}");
+
         if ($memoryLimit == -1) {
             // No memory limit imposed on this process.
             return false;
         }
 
         $memoryUsage = memory_get_usage();
+
+        print("\nMemoryUsageMonitor: memoryUsage = {$memoryUsage}");
 
         if ($memoryUsage >= $memoryLimit) {
             return true;
