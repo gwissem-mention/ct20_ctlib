@@ -72,8 +72,12 @@ class ProcessLock
      * @return boolean  Returns TRUE if lock acquired. FALSE if not.
      * @throws \Exception
      */
-    public function acquireLock($id, $timeout = 0)
+    public function acquireLock($id, $timeout = 1)
     {
+        if ($timeout < 1) {
+            throw new \InvalidArgumentException("ProcessLock: (acquireLock) minimum timeout value of 1 expected for id {$id}: timeout of {$timeout} given instead");
+        }
+
         // generate the key for the lock
         $key = $this->generateLockKey($id);
         // generate a unique string for the lock value
@@ -99,8 +103,12 @@ class ProcessLock
      * @param integer $timeout  If <= 0, lock will not have timeout.
      * @return boolean  Returns TRUE if lock refreshed. FALSE if not.
      */
-    public function refreshLock($id, $timeout = 0)
+    public function refreshLock($id, $timeout = 1)
     {
+        if ($timeout < 1) {
+            throw new \InvalidArgumentException("ProcessLock: (refreshLock) minimum timeout value of 1 expected for id {$id}: timeout of {$timeout} given instead");
+        }
+        
         // generate key name
         $key = $this->generateLockKey($id);
 
