@@ -17,6 +17,7 @@ class DateRangeFilter implements DataAccessFilterInterface
     const EARLIER_THAN_THIS_WEEK    = 'prevThisWeek';
     const SPECIFY                   = 'specify';
 
+    const TYPE_DATE      = 'DATE';
     const TYPE_DATETIME  = 'DATETIME';
     const TYPE_TIMESTAMP = 'TIMESTAMP';
 
@@ -185,6 +186,10 @@ class DateRangeFilter implements DataAccessFilterInterface
      */
     protected function formatStartTime(\DateTime $datetime)
     {
+        if ($this->fieldType == static::TYPE_DATE) {
+            return $datetime->format("Y-m-d");
+        }
+
         if ($this->fieldType == static::TYPE_DATETIME) {
             return $datetime->format("Y-m-d 00:00:00");
         }
@@ -207,6 +212,10 @@ class DateRangeFilter implements DataAccessFilterInterface
      */
     protected function formatStopTime(\DateTime $datetime)
     {
+        if ($this->fieldType == static::TYPE_DATE) {
+            return $datetime->format("Y-m-d");
+        }
+
         if ($this->fieldType == static::TYPE_DATETIME) {
             return $datetime->format("Y-m-d 23:59:59");
         }
