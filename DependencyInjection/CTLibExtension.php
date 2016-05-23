@@ -40,8 +40,8 @@ class CTLibExtension extends Extension
         if (! $config['enabled']) { return; }
         
         $args = [
-            $config['namespace'],
-            new Reference($config['redis_client'])
+            new Reference($config['redis_client']),
+            $config['namespace']
         ];
         $def = new Definition('CTLib\Component\Lock\ProcessLock', $args);
         $container->setDefinition('process_lock', $def);
