@@ -75,7 +75,7 @@ class ProcessLock
     public function acquireLock($id, $timeout = 1)
     {
         if ($timeout < 1) {
-            throw new OutOfBoundsException("ProcessLock: (acquireLock) minimum timeout value of 1 expected for id {$id}: timeout of {$timeout} given instead");
+            throw new \InvalidArgumentException("ProcessLock: (acquireLock) minimum timeout value of 1 expected for id {$id}: timeout of {$timeout} given instead");
         }
 
         // generate the key for the lock
@@ -106,7 +106,7 @@ class ProcessLock
     public function refreshLock($id, $timeout = 1)
     {
         if ($timeout < 1) {
-            throw new OutOfBoundsException("ProcessLock: (refreshLock) minimum timeout value of 1 expected for id {$id}: timeout of {$timeout} given instead");
+            throw new \InvalidArgumentException("ProcessLock: (refreshLock) minimum timeout value of 1 expected for id {$id}: timeout of {$timeout} given instead");
         }
         
         // generate key name
