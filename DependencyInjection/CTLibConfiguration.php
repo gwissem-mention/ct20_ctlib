@@ -20,6 +20,7 @@ class CTLibConfiguration implements ConfigurationInterface
             
         $root
             ->children()
+                ->append($this->addProcessLockNode())
                 ->append($this->addLoggingNode())
                 ->append($this->addSystemAlertsNode())
                 ->append($this->addExceptionListenerNode())
@@ -40,6 +41,26 @@ class CTLibConfiguration implements ConfigurationInterface
         return $tb;
     }
 
+    protected function addProcessLockNode()
+    {
+        $tb = new TreeBuilder;
+        $node = $tb->root('process_lock');
+
+        $node
+            ->canBeEnabled()
+            ->children()
+                ->scalarNode('redis_client')
+                    ->isRequired()
+                ->end()
+                ->scalarNode('namespace')
+                    ->defaultNull()
+                ->end()
+            ->end()
+        ->end();
+
+        return $node;
+    }
+    
     protected function addLoggingNode()
     {
         $tb = new TreeBuilder;

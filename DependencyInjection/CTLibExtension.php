@@ -16,7 +16,8 @@ class CTLibExtension extends Extension
         $processor  = new Processor;
         $config     = $processor
                         ->processConfiguration(new CTLibConfiguration, $configs);
-        
+
+        $this->loadProcessLockServices($config['process_lock'], $container);
         $this->loadLoggingServices($config['logging'], $container);
         $this->loadSystemAlertServices($config['system_alerts'], $container);
         $this->loadExceptionListenerServices($config['exception_listener'], $container);
@@ -34,6 +35,18 @@ class CTLibExtension extends Extension
         $this->loadHtmlToPdfServices($config['html_to_pdf'], $container);
     }
 
+    protected function loadProcessLockServices($config, $container)
+    {
+        if (! $config['enabled']) { return; }
+        
+        $args = [
+            new Reference($config['redis_client']),
+            $config['namespace']
+        ];
+        $def = new Definition('CTLib\Component\ProcessLock\ProcessLock', $args);
+        $container->setDefinition('process_lock', $def);
+    }
+    
     protected function loadLoggingServices($config, $container)
     {
         if (! $config['enabled']) { return; }
