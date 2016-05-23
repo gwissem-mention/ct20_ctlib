@@ -1,6 +1,6 @@
 <?php
 
-namespace CTLib\Component\Lock;
+namespace CTLib\Component\ProcessLock;
 
 /**
  * ProcessLock manages the acquisition, refreshing, releasing, and status
@@ -33,13 +33,19 @@ class ProcessLock
      */
     public function __construct(
         $redisManager,
-        $namespace=null)
-    {
+        $namespace = null
+    ) {
         $this->redisManager = $redisManager;
         $this->namespace = $namespace;
     }
 
     function __destruct() {
+
+        // if lockValues is empty, return
+        if (count($this->lockValues) <= 0) {
+            return;
+        }
+
         $luaScript =
               "local values = redis.call('MGET', unpack(KEYS));"
             . "local keys = {};"
@@ -52,17 +58,11 @@ class ProcessLock
             . "    redis.call('DEL', unpack(keys));"
             . "end";
 
-        $keys = [];
-        $values = [];
+        // get order arrays of keys and values
+        $keys = array_keys($this->lockValues);
+        $values = array_values($this->lockValues);
 
-        foreach ($this->lockValues as $key => $value) {
-            $keys[] = $key;
-            $values[] = $value;
-        }
-
-        if (count($keys) > 0) {
-            $this->redisManager->runScript($luaScript, $keys, $values);
-        }
+        $this->redisManager->runScript($luaScript, $keys, $values);
     }
     /**
      * Acquires site-level lock.
@@ -101,14 +101,6 @@ class ProcessLock
      */
     public function refreshLock($id, $timeout = 0)
     {
-        $luaScript =
-              "if redis.call('GET', KEYS[1]) == ARGV[1] then"
-            . "    redis.call('SETEX', KEYS[1], ARGV[2], ARGV[1]);"
-            . "    return 1;"
-            . "else"
-            . "    return 0;"
-            . "end";
-
         // generate key name
         $key = $this->generateLockKey($id);
 
@@ -116,6 +108,14 @@ class ProcessLock
         if (! isset($this->lockValues[$key])) {
             return false;
         }
+
+        $luaScript =
+              "if redis.call('GET', KEYS[1]) == ARGV[1] then"
+            . "    redis.call('SETEX', KEYS[1], ARGV[2], ARGV[1]);"
+            . "    return 1;"
+            . "else"
+            . "    return 0;"
+            . "end";
 
         // get the key-value pair from $lockValues
         $value = $this->lockValues[$key];
@@ -141,14 +141,6 @@ class ProcessLock
      */
     public function releaseLock($id)
     {
-        $luaScript =
-              "if redis.call('GET', KEYS[1]) == ARGV[1] then"
-            . "    redis.call('DEL', KEYS[1]);"
-            . "    return 1;"
-            . "else"
-            . "    return 0;"
-            . "end";
-
         // generate key name
         $key = $this->generateLockKey($id);
 
@@ -156,6 +148,14 @@ class ProcessLock
         if (! isset($this->lockValues[$key])) {
             return false;
         }
+
+        $luaScript =
+              "if redis.call('GET', KEYS[1]) == ARGV[1] then"
+            . "    redis.call('DEL', KEYS[1]);"
+            . "    return 1;"
+            . "else"
+            . "    return 0;"
+            . "end";
 
         // get the lock key value from $lockValues
         $value = $this->lockValues[$key];
