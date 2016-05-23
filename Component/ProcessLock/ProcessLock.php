@@ -118,7 +118,7 @@ class ProcessLock
         }
 
         $luaScript =
-            "if redis.call('GET', KEYS[1]) == ARGV[1] then"
+              "if redis.call('GET', KEYS[1]) == ARGV[1] then"
             . "    redis.call('SETEX', KEYS[1], ARGV[2], ARGV[1]);"
             . "    return 1;"
             . "else"
