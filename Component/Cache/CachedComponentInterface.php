@@ -27,17 +27,6 @@ interface CachedComponentInterface
     function inspectCache();
 
     /**
-    * Migrate data from MemCache to Redis.
-    *
-    * @param string $newAppVersion
-    * @param string $oldAppVersion
-    * @param string $environment
-    *
-    * @return bool
-    */
-    function migrateCache($newAppVersion, $oldAppVersion, $environment);
-
-    /**
      * Get a description of the cached component.
      *
      * @return string
