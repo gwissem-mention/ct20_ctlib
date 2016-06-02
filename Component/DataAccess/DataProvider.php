@@ -105,7 +105,7 @@ class DataProvider
                     $value = Arr::findByKeyChain($rawRecord, $field);
                 } else {
                     // Hand off to callback to get value
-                    $value = call_user_func($field, $rawRecord, $context);
+                    $value = call_user_func_array($field, [$rawRecord, &$context]);
                 }
                 $record[$alias] = $value;
             }
