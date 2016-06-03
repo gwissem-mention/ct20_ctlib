@@ -31,6 +31,7 @@ class CacheCommand extends BaseCommand
         $this->setDescription('Manage cache')
              ->addArgument('siteId', InputArgument::REQUIRED)
              ->addArgument('action', InputArgument::REQUIRED)
+             ->addArgument('cacheManager', InputArgument::REQUIRED)
              ->addArgument('cachedComponent', InputArgument::OPTIONAL);
     }
 
@@ -39,8 +40,9 @@ class CacheCommand extends BaseCommand
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->cachedComponentManager =
-            $this->getService('cached_component_manager');
+        $this->cachedComponentManager = $this->getService(
+            'cache.manager.' . $input->getArgument('cacheManager')
+        );
 
         $action = $input->getArgument('action');
         $cachedComponentId = $input->getArgument('cachedComponent');

@@ -42,9 +42,12 @@ class CTLibExtension extends Extension
             return;
         }
 
-        foreach ($config['managers'] as $managerId => $managerConfig) {
-            $def = new Definition($managerConfig['class'],[]);
-            $container->setDefinition("cache.managers.{$managerId}", $def);
+        $def = new Definition('CTLib\Component\Cache\SimpleCache',[]);
+        $container->setDefinition("cache.simple", $def);
+
+        foreach ($config['managers'] as $manager) {
+            $def = new Definition('CTLib\Component\Cache\CachedComponentManager',[]);
+            $container->setDefinition("cache.manager.{$manager}", $def);
         }
     }
 

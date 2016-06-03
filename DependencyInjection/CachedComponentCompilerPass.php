@@ -19,11 +19,6 @@ class CachedComponentCompilerPass implements CompilerPassInterface
      */
     public function process(ContainerBuilder $container)
     {
-        if (!$container->hasDefinition('cached_component_manager')) {
-            return;
-        }
-
-        $definition = $container->getDefinition('cached_component_manager');
         $services = $container->findTaggedServiceIds('ctlib.cached_component');
 
         if (!$services) {
@@ -38,6 +33,9 @@ class CachedComponentCompilerPass implements CompilerPassInterface
                 $serviceClass,
                 new Reference($serviceId)
             ];
+            $definition = $container->getDefinition(
+                'cache.manager.' . $tagAttributes[0]['manager']
+            );
             $definition->addMethodCall('registerCachedComponent', $args);
         }
     }
