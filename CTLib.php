@@ -1,11 +1,11 @@
 <?php
 namespace CTLib;
 
-use Symfony\Component\HttpKernel\Bundle\Bundle,
-    Symfony\Component\DependencyInjection\ContainerBuilder,
-    CTLib\DependencyInjection\LoggerCompilerPass,
-    CTLib\DependencyInjection\EntityManagerCompilerPass;
-    
+use Symfony\Component\HttpKernel\Bundle\Bundle;
+use Symfony\Component\DependencyInjection\ContainerBuilder;
+use CTLib\DependencyInjection\LoggerCompilerPass;
+use CTLib\DependencyInjection\EntityManagerCompilerPass;
+use CTLib\DependencyInjection\CachedComponentCompilerPass;
 
 class CTLib extends Bundle
 {
@@ -15,6 +15,7 @@ class CTLib extends Bundle
         parent::build($container);
         $container->addCompilerPass(new LoggerCompilerPass);
         $container->addCompilerPass(new EntityManagerCompilerPass);
+        $container->addCompilerPass(new CachedComponentCompilerPass);
     }
 
 	public static function getCTLibVersion()

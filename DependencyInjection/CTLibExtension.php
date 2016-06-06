@@ -1,4 +1,4 @@
-<?php 
+<?php
 namespace CTLib\DependencyInjection;
 
 use Symfony\Component\HttpKernel\DependencyInjection\Extension,
@@ -17,6 +17,7 @@ class CTLibExtension extends Extension
         $config     = $processor
                         ->processConfiguration(new CTLibConfiguration, $configs);
 
+        $this->loadCacheManagerServices($config['cache'], $container);
         $this->loadProcessLockServices($config['process_lock'], $container);
         $this->loadLoggingServices($config['logging'], $container);
         $this->loadSystemAlertServices($config['system_alerts'], $container);
@@ -35,10 +36,25 @@ class CTLibExtension extends Extension
         $this->loadHtmlToPdfServices($config['html_to_pdf'], $container);
     }
 
+    protected function loadCacheManagerServices($config, $container)
+    {
+        if (!$config['enabled']) {
+            return;
+        }
+
+        $def = new Definition('CTLib\Component\Cache\SimpleCache',[]);
+        $container->setDefinition("simple_cache", $def);
+
+        foreach ($config['managers'] as $manager) {
+            $def = new Definition('CTLib\Component\Cache\CachedComponentManager',[]);
+            $container->setDefinition("cache.manager.{$manager}", $def);
+        }
+    }
+
     protected function loadProcessLockServices($config, $container)
     {
         if (! $config['enabled']) { return; }
-        
+
         $args = [
             new Reference($config['redis_client']),
             $config['namespace']
@@ -46,7 +62,7 @@ class CTLibExtension extends Extension
         $def = new Definition('CTLib\Component\ProcessLock\ProcessLock', $args);
         $container->setDefinition('process_lock', $def);
     }
-    
+
     protected function loadLoggingServices($config, $container)
     {
         if (! $config['enabled']) { return; }
@@ -62,7 +78,7 @@ class CTLibExtension extends Extension
             $def->addTag('monolog.processor');
             $container->setDefinition('monolog.processors.runtime', $def);
         }
-        
+
         $def = new Definition(
                     'CTLib\Component\Monolog\SanitizeProcessor',
                     array(new Reference('kernel')));
@@ -186,7 +202,7 @@ class CTLibExtension extends Extension
             $def = new Definition(
                         'CTLib\Listener\EntityListener',
                         array(new Reference('session')));
-            
+
             $attributes = array(
                 'event'     => 'prePersist',
                 'method'    => 'prePersist'
@@ -312,16 +328,16 @@ class CTLibExtension extends Extension
         if (! $config['enabled']) {
             return;
         }
-        
+
         $mgrDef = new Definition(
             'CTLib\MapService\MapProviderManager',
             array($config['country'], new Reference('logger'), new Reference('localizer')));
-        
+
         $container->setDefinition('map_service', $mgrDef);
         foreach ($config['providers'] as $providerId => $providerConfig) {
                 $args = array(
                 $providerId,
-                $providerConfig['class'], 
+                $providerConfig['class'],
                 $providerConfig['javascript_url'],
                 $providerConfig['javascript_key'],
                 $providerConfig['webservice_url'],
@@ -330,7 +346,7 @@ class CTLibExtension extends Extension
 
             $mgrDef->addMethodCall('registerProvider', $args);
         }
-        
+
         foreach ($config['geocoders'] as $country => $geocoderConfigs) {
             foreach ($geocoderConfigs as $geoConfig) {
                 $args = array(
@@ -343,8 +359,8 @@ class CTLibExtension extends Extension
                 $mgrDef->addMethodCall('registerGeocoder', $args);
             }
         }
-        
-        foreach ($config['reverseGeocoders'] as 
+
+        foreach ($config['reverseGeocoders'] as
             $country => $reverseGeocoderConfigs) {
             foreach ($reverseGeocoderConfigs as $reverseGeoConfig) {
                 $args = array(
@@ -354,8 +370,8 @@ class CTLibExtension extends Extension
                 $mgrDef->addMethodCall('registerReverseGeocoder', $args);
             }
         }
-        
-        foreach ($config['routers'] as 
+
+        foreach ($config['routers'] as
             $country => $routerConfig) {
             $args = array(
                 $country,
@@ -363,8 +379,8 @@ class CTLibExtension extends Extension
                 );
             $mgrDef->addMethodCall('registerRouter', $args);
         }
-        
-        foreach ($config['javascript_apis'] as 
+
+        foreach ($config['javascript_apis'] as
             $country => $apiConfig) {
             $args = array(
                 $country,
@@ -373,7 +389,7 @@ class CTLibExtension extends Extension
             $mgrDef->addMethodCall('registerAPI', $args);
         }
     }
-    
+
     protected function loadLocalizationServices($config, $container)
     {
         if (! $config['enabled']) { return; }
@@ -410,7 +426,7 @@ class CTLibExtension extends Extension
         foreach ($config as $namespace => $url) {
             $args = [$namespace, $url['host'], $url['asset_path']];
             $def->addMethodCall('addUrl', $args);
-        }        
+        }
     }
 
     protected function loadViewServices($config, $container)
@@ -437,10 +453,10 @@ class CTLibExtension extends Extension
                 if (isset($config['js']['permissions']['source'])) {
                     $def
                         ->addMethodCall(
-                            'setPermissionSource', 
+                            'setPermissionSource',
                             array(
                                 array(
-                                    new Reference($config['js']['permissions']['source']), 
+                                    new Reference($config['js']['permissions']['source']),
                                     $config['js']['permissions']['method']
                                 )
                             )
@@ -481,7 +497,7 @@ class CTLibExtension extends Extension
         $def->addTag('twig.extension');
         $container->setDefinition('twig.extension.js', $def);
 
-    
+
         if ($container->hasDefinition('localizer')) {
             $def = new Definition(
                         'CTLib\Twig\Extension\LocalizerExtension',
@@ -496,7 +512,7 @@ class CTLibExtension extends Extension
                         'CTLib\Twig\Extension\DynaPartExtension',
                         array(new Reference('service_container')));
             $def->addTag('twig.extension');
-            $container->setDefinition('twig.extension.dynapart', $def);   
+            $container->setDefinition('twig.extension.dynapart', $def);
         }
 
     }
@@ -515,7 +531,7 @@ class CTLibExtension extends Extension
         foreach ($config['authenticators'] as $ctApiAuthenticatorName => $ctApiAuthenticator) {
             $args = [$ctApiAuthenticatorName, new Reference($ctApiAuthenticator)];
             $def->addMethodCall('addAuthenticator', $args);
-        }          
+        }
     }
 
     protected function loadHtmlToPdfServices($config, $container)

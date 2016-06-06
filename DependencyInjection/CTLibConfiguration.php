@@ -12,14 +12,15 @@ use Symfony\Component\Config\Definition\ConfigurationInterface,
  */
 class CTLibConfiguration implements ConfigurationInterface
 {
-    
+
     public function getConfigTreeBuilder()
     {
         $tb = new TreeBuilder;
         $root = $tb->root('ct_lib');
-            
+
         $root
             ->children()
+                ->append($this->addCacheManagerNode())
                 ->append($this->addProcessLockNode())
                 ->append($this->addLoggingNode())
                 ->append($this->addSystemAlertsNode())
@@ -34,11 +35,30 @@ class CTLibConfiguration implements ConfigurationInterface
                 ->append($this->addMutexNode())
                 ->append($this->addUrlsNode())
                 ->append($this->addViewNode())
-                ->append($this->addCTAPINode()) 
-                ->append($this->addHtmlToPdfNode())               
+                ->append($this->addCTAPINode())
+                ->append($this->addHtmlToPdfNode())
             ->end();
 
         return $tb;
+    }
+
+    protected function addCacheManagerNode()
+    {
+        $tb = new TreeBuilder;
+        $node = $tb->root('cache');
+
+        $node
+            ->canBeEnabled()
+            ->children()
+                ->arrayNode('managers')
+                    ->isRequired()
+                    ->cannotBeEmpty()
+                    ->prototype('scalar')->end()
+                ->end()
+            ->end()
+        ->end();
+
+        return $node;
     }
 
     protected function addProcessLockNode()
@@ -60,7 +80,7 @@ class CTLibConfiguration implements ConfigurationInterface
 
         return $node;
     }
-    
+
     protected function addLoggingNode()
     {
         $tb = new TreeBuilder;
@@ -332,7 +352,7 @@ class CTLibConfiguration implements ConfigurationInterface
 
         return $node;
     }
-    
+
     protected function addMapServiceNode()
     {
         $tb = new TreeBuilder;
@@ -345,7 +365,7 @@ class CTLibConfiguration implements ConfigurationInterface
                     ->isRequired()
                     ->cannotBeEmpty()
                 ->end()
-            
+
                 ->arrayNode('providers')
                     ->children()
 
@@ -398,7 +418,7 @@ class CTLibConfiguration implements ConfigurationInterface
                                 ->end()
                             ->end()
                         ->end()
-            
+
                         ->arrayNode('google')
                             ->children()
                                 ->scalarNode('class')
@@ -425,7 +445,7 @@ class CTLibConfiguration implements ConfigurationInterface
                         ->end()
                     ->end()
                 ->end()
-                
+
                 ->arrayNode('geocoders')
                     ->performNoDeepMerging()
                     ->children()
@@ -437,13 +457,13 @@ class CTLibConfiguration implements ConfigurationInterface
                                         ->isRequired()
                                         ->cannotBeEmpty()
                                     ->end()
-            
+
                                     ->arrayNode('tokens')
                                         ->isRequired()
                                         ->cannotBeEmpty()
                                         ->prototype('scalar')->end()
                                     ->end()
-            
+
                                     ->arrayNode('allowedQualityCodes')
                                         ->isRequired()
                                         ->cannotBeEmpty()
@@ -464,19 +484,19 @@ class CTLibConfiguration implements ConfigurationInterface
                                         ->isRequired()
                                         ->cannotBeEmpty()
                                     ->end()
-            
+
                                     ->arrayNode('tokens')
                                         ->isRequired()
                                         ->cannotBeEmpty()
                                         ->prototype('scalar')->end()
                                     ->end()
-            
+
                                     ->arrayNode('allowedQualityCodes')
                                         ->isRequired()
                                         ->cannotBeEmpty()
                                         ->prototype('scalar')->end()
                                     ->end()
-                                
+
                                     ->scalarNode('batchSize')
 										->defaultValue(1)
                                     ->end()
@@ -491,19 +511,19 @@ class CTLibConfiguration implements ConfigurationInterface
                                         ->isRequired()
                                         ->cannotBeEmpty()
                                     ->end()
-            
+
                                     ->arrayNode('tokens')
                                         ->isRequired()
                                         ->cannotBeEmpty()
                                         ->prototype('scalar')->end()
                                     ->end()
-            
+
                                     ->arrayNode('allowedQualityCodes')
                                         ->isRequired()
                                         ->cannotBeEmpty()
                                         ->prototype('scalar')->end()
                                     ->end()
-                                
+
                                     ->scalarNode('batchSize')
 										->defaultValue(1)
                                     ->end()
@@ -512,7 +532,7 @@ class CTLibConfiguration implements ConfigurationInterface
                         ->end()
                     ->end()
                 ->end()
-                    
+
                 ->arrayNode('reverseGeocoders')
                     ->performNoDeepMerging()
                     ->children()
@@ -538,7 +558,7 @@ class CTLibConfiguration implements ConfigurationInterface
                                 ->end()
                             ->end()
                         ->end()
-            
+
                         ->arrayNode('GB')
                             ->prototype('array')
                                 ->children()
@@ -551,7 +571,7 @@ class CTLibConfiguration implements ConfigurationInterface
                         ->end()
                     ->end()
                 ->end()
-                
+
                 ->arrayNode('routers')
                     ->performNoDeepMerging()
                     ->children()
@@ -572,8 +592,8 @@ class CTLibConfiguration implements ConfigurationInterface
                                     ->cannotBeEmpty()
                                 ->end()
                             ->end()
-                        ->end()   
-						
+                        ->end()
+
                         ->arrayNode('GB')
                             ->children()
                                 ->scalarNode('provider')
@@ -583,8 +603,8 @@ class CTLibConfiguration implements ConfigurationInterface
                             ->end()
                         ->end()
                     ->end()
-                ->end()                
-                
+                ->end()
+
                 ->arrayNode('javascript_apis')
                     ->performNoDeepMerging()
                     ->children()
@@ -605,8 +625,8 @@ class CTLibConfiguration implements ConfigurationInterface
                                     ->cannotBeEmpty()
                                 ->end()
                             ->end()
-                        ->end()   
-						
+                        ->end()
+
                         ->arrayNode('GB')
                             ->children()
                                 ->scalarNode('provider')
@@ -616,12 +636,12 @@ class CTLibConfiguration implements ConfigurationInterface
                             ->end()
                         ->end()
                     ->end()
-                ->end()                  
+                ->end()
             ->end();
 
         return $node;
     }
-    
+
     protected function addLocalizationNode()
     {
         $tb = new TreeBuilder;
@@ -736,7 +756,7 @@ class CTLibConfiguration implements ConfigurationInterface
                     ->useAttributeAsKey('authenticationId')
                     ->prototype('scalar')
                     ->end()
-                ->end()               
+                ->end()
             ->end()
         ->end();
 
@@ -758,6 +778,6 @@ class CTLibConfiguration implements ConfigurationInterface
         ->end();
 
         return $node;
-    }   
+    }
 
 }
