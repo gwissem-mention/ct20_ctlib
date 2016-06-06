@@ -56,8 +56,8 @@ class CTLibExtension extends Extension
         }
 
         $args = [
-            new Reference($config['redis_client']),
-            $config['namespace']
+            $config['namespace'],
+            new Reference($config['redis_client'])
         ];
 
         $def = new Definition(
