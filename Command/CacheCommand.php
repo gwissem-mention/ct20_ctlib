@@ -29,9 +29,11 @@ class CacheCommand extends BaseCommand
         parent::configure();
 
         $this->setDescription('Manage cache')
+             // Even though siteId is not used with this command, it is required
+             // because appconsole requires it.
              ->addArgument('siteId', InputArgument::REQUIRED)
-             ->addArgument('action', InputArgument::REQUIRED)
              ->addArgument('cacheManager', InputArgument::REQUIRED)
+             ->addArgument('action', InputArgument::REQUIRED)
              ->addArgument('cachedComponent', InputArgument::OPTIONAL);
     }
 
