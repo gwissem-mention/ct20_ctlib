@@ -21,6 +21,7 @@ class CTLibConfiguration implements ConfigurationInterface
         $root
             ->children()
                 ->append($this->addCacheManagerNode())
+                ->append($this->addSimpleCacheNode())
                 ->append($this->addProcessLockNode())
                 ->append($this->addLoggingNode())
                 ->append($this->addSystemAlertsNode())
@@ -54,6 +55,23 @@ class CTLibConfiguration implements ConfigurationInterface
                     ->isRequired()
                     ->cannotBeEmpty()
                     ->prototype('scalar')->end()
+                ->end()
+            ->end()
+        ->end();
+
+        return $node;
+    }
+
+    protected function addSimpleCacheNode()
+    {
+        $tb = new TreeBuilder;
+        $node = $tb->root('simple_cache');
+
+        $node
+            ->canBeEnabled()
+            ->children()
+                ->scalarNode('namespace')
+                    ->defaultNull()
                 ->end()
             ->end()
         ->end();
