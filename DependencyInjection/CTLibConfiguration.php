@@ -71,7 +71,10 @@ class CTLibConfiguration implements ConfigurationInterface
             ->canBeEnabled()
             ->children()
                 ->scalarNode('namespace')
-                    ->defaultNull()
+                    ->isRequired()
+                ->end()
+                ->scalarNode('redis_client')
+                    ->isRequired()
                 ->end()
             ->end()
         ->end();

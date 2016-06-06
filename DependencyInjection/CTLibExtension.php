@@ -55,9 +55,14 @@ class CTLibExtension extends Extension
             return;
         }
 
+        $args = [
+            new Reference($config['redis_client']),
+            $config['namespace']
+        ];
+
         $def = new Definition(
             'CTLib\Component\Cache\SimpleCache',
-            [$config['namespace']]
+            $args
         );
         $container->setDefinition("simple_cache", $def);
     }
