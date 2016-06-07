@@ -17,6 +17,12 @@ class HtmlToPdf
 {
 
     /**
+     * Plugin method attributes
+     */
+    const ORIENTATION_PORTRAIT = 'Portrait';
+    const ORIENTATION_LANDSCAPE = 'Landscape';
+
+    /**
      * CanGelis\PDF\PDF
      * @var $pdf
      */
@@ -24,12 +30,12 @@ class HtmlToPdf
 
 
     /**
-     * @param string $wkhtmltopdfBinPath    CanGelis PDF requires the 
+     * @param string $wkhtmltopdfBinPath    CanGelis PDF requires the
      *                                      wkhtmltopdf binary.
      */
     public function __construct($wkhtmltopdfBinPath)
     {
-        $this->wkhtmltopdfBinPath = $wkhtmltopdfBinPath;        
+        $this->wkhtmltopdfBinPath = $wkhtmltopdfBinPath;
     }
 
     /**
@@ -37,11 +43,12 @@ class HtmlToPdf
      *
      * @return string PDF string
      */
-    public function renderPdf($html)
+    public function renderPdf($html, $orientation = self::ORIENTATION_PORTRAIT)
     {
         $pdf = new PDF($this->wkhtmltopdfBinPath);
         $pdf->loadHTML($html);
         $pdf->pageSize('Letter');
+        $pdf->orientation($orientation);
 
         return $pdf->get();
     }
