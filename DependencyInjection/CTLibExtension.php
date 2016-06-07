@@ -18,6 +18,7 @@ class CTLibExtension extends Extension
                         ->processConfiguration(new CTLibConfiguration, $configs);
 
         $this->loadCacheManagerServices($config['cache'], $container);
+        $this->loadSimpleCacheServices($config['simple_cache'], $container);
         $this->loadProcessLockServices($config['process_lock'], $container);
         $this->loadLoggingServices($config['logging'], $container);
         $this->loadSystemAlertServices($config['system_alerts'], $container);
@@ -42,13 +43,28 @@ class CTLibExtension extends Extension
             return;
         }
 
-        $def = new Definition('CTLib\Component\Cache\SimpleCache',[]);
-        $container->setDefinition("simple_cache", $def);
-
         foreach ($config['managers'] as $manager) {
             $def = new Definition('CTLib\Component\Cache\CachedComponentManager',[]);
             $container->setDefinition("cache.manager.{$manager}", $def);
         }
+    }
+
+    protected function loadSimpleCacheServices($config, $container)
+    {
+        if (!$config['enabled']) {
+            return;
+        }
+
+        $args = [
+            $config['namespace'],
+            new Reference($config['redis_client'])
+        ];
+
+        $def = new Definition(
+            'CTLib\Component\Cache\SimpleCache',
+            $args
+        );
+        $container->setDefinition("simple_cache", $def);
     }
 
     protected function loadProcessLockServices($config, $container)
