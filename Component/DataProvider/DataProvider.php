@@ -323,7 +323,6 @@ class DataProvider
         $this->applyFilters($queryConfig);
 
         $model = $this->getModel($queryConfig);
-
         if ($queryConfig->suppressTotal) {
             $total = -1;
         }
@@ -501,13 +500,11 @@ class DataProvider
     {
         if ($queryConfig->rowsPerPage <= 0) { return; }
 
-        $offset = ($queryConfig->currentPage - 1) * $queryConfig->rowsPerPage;
-        $max = $queryConfig->rowsPerPage
-                + $queryConfig->cachePages * $queryConfig->rowsPerPage;
+        $offset = ($queryConfig->currentPage - 1) * ($queryConfig->rowsPerPage - 1);
 
-        if($offset > 0) {
-            $offset--;
-        }
+        $max = $queryConfig->rowsPerPage
+            + ($queryConfig->cachePages * $queryConfig->rowsPerPage);
+
         $this->queryBuilder->setFirstResult($offset);
         $this->queryBuilder->setMaxResults($max);
     }
