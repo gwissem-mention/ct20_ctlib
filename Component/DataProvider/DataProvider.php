@@ -498,23 +498,12 @@ class DataProvider
      */
     protected function applyLimit($queryConfig)
     {
-        // max result is used in 2 ways
-        // 1. Get back the DISPLAY rows for the UI
-        // 2. if we can get back +1 record over max display, we know we have a 'next' page
-        //
+        if ($queryConfig->rowsPerPage <= 0) { return; }
 
-        // rowsperpage should be at least 2 [1 record + 1 additional to show next page]
-        if ($queryConfig->rowsPerPage <= 1) { return; }
+        $offset = ($queryConfig->currentPage - 1) * ($queryConfig->rowsPerPage - 1);
 
-        //adjust for display value
-        $displayRows = $queryConfig->rowsPerPage - 1;
-
-        // what record is first displayed? 0 = first.
-        $offset = ($queryConfig->currentPage - 1) * $displayRows;
-
-        // ensure result is maxDisplay + 1
-        $max = ($displayRows
-                + ($queryConfig->cachePages * $displayRows)) + 1;
+        $max = $queryConfig->rowsPerPage
+            + ($queryConfig->cachePages * $queryConfig->rowsPerPage);
 
         $this->queryBuilder->setFirstResult($offset);
         $this->queryBuilder->setMaxResults($max);
