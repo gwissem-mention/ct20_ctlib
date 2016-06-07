@@ -722,8 +722,10 @@ abstract class BaseController extends Controller
 
         // for current page = 1, we want the offset to be Zero
         // offset should be current_page - 1, but result in 0 or greater.
-        $currentPage = $request->get('currentPage', 1);
-        $cnf->offset            = ($currentPage - 1) >= 0 ? ($currentPage - 1) : 0;
+        $cnf->offset = ($request->get('currentPage', 1) - 1) * ($request->get('rowsPerPage', 1) - 1);
+
+        $cnf->maxResults = $request->get('rowsPerPage', 1)
+                            + ($cnf->cachePages * $request->get('rowsPerPage', 1));
 
         list(
             $cnf->fields,
