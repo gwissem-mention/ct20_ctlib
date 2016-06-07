@@ -35,7 +35,7 @@ class SimpleCache
     {
         $this->siteId   = $namespace;
         $this->redis    = $redis;
-        $this->cacheKey = "ssc:" . $this->namespace;
+        $this->cacheKey = "ssc:" . $namespace;
     }
 
     /**
