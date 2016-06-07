@@ -715,7 +715,6 @@ abstract class BaseController extends Controller
     public function getDataProviderQueryConfig($request)
     {
         $cnf = new \stdClass;
-        $cnf->maxResults        = $request->get('rowsPerPage', -1);
         $cnf->filters           = $request->get('filters', []);
         $cnf->sorts             = $request->get('sorts', []);
         $cnf->cachePages        = $request->get('cachedPage', 0);
@@ -723,7 +722,12 @@ abstract class BaseController extends Controller
         // for current page = 1, we want the offset to be Zero
         // offset should be current_page - 1, but result in 0 or greater.
         $currentPage = $request->get('currentPage', 1);
-        $cnf->offset            = ($currentPage - 1) >= 0 ? ($currentPage - 1) : 0;
+        $rowsPerPage = $request->get('rowsPerPage', 1);
+
+        $cnf->offset = ($currentPage - 1) * ($rowsPerPage - 1);
+
+        $cnf->maxResults = $rowsPerPage
+                        + ($cnf->cachePages * $rowsPerPage);
 
         list(
             $cnf->fields,
