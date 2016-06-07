@@ -33,9 +33,9 @@ class SimpleCache
      */
     public function __construct($namespace, CellTrakRedis $redis)
     {
-        $this->siteId   = $namespace;
-        $this->redis    = $redis;
-        $this->cacheKey = "ssc:" . $this->namespace;
+        $this->namespace   = $namespace;
+        $this->redis       = $redis;
+        $this->cacheKey    = "ssc:" . $namespace;
     }
 
     /**
