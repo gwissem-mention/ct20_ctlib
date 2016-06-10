@@ -131,6 +131,31 @@ class Util
     }
 
     /**
+     * Format time into hours and minutes (HH:MM)
+     *
+     * @param $seconds
+     *
+     * @return string HH:MM
+     */
+    public function secsToHoursAndMinutes($seconds)
+    {
+        if ($seconds != '') {
+            if ($seconds < 0) {
+                $seconds = -$seconds;
+                $minutes = $seconds % 60;
+                $hours = (int)($seconds / 60);
+                return sprintf(' -%02d:%02u', $hours, $minutes);
+            } else {
+                $minutes = $seconds % 60;
+                $hours = (int)($seconds / 60);
+                return sprintf('%02d:%02u', $hours, $minutes);
+            }
+        }
+
+        return $seconds;
+    }
+
+    /**
      * Convert and round duration from secs into minutes
      *
      * @param integer $startTime start time.
