@@ -104,14 +104,16 @@ class LocalizationHelper
      */
     protected function loadConfig($configType, $configCode)
     {
-        if(!isset($this->configs[$configType][$configCode])) {
-			$appVersion = CTLib::getCTLibVersion();
-			$cacheKey = $configType . "Config.$appVersion." . $configCode;
+        if (!isset($this->configs[$configType][$configCode])) {
+            $appVersion = CTLib::getCTLibVersion();
+            $cacheKey = $configType . "Config.$appVersion." . $configCode;
             $config = $this->cache->get($cacheKey);
 
             if(!$config) {
                 $config = $this->fetchConfig($configType, $configCode);
-                $this->cache->set($cacheKey, $config);
+                $this->cache->set($cacheKey, serialize($config));
+            } else {
+                $config = unserialize($config);
             }
             $this->configs[$configType] = array($configCode => $config);
         }
