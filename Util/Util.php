@@ -139,7 +139,7 @@ class Util
      */
     public function secsToHoursAndMinutes($seconds)
     {
-        if ($seconds === '' || ! is_numeric($seconds)) {
+        if (! is_numeric($seconds)) {
             throw new \InvalidArgumentException("Invalid argument {$seconds}.");
         }
 
