@@ -133,13 +133,13 @@ class Util
     /**
      * Format time into hours and minutes (HH:MM)
      *
-     * @param $seconds
+     * @param int|string $seconds
      *
      * @return string HH:MM
      */
     public function secsToHoursAndMinutes($seconds)
     {
-        if ($seconds != '') {
+        if ($seconds != '' || $seconds === 0) {
             if ($seconds < 0) {
                 $seconds = -$seconds;
                 $minutes = $seconds % 60;
