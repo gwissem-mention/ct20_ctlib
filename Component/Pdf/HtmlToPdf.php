@@ -45,12 +45,26 @@ class HtmlToPdf
      */
     public function renderPdf($html, $orientation = self::ORIENTATION_PORTRAIT)
     {
-        $pdf = new PDF($this->wkhtmltopdfBinPath);
+        $pdf = $this->createBasicPdf($orientation);
         $pdf->loadHTML($html);
+
+        return $pdf->get();
+    }
+
+    /**
+     * Uses the Current PDF library to return an instance to be manipulated elsewhere
+     *
+     * @params string $orientation
+     *
+     * @return object CanGelis\PDF\PDF;
+     */
+    public function createBasicPdf($orientation = self::ORIENTATION_PORTRAIT)
+    {
+        $pdf = new PDF($this->wkhtmltopdfBinPath);
         $pdf->pageSize('Letter');
         $pdf->orientation($orientation);
 
-        return $pdf->get();
+        return $pdf;
     }
 
 }
