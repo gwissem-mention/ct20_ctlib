@@ -75,6 +75,7 @@ class DateRangeFilter implements DataAccessFilterInterface
         $date = Arr::mustGet("date", $value);
         $startTime = null;
         $stopTime = null;
+        $startWeekIds = null;
 
         switch ($date["value"]) {
             case self::TODAY:
@@ -97,7 +98,9 @@ class DateRangeFilter implements DataAccessFilterInterface
 
             case self::EARLIER_THAN_THIS_WEEK:
                 $stopTime = new \DateTime('Sunday last week', $this->timezone);
-
+                // default $startWeekIds to all possible weekIds
+                // upto 53 covers leapyears
+                $startWeekIds = range(1, 53);
                 break;
 
             case self::SPECIFY:
@@ -132,9 +135,12 @@ class DateRangeFilter implements DataAccessFilterInterface
         );
 
         if ($this->includeWeekIds) {
+            if (!$startWeekIds) {
+                $startWeekIds = $this->getWeekIds($startTime, $stopTime);
+            }
             $dac->addFilter(
                 'startDateWeek',
-                $this->getWeekIds($startTime, $stopTime),
+                $startWeekIds,
                 'in'
             );
         }
