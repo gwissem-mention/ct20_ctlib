@@ -132,9 +132,18 @@ class DateRangeFilter implements DataAccessFilterInterface
         );
 
         if ($this->includeWeekIds) {
+            if ($date["value"] == self::EARLIER_THAN_THIS_WEEK) {
+                // in finding an ISO StartWeekId issue with iDate()
+                // - 01/01/2000 - will result in a weekId of 52 NOT 1
+                // we will default $startWeekIds array to all possible startWeekIds,
+                // 1 - 53 covers any possible max startWeekId including leapyears
+                $startWeekIds = range(1, 53);
+            } else {
+                $startWeekIds = $this->getWeekIds($startTime, $stopTime);
+            }
             $dac->addFilter(
                 'startDateWeek',
-                $this->getWeekIds($startTime, $stopTime),
+                $startWeekIds,
                 'in'
             );
         }
