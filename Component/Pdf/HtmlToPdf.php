@@ -62,6 +62,7 @@ class HtmlToPdf
     {
         $pdf = new PDF($this->wkhtmltopdfBinPath);
         $pdf->pageSize('Letter');
+        $pdf->encoding('UTF-8');
         $pdf->orientation($orientation);
 
         return $pdf;
