@@ -74,12 +74,47 @@ class Google implements Geocoder, ReverseGeocoder, Router
 
         if (in_array($geocodeResult["qualityCode"], $allowedQualityCodes)) {
             $geocodeResult['isValidated'] = true;
+            //if geocode result matches accepted quality,
+            // get the current time zone of validated location
+            try {
+                $timeZoneResponse = $this
+                    ->getTimeZoneResponse($geocodeResult['lat'], $geocodeResult['lng']);
+
+                $geocodeResult['timeZone'] = $timeZoneResponse['timeZoneId'];
+            } catch (\Exception $e) {
+                $this->logger->debug("Google: google time zone api getting exception {$e}.");
+            }
         }
         else {
             $geocodeResult['isValidated'] = false;
         }
 
         return $geocodeResult;
+    }
+
+    /**
+     * Get location time zone by latitude and longitude
+     *
+     * @param float $latitude
+     * @param float $longitude
+     * @return mixed
+     * @throws \Exception
+     */
+    protected function getTimeZone($latitude, $longitude)
+    {
+        $response = $this->getTimeZoneResponse($latitude, $longitude);
+        $this->logger->debug("Google: getting time zone response is {$response}.");
+
+        $timeZoneResult = json_decode($response, true);
+        if (! $this->isValidResponse($timeZoneResult, $errorMsg)) {
+            throw new \Exception("Google: invalid time zone response with error {$errorMsg}");
+        }
+
+        if (! $timeZoneResult) {
+            throw new \Exception("Google: time zone result is invalid");
+        }
+
+        return $timeZoneResult;
     }
 
     /**
@@ -461,6 +496,33 @@ class Google implements Geocoder, ReverseGeocoder, Router
         if (! $response) {
             $errorCode = curl_errno($curl);
             throw new \Exception("Google: failed on http request error. {$errorCode}");
+        }
+
+        return curl_exec($curl);
+    }
+
+    /**
+     * Send curl request to time zone api and get response
+     *
+     * @param float $latitude
+     * @param float $longitude
+     * @return mixed
+     * @throws \Exception
+     */
+    protected function getTimeZoneResponse($latitude, $longitude)
+    {
+        $curl = $this->createMapServiceRequest();
+        $requestData = $latitude . "," . $longitude;
+        $requestUrl = $this->webServiceUrl . "timezone/json?location=". $requestData .
+            "&timestamp=" . time() . "&key=". $this->webServiceKey;
+
+        curl_setopt($curl, CURLOPT_URL, $requestUrl);
+
+        $response = curl_exec($curl);
+
+        if (! $response) {
+            $errorCode = curl_errno($curl);
+            throw new \Exception("Google: getting time zone request failed on http request error. {$errorCode}");
         }
 
         return curl_exec($curl);
