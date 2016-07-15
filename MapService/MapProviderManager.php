@@ -53,6 +53,11 @@ class MapProviderManager
     /**
      * @var array
      */
+    protected $timeZoners;
+
+    /**
+     * @var array
+     */
     protected $apis;
 
     /**
@@ -69,6 +74,7 @@ class MapProviderManager
         $this->geocoders        = array();
         $this->reverseGeocoders = array();
         $this->routers          = array();
+        $this->timeZoners       = array();
         $this->apis             = array();
     }
 
@@ -158,6 +164,24 @@ class MapProviderManager
         }
 
         $this->routers[$country] = array(
+            'providerId' => $providerId
+        );
+    }
+
+    /**
+     * Register map service time zone provider
+     *
+     * @param string $country
+     * @param string $providerId
+     * @throws \Exception
+     */
+    public function registerTimeZoner($country, $providerId)
+    {
+        if (!isset($this->providers[$providerId])) {
+            throw new \Exception("Can not find provider with provider id: {$providerId}");
+        }
+
+        $this->timeZoners[$country] = array(
             'providerId' => $providerId
         );
     }
@@ -344,6 +368,39 @@ class MapProviderManager
         }
 
         return $batchResults;
+    }
+
+    /**
+     * Get time zone of given location
+     *
+     * @param float $latitude
+     * @param float $longitude
+     * @param string|null $country
+     * @return mixed
+     * @throws \Exception
+     */
+    public function timeZone($latitude, $longitude, $country=null)
+    {
+        if ($country === null) {
+            $country = $this->defaultCountry;
+        }
+
+        if (! isset($this->timeZoners[$country])) {
+            throw new \Exception("Can not find time zone provider for country {$country}");
+        }
+
+        foreach ($this->timeZoners[$country] as $priority => $timeZoner) {
+            $timeZoneProvider = $this
+                ->providers[$timeZoner['providerId']];
+            $this->logger->debug("Time zone provider is {$timeZoner['providerId']} with priority {$priority}.");
+
+            try {
+                $result = $timeZoneProvider->timeZone($latitude, $longitude);
+                return $result;
+            } catch (\Exception $e) {
+                $this->logger->warn("Time zone provider exception: {$e}.");
+            }
+        }
     }
 
     /**

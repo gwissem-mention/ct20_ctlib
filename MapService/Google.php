@@ -74,16 +74,6 @@ class Google implements Geocoder, ReverseGeocoder, Router
 
         if (in_array($geocodeResult["qualityCode"], $allowedQualityCodes)) {
             $geocodeResult['isValidated'] = true;
-            //if geocode result matches accepted quality,
-            // get the current time zone of validated location
-            try {
-                $timeZoneResponse = $this
-                    ->getTimeZoneResponse($geocodeResult['lat'], $geocodeResult['lng']);
-
-                $geocodeResult['timeZone'] = $timeZoneResponse['timeZoneId'];
-            } catch (\Exception $e) {
-                $this->logger->debug("Google: google time zone api getting exception {$e}.");
-            }
         }
         else {
             $geocodeResult['isValidated'] = false;
@@ -100,7 +90,7 @@ class Google implements Geocoder, ReverseGeocoder, Router
      * @return mixed
      * @throws \Exception
      */
-    protected function getTimeZone($latitude, $longitude)
+    public function timeZone($latitude, $longitude)
     {
         $response = $this->getTimeZoneResponse($latitude, $longitude);
         $this->logger->debug("Google: getting time zone response is {$response}.");
@@ -114,7 +104,7 @@ class Google implements Geocoder, ReverseGeocoder, Router
             throw new \Exception("Google: time zone result is invalid");
         }
 
-        return $timeZoneResult;
+        return $timeZoneResult['timeZoneId'];
     }
 
     /**
