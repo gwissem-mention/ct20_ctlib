@@ -174,8 +174,22 @@ class Arr
         // Reduce $search by iterating through $keyChain tokens.
         // If token not found, stop iterating and return $default.
         foreach ($keyChain as $keyToken) {
-            if (! isset($search[$keyToken])) { return $default; }
-            $search = $search[$keyToken];
+            $getFirst = false;
+            if (strpos($keyToken, '|first') !== false) {
+                $keyToken = str_replace('|first', '', $keyToken);
+                $getFirst = true;
+            }
+
+            if (!isset($search[$keyToken])) {
+                return $default;
+            }
+
+            if ($getFirst) {
+                $search = $search[$keyToken][0];
+            } else {
+                $search = $search[$keyToken];
+            }
+
         }
         return $search;
     }
