@@ -396,7 +396,7 @@ class CTLibExtension extends Extension
             $mgrDef->addMethodCall('registerRouter', $args);
         }
 
-        foreach ($config['timeZoner'] as
+        foreach ($config['timeZoners'] as
                  $country => $routerConfig) {
             $args = [
                 $country,
