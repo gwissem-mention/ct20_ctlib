@@ -90,7 +90,7 @@ class Google implements Geocoder, ReverseGeocoder, Router
      * @return mixed
      * @throws \Exception
      */
-    public function timeZone($latitude, $longitude)
+    public function getTimeZone($latitude, $longitude)
     {
         $response = $this->getTimeZoneResponse($latitude, $longitude);
         $this->logger->debug("Google: getting time zone response is {$response}.");

@@ -379,28 +379,17 @@ class MapProviderManager
      * @return mixed
      * @throws \Exception
      */
-    public function timeZone($latitude, $longitude, $country=null)
+    public function getTimeZone($latitude, $longitude, $country=null)
     {
-        if ($country === null) {
+        if (!$country) {
             $country = $this->defaultCountry;
         }
 
-        if (! isset($this->timeZoners[$country])) {
-            throw new \Exception("Can not find time zone provider for country {$country}");
-        }
+        $timeZoneProvider = $this->getTimeZoneProvider($country);
 
-        foreach ($this->timeZoners[$country] as $priority => $timeZoner) {
-            $timeZoneProvider = $this
-                ->providers[$timeZoner['providerId']];
-            $this->logger->debug("Time zone provider is {$timeZoner['providerId']} with priority {$priority}.");
+        $timeZone = $timeZoneProvider->getTimeZone($latitude, $longitude);
 
-            try {
-                $result = $timeZoneProvider->timeZone($latitude, $longitude);
-                return $result;
-            } catch (\Exception $e) {
-                $this->logger->warn("Time zone provider exception: {$e}.");
-            }
-        }
+        return $timeZone;
     }
 
     /**
@@ -674,6 +663,26 @@ class MapProviderManager
         $this->logger->debug("Route provider is {$router['providerId']}.");
 
         return $routeProvider;
+    }
+
+    /**
+     * Get time zone provider
+     * @param $country
+     * @return mixed
+     * @throws \Exception
+     */
+    protected function getTimeZoneProvider($country)
+    {
+        if (!isset($this->timeZoners[$country])) {
+            throw new \Exception("Can not find time zone provider for country {$country}");
+        }
+
+        $timeZoner = $this->timeZoners[$country];
+        $timeZoneProvider = $this->providers[$timeZoner['providerId']];
+
+        $this->logger->debug("Time zone provider is {$timeZoner['providerId']}.");
+
+        return $timeZoneProvider;
     }
 
     /**
