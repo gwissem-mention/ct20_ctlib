@@ -4,7 +4,7 @@ namespace CTLib\MapService;
 
 use CTLib\Util\Arr;
 
-class Google implements Geocoder, ReverseGeocoder, Router
+class Google implements Geocoder, ReverseGeocoder, Router, TimeZoner
 {
     const CONNECTION_TIMEOUT = 5;
     const REQUEST_TIMEOUT = 10;
@@ -95,15 +95,18 @@ class Google implements Geocoder, ReverseGeocoder, Router
         $response = $this->getTimeZoneResponse($latitude, $longitude);
         $this->logger->debug("Google: getting time zone response is {$response}.");
 
-        $timeZoneResult = json_decode($response, true);
-        if (! $this->isValidResponse($timeZoneResult, $errorMsg)) {
-            throw new \Exception("Google: invalid time zone response with error {$errorMsg}");
-        }
-
-        if (! $timeZoneResult) {
+        if (!$response) {
             throw new \Exception("Google: time zone result is invalid");
         }
 
+        $timeZoneResult = json_decode($response, true);
+        if (!$this->isValidResponse($timeZoneResult, $errorMsg)) {
+            throw new \Exception("Google: invalid time zone response with error {$errorMsg}");
+        }
+
+        if (!isset($timeZoneResult['timeZoneId'])) {
+            throw new \Exception("Google: time zone id is not available in the result.");
+        }
         return $timeZoneResult['timeZoneId'];
     }
 

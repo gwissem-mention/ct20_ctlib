@@ -181,9 +181,9 @@ class MapProviderManager
             throw new \Exception("Can not find provider with provider id: {$providerId}");
         }
 
-        $this->timeZoners[$country] = array(
+        $this->timeZoners[$country] = [
             'providerId' => $providerId
-        );
+        ];
     }
 
     /** Register map service router
@@ -379,7 +379,7 @@ class MapProviderManager
      * @return mixed
      * @throws \Exception
      */
-    public function getTimeZone($latitude, $longitude, $country=null)
+    public function getTimeZone($latitude, $longitude, $country = null)
     {
         if (!$country) {
             $country = $this->defaultCountry;

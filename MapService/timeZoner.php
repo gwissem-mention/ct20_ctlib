@@ -2,7 +2,7 @@
 
 namespace CTLib\MapService;
 
-interface timeZoner
+interface TimeZoner
 {
     /**
      * Get time zone by latitude and longitude
@@ -11,5 +11,5 @@ interface timeZoner
      * @param float $longitude longitude
      * @return string timeZoneId
      */
-    public function timeZone($latitude, $longitude);
+    public function getTimeZone($latitude, $longitude);
 }
