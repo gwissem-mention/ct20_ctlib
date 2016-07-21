@@ -70,12 +70,12 @@ class MapProviderManager
         $this->defaultCountry   = $defaultCountry;
         $this->logger           = $logger;
         $this->localizer        = $localizer;
-        $this->providers        = array();
-        $this->geocoders        = array();
-        $this->reverseGeocoders = array();
-        $this->routers          = array();
-        $this->timeZoners       = array();
-        $this->apis             = array();
+        $this->providers        = [];
+        $this->geocoders        = [];
+        $this->reverseGeocoders = [];
+        $this->routers          = [];
+        $this->timeZoners       = [];
+        $this->apis             = [];
     }
 
     /** Register map service provider
