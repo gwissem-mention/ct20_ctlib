@@ -107,7 +107,17 @@ class FilterConfig
      */
     public function getFiltersConfig()
     {
-        return Output::paramsToDataProviderFilters($this->params);
+        return Output::paramsToDataProviderFilters($this->outputParams());
+    }
+
+    /**
+     * Returns only the params that aren't ignored
+     */
+    private function outputParams()
+    {
+        return array_filter($this->params, function ($param) {
+            return $this->isIgnored();
+        });
     }
 
     /**
@@ -181,6 +191,22 @@ class FilterConfig
     public function getOffset()
     {
         return $this->offset;
+    }
+
+    /**
+     * Retrieves value for a set param or null if the value is not found
+     *
+     * @param string $paramName
+     * @return mixed value of the requested param
+     */
+    public function getParamValue($paramName)
+    {
+        foreach ($this->params as $param) {
+            if ($param->name == $paramName) {
+                return $param->value;
+            }
+        }
+        return null;
     }
 }
 
