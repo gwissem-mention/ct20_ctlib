@@ -13,6 +13,9 @@ use CTLib\Component\DataAccess\Filter\DataAccessFilterInterface;
  */
 class QueryBuilderDataAccess implements DataAccessInterface
 {
+    const VALID_OPERATORS = ['eq', 'in', 'notIn', 'lt', 'gt', 'lte', 'gte'];
+    const VALID_ARRAY_OPERATORS = ['eq', 'in', 'notIn'];
+
     /**
      * @var Doctrine\ORM\QueryBuidler
      */
@@ -121,16 +124,20 @@ class QueryBuilderDataAccess implements DataAccessInterface
      */
     public function addFilter($field, $value=null, $operator='eq')
     {
+        $this->verifyOp($operator);
+
         if (!is_callable($field) && !$value) {
             throw new \InvalidArgumentException('Invalid filter value');
         }
 
         if (is_array($value)) {
-            if (!in_array($operator, ['eq', 'in', "notIn"])) {
-                throw new \InvalidArgumentException("Array value only supports 'eq' or 'in' or 'notIn' operator.");
-            }
+            $this->verifyOp($operator, self::VALID_ARRAY_OPERATORS);
+
             if ($operator == 'eq') {
                 $operator = 'in';
+            }
+            if ($operator == 'orEq') {
+                $operator = 'orIn';
             }
         }
 
@@ -141,6 +148,26 @@ class QueryBuilderDataAccess implements DataAccessInterface
         ];
 
         return $this;
+    }
+
+
+    /**
+     * helper method to verify that the passed operator is valid
+     *
+     * @param string $operator
+     * @param array $valids
+     */
+    private function verifyOp($operator, $valids = self::VALID_OPERATORS) {
+        $allOps = [];
+        foreach ($valids as $valid) {
+            $allOps[] = 'or' . ucfirst($valid);
+            $allOps[] = $valid;
+        }
+
+        if (!in_array($operator, $allOps)) {
+            $operators = implode(', ', $allOps);
+            throw new \InvalidArgumentException("Only $operators are valid operators");
+        }
     }
 
     /**
@@ -222,43 +249,17 @@ class QueryBuilderDataAccess implements DataAccessInterface
      */
     protected function buildQuery()
     {
-        $queryCounter = 0;
+        $counter = 0;
+        foreach ($this->filters as $filter) {
+            list($statement, $valueName) = $this->statementGen($filter, $counter);
 
-        $statementGen = function($filter) use (&$queryCounter) {
-            $valueName = "queryValue{$queryCounter}";
-            switch ($filter['op']) {
-                case 'eq':
-                    $statement = "{$filter['field']} = :$valueName";
-                    break;
-                case 'in':
-                    $statement = "{$filter['field']} IN (:$valueName)";
-                    break;
-                case 'notIn':
-                    $statement = "{$filter['field']} NOT IN (:$valueName)";
-                    break;
-                case 'gt':
-                    $statement = "{$filter['field']} > :$valueName";
-                    break;
-                case 'lt':
-                    $statement = "{$filter['field']} < :$valueName";
-                    break;
-                case 'gte':
-                    $statement = "{$filter['field']} >= :$valueName";
-                    break;
-                case 'lte':
-                    $statement = "{$filter['field']} <= :$valueName";
-                    break;
+            if (strpos($filter['op'], 'or') === 0) {
+                $this->queryBuilder->orWhere($statement);
+            } else {
+                $this->queryBuilder->andWhere($statement);
             }
 
-            $queryCounter++;
-            return [$statement, $valueName];
-        };
-
-        foreach ($this->filters as $filter) {
-            list($statement, $valueName) = $statementGen($filter);
-            $this->queryBuilder
-                ->andWhere($statement)
-                ->setParameter($valueName, $filter['value']);
+            $this->queryBuilder->setParameter($valueName, $filter['value']);
         }
 
         foreach ($this->sorts as $order) {
@@ -274,6 +275,49 @@ class QueryBuilderDataAccess implements DataAccessInterface
             $this->queryBuilder->setMaxResults($this->maxResults);
         }
     }
+
+    /**
+     * Handles the generation of statements based on the operator
+     * @param array $filter
+     * @param int $queryCounter
+     *
+     * @return array [query statement, parameter value name]
+     */
+    private function statementGen($filter, &$queryCounter)
+    {
+        $valueName = "queryValue{$queryCounter}";
+        $op = lcfirst(preg_replace('/^or/', '', $filter['op']));
+
+        switch ($op) {
+            case 'eq':
+                $statement = "{$filter['field']} = :$valueName";
+                break;
+            case 'in':
+                $statement = "{$filter['field']} IN (:$valueName)";
+                break;
+            case 'notIn':
+                $statement = "{$filter['field']} NOT IN (:$valueName)";
+                break;
+            case 'gt':
+                $statement = "{$filter['field']} > :$valueName";
+                break;
+            case 'lt':
+                $statement = "{$filter['field']} < :$valueName";
+                break;
+            case 'gte':
+                $statement = "{$filter['field']} >= :$valueName";
+                break;
+            case 'lte':
+                $statement = "{$filter['field']} <= :$valueName";
+                break;
+            default:
+                throw new \InvalidArgumentException("{$filter['op']} is not a valid operator");
+        }
+
+        $queryCounter++;
+        return [$statement, $valueName];
+    }
+
 
     /**
      * Applies filter handler.

@@ -33,6 +33,11 @@ class Param
      */
     private $required = false;
 
+    /**
+     * @var boolean $ignore
+     */
+    private $ignore = false;
+
 
     public function __construct($param)
     {
@@ -51,6 +56,16 @@ class Param
     }
 
     /**
+     * pull back ignored param
+     *
+     * @return bool $required
+     */
+    public function isIgnored()
+    {
+        return $this->ignore;
+    }
+
+    /**
      * Provides additional logic to the setting of the value variable
      *
      * @param string $value
@@ -58,8 +73,11 @@ class Param
      */
     public function setValue($value)
     {
+        $value = trim($value);
+
         if ($this->delimiter) {
             $value = explode($this->delimiter, $value);
+            $value = array_map('trim', $value);
         }
 
         $this->value = $value;
@@ -107,6 +125,16 @@ class Param
     public function setDelimiter($delimiter)
     {
         $this->delimiter = $delimiter;
+    }
+
+    /**
+     * Setter for ignore variable
+     *
+     * @param boolean $ignore
+     */
+    public function setIgnore($ignore)
+    {
+        $this->ignore = (bool) $ignore;
     }
 }
 
