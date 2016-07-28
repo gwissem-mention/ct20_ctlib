@@ -116,7 +116,7 @@ class FilterConfig
     private function outputParams()
     {
         return array_filter($this->params, function ($param) {
-            return $this->isIgnored();
+            return !$this->isIgnored();
         });
     }
 
