@@ -366,4 +366,19 @@ class Util
             .substr($charid,20,12);
         return $uuid;
     }
+
+    /**
+     * Strips a string down to only digit characters
+     *
+     * @param mixed $string
+     * @return int
+     */
+    public static function stripStrToInt($number)
+    {
+        if (is_string($number)) {
+            $number = (int) preg_replace('/\D/', '', $number);
+        }
+        return $number;
+    }
+
 }
