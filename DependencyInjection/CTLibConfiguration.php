@@ -25,7 +25,7 @@ class CTLibConfiguration implements ConfigurationInterface
                 ->append($this->addProcessLockNode())
                 ->append($this->addLoggingNode())
                 ->append($this->addSystemAlertsNode())
-                ->append($this->addExceptionListenerNode())
+                ->append($this->addXhrExceptionListenerNode())
                 ->append($this->addRouteInspectorNode())
                 ->append($this->addOrmNode())
                 ->append($this->addSharedCacheNode())
@@ -194,20 +194,17 @@ class CTLibConfiguration implements ConfigurationInterface
         return $node;
     }
 
-    protected function addExceptionListenerNode()
+    protected function addXhrExceptionListenerNode()
     {
         $tb = new TreeBuilder;
-        $node = $tb->root('exception_listener');
+        $node = $tb->root('xhr_exception_listener');
 
         $node
             ->canBeEnabled()
-            ->addDefaultsIfNotSet()
             ->children()
-                ->scalarNode('exec_mode')
-                    ->defaultNull()
-                ->end()
-                ->scalarNode('redirect')
-                    ->defaultNull()
+                ->scalarNode('invalidate_session')
+                    ->defaultTrue()
+                    ->info('Indicates whether to invalidate session when not debug')
                 ->end()
             ->end()
         ->end();

@@ -22,7 +22,7 @@ class CTLibExtension extends Extension
         $this->loadProcessLockServices($config['process_lock'], $container);
         $this->loadLoggingServices($config['logging'], $container);
         $this->loadSystemAlertServices($config['system_alerts'], $container);
-        $this->loadExceptionListenerServices($config['exception_listener'], $container);
+        $this->loadXhrExceptionListenerServices($config['xhr_exception_listener'], $container);
         $this->loadRouteInspectorServices($config['route_inspector'], $container);
         $this->loadORMServices($config['orm'], $container);
         $this->loadSharedCacheServices($config['shared_cache'], $container);
@@ -164,29 +164,27 @@ class CTLibExtension extends Extension
         $container->setDefinition('monolog.handler.email', $def);
     }
 
-    protected function loadExceptionListenerServices($config, $container)
+    protected function loadXhrExceptionListenerServices($config, $container)
     {
         if (! $config['enabled']) { return; }
 
-        $args = array(
-            $container->getParameter('kernel.environment'),
+        $args = [
             $container->getParameter('kernel.debug'),
-            new Reference('logger'),
-            $config['exec_mode']
-        );
+            new Reference('logger')
+        ];
 
-        if (is_null($config['exec_mode']) || $config['exec_mode'] == 'std') {
-            $args[] = new Reference('session');
+        $def = new Definition('CTLib\Listener\XhrExceptionListener', $args);
+        $def->addTag('kernel.event_listener', ['event' => 'kernel.exception']);
+
+        if (isset($config['invalidate_session'])) {
+            $def
+            ->addMethodCall(
+                'setInvalidateSessionWhenNotDebug',
+                $config['invalidate_session']
+            );
         }
 
-        $def = new Definition('CTLib\Listener\ExceptionListener', $args);
-        $def->addTag('kernel.event_listener', array('event' => 'kernel.exception'));
-
-        if ($config['redirect']) {
-            $def->addMethodCall('setRedirect', array($config['redirect']));
-        }
-
-        $container->setDefinition('exception_listener', $def);
+        $container->setDefinition('xhr_exception_listener', $def);
     }
 
     protected function loadRouteInspectorServices($config, $container)
