@@ -166,7 +166,7 @@ class CTLibExtension extends Extension
 
     protected function loadXhrExceptionListenerServices($config, $container)
     {
-        if (! $config['enabled']) { return; }
+        if (!$config['enabled']) { return; }
 
         $args = [
             $container->getParameter('kernel.debug'),
@@ -180,7 +180,7 @@ class CTLibExtension extends Extension
             $def
             ->addMethodCall(
                 'setInvalidateSessionWhenNotDebug',
-                $config['invalidate_session']
+                [$config['invalidate_session']]
             );
         }
 
