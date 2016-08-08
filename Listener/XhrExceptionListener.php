@@ -4,24 +4,44 @@ namespace CTLib\Listener;
 use Symfony\Component\HttpKernel\Event\GetResponseForExceptionEvent;
 use Symfony\Component\HttpFoundation\Response;
 use CTLib\Component\HttpFoundation\JsonResponse;
+use CTLib\Component\Monolog\Logger;
 
 
+/**
+ * Exception listener designed specifically for XmlHTTPRequests (XHRs).
+ *
+ * @author Mike Turoff
+ */
 class XhrExceptionListener
 {
 
-
-    public function __construct($debug, $logger)
+    /**
+     * @param boolean $debug
+     * @param Logger $logger
+     */
+    public function __construct($debug, Logger $logger)
     {
         $this->debug = $debug;
         $this->logger = $logger;
         $this->invalidateSessionWhenNotDebug = true;
     }
 
+    /**
+     * Sets whether the Session will be invalidated when running in non-debug
+     * mode.
+     * @param boolean $invalidateSession
+     * @return void
+     */
     public function setInvalidateSessionWhenNotDebug($invalidateSession)
     {
         $this->invalidateSessionWhenNotDebug = $invalidateSession;
     }
 
+    /**
+     * Kernel event callback.
+     * @param GetResponseForExceptionEvent $event
+     * @return void
+     */
     public function onKernelException(GetResponseForExceptionEvent $event)
     {
         $request = $event->getRequest();
@@ -57,14 +77,20 @@ class XhrExceptionListener
         $event->setResponse($response);
     }
 
+    /**
+     * Encodes Exception into JSON for use in debug mode responses.
+     * @param Exception $exception
+     * @return string
+     */
     protected function encodeException(\Exception $exception)
     {
-        return [
+        $values = [
             'exception'     => true,
             'type'          => get_class($exception),
             'message'       => $exception->getMessage(),
             'stacktrace'    => $exception->getTrace()
         ];
+        return json_encode($values);
     }
 
 }
