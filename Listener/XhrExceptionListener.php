@@ -57,4 +57,14 @@ class XhrExceptionListener
         $event->setResponse($response);
     }
 
+    protected function encodeException(\Exception $exception)
+    {
+        return [
+            'exception'     => true,
+            'type'          => get_class($exception),
+            'message'       => $exception->getMessage(),
+            'stacktrace'    => $exception->getTrace()
+        ];
+    }
+
 }
