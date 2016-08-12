@@ -29,6 +29,11 @@ class DateRangeFilter implements DataAccessFilterInterface
     /**
      * @var string
      */
+    protected $sharedKey;
+
+    /**
+     * @var string
+     */
     protected $timezone;
 
     /**
@@ -48,6 +53,7 @@ class DateRangeFilter implements DataAccessFilterInterface
 
     /**
      * @param string $fieldName
+     * @param string $sharedKey
      * @param string $timezone
      * @param string $dateFormat
      * @param string $fieldType
@@ -55,12 +61,14 @@ class DateRangeFilter implements DataAccessFilterInterface
      */
     public function __construct(
         $fieldName,
+        $sharedKey,
         $timezone,
         $dateFormat,
         $fieldType=DateRangeFilter::TYPE_DATETIME,
         $includeWeekIds=false
     ) {
         $this->dateField    = $fieldName;
+        $this->sharedKey    = $sharedKey;
         $this->timezone     = $timezone;
         $this->fieldType    = $fieldType;
         $this->dateFormat   = $dateFormat;
@@ -142,7 +150,7 @@ class DateRangeFilter implements DataAccessFilterInterface
                 $startWeekIds = $this->getWeekIds($startTime, $stopTime);
             }
             $dac->addFilter(
-                'startDateWeek',
+                $this->sharedKey,
                 $startWeekIds,
                 'in'
             );
