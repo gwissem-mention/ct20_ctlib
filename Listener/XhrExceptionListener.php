@@ -16,9 +16,22 @@ class XhrExceptionListener
 {
 
     /**
+     * Indicates whether in debug mode.
+     * @var boolean
+     */
+    protected $debug;
+
+    /**
      * @var Logger
      */
     protected $logger;
+
+    /**
+     * Indicates whether to invalidate session after exception (debug only).
+     * @var boolean
+     */
+    protected $invalidateSession;
+
 
     /**
      * @param boolean $debug
