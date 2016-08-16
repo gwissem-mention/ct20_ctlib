@@ -203,7 +203,7 @@ class CTLibConfiguration implements ConfigurationInterface
             ->canBeEnabled()
             ->children()
                 ->booleanNode('invalidate_session')
-                    ->defaultTrue()
+                    ->defaultFalse()
                     ->info('Indicates whether to invalidate session when not debug')
                 ->end()
             ->end()

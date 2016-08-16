@@ -16,14 +16,19 @@ class XhrExceptionListener
 {
 
     /**
+     * @var Logger
+     */
+    protected $logger;
+
+    /**
      * @param boolean $debug
      * @param Logger $logger
      */
     public function __construct($debug, Logger $logger)
     {
-        $this->debug = $debug;
-        $this->logger = $logger;
-        $this->invalidateSessionWhenNotDebug = true;
+        $this->debug                = $debug;
+        $this->logger               = $logger;
+        $this->invalidateSession    = true;
     }
 
     /**
@@ -32,9 +37,9 @@ class XhrExceptionListener
      * @param boolean $invalidateSession
      * @return void
      */
-    public function setInvalidateSessionWhenNotDebug($invalidateSession)
+    public function setInvalidateSession($invalidateSession)
     {
-        $this->invalidateSessionWhenNotDebug = $invalidateSession;
+        $this->invalidateSession = $invalidateSession;
     }
 
     /**
@@ -63,7 +68,7 @@ class XhrExceptionListener
             $response = new JsonResponse($body, 500);
         } else {
 
-            if ($this->invalidateSessionWhenNotDebug) {
+            if ($this->invalidateSession) {
                 $session = $request->getSession();
 
                 if ($session) {

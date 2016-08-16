@@ -179,7 +179,7 @@ class CTLibExtension extends Extension
         if (isset($config['invalidate_session'])) {
             $def
             ->addMethodCall(
-                'setInvalidateSessionWhenNotDebug',
+                'setInvalidateSession',
                 [$config['invalidate_session']]
             );
         }
