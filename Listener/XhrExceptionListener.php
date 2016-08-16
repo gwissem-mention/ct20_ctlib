@@ -41,7 +41,7 @@ class XhrExceptionListener
     {
         $this->debug                = $debug;
         $this->logger               = $logger;
-        $this->invalidateSession    = true;
+        $this->invalidateSession    = false;
     }
 
     /**
