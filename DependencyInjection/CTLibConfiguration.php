@@ -25,7 +25,8 @@ class CTLibConfiguration implements ConfigurationInterface
                 ->append($this->addProcessLockNode())
                 ->append($this->addLoggingNode())
                 ->append($this->addSystemAlertsNode())
-                ->append($this->addExceptionListenerNode())
+                ->append($this->addXhrExceptionListenerNode())
+                ->append($this->addRedirectExceptionListenerNode())
                 ->append($this->addRouteInspectorNode())
                 ->append($this->addOrmNode())
                 ->append($this->addSharedCacheNode())
@@ -194,20 +195,40 @@ class CTLibConfiguration implements ConfigurationInterface
         return $node;
     }
 
-    protected function addExceptionListenerNode()
+    protected function addXhrExceptionListenerNode()
     {
         $tb = new TreeBuilder;
-        $node = $tb->root('exception_listener');
+        $node = $tb->root('xhr_exception_listener');
 
         $node
             ->canBeEnabled()
-            ->addDefaultsIfNotSet()
             ->children()
-                ->scalarNode('exec_mode')
-                    ->defaultNull()
+                ->booleanNode('invalidate_session')
+                    ->defaultFalse()
+                    ->info('Indicates whether to invalidate session when not debug')
                 ->end()
-                ->scalarNode('redirect')
-                    ->defaultNull()
+            ->end()
+        ->end();
+
+        return $node;
+    }
+
+    protected function addRedirectExceptionListenerNode()
+    {
+        $tb = new TreeBuilder;
+        $node = $tb->root('redirect_exception_listener');
+
+        $node
+            ->canBeEnabled()
+            ->children()
+                ->scalarNode('redirect_to')
+                    ->isRequired()
+                    ->cannotBeEmpty()
+                    ->info('Indicates where to redirect browser')
+                ->end()
+                ->booleanNode('invalidate_session')
+                    ->defaultFalse()
+                    ->info('Indicates whether to invalidate session')
                 ->end()
             ->end()
         ->end();
