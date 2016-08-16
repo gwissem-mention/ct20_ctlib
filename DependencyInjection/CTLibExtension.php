@@ -194,6 +194,7 @@ class CTLibExtension extends Extension
 
         $args = [
             $config['redirect_to'],
+            $container->getParameter('kernel.debug'),
             new Reference('logger')
         ];
 

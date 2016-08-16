@@ -22,6 +22,12 @@ class RedirectExceptionListener
     protected $redirectTo;
 
     /**
+     * Indicates whether in debug mode.
+     * @var boolean
+     */
+    protected $debug;
+
+    /**
      * @var Logger
      */
     protected $logger;
@@ -35,11 +41,13 @@ class RedirectExceptionListener
 
     /**
      * @param string $redirectTo
+     * @param boolean $debug
      * @param Logger $logger
      */
-    public function __construct($redirectTo, $logger)
+    public function __construct($redirectTo, $debug, $logger)
     {
         $this->redirectTo           = $redirectTo;
+        $this->debug                = $debug;
         $this->logger               = $logger;
         $this->invalidateSession    = false;
     }
@@ -62,12 +70,17 @@ class RedirectExceptionListener
      */
     public function onKernelException(GetResponseForExceptionEvent $event)
     {
-        // Only run for master requests.
-        if ($event->getRequestType() !== HttpKernelInterface::MASTER_REQUEST) {
+        // Only run when not in debug mode, for master requests, and when not
+        // XHR.
+        $request = $event->getRequest();
+
+        if ($this->debug
+            || $event->getRequestType() !== HttpKernelInterface::MASTER_REQUEST
+            || $request->isXmlHttpRequest()
+        ) {
             return;
         }
 
-        $request = $event->getRequest();
         $exception = $event->getException();
 
         // Always log the exception.
