@@ -26,6 +26,7 @@ class CTLibConfiguration implements ConfigurationInterface
                 ->append($this->addLoggingNode())
                 ->append($this->addSystemAlertsNode())
                 ->append($this->addXhrExceptionListenerNode())
+                ->append($this->addRedirectExceptionListenerNode())
                 ->append($this->addRouteInspectorNode())
                 ->append($this->addOrmNode())
                 ->append($this->addSharedCacheNode())
@@ -205,6 +206,29 @@ class CTLibConfiguration implements ConfigurationInterface
                 ->booleanNode('invalidate_session')
                     ->defaultFalse()
                     ->info('Indicates whether to invalidate session when not debug')
+                ->end()
+            ->end()
+        ->end();
+
+        return $node;
+    }
+
+    protected function addRedirectExceptionListenerNode()
+    {
+        $tb = new TreeBuilder;
+        $node = $tb->root('redirect_exception_listener');
+
+        $node
+            ->canBeEnabled()
+            ->children()
+                ->scalarNode('redirect_to')
+                    ->isRequired()
+                    ->cannotBeEmpty()
+                    ->info('Indicates where to redirect browser')
+                ->end()
+                ->booleanNode('invalidate_session')
+                    ->defaultFalse()
+                    ->info('Indicates whether to invalidate session')
                 ->end()
             ->end()
         ->end();

@@ -23,6 +23,7 @@ class CTLibExtension extends Extension
         $this->loadLoggingServices($config['logging'], $container);
         $this->loadSystemAlertServices($config['system_alerts'], $container);
         $this->loadXhrExceptionListenerServices($config['xhr_exception_listener'], $container);
+        $this->loadRedirectExceptionListenerServices($config['redirect_exception_listener'], $container);
         $this->loadRouteInspectorServices($config['route_inspector'], $container);
         $this->loadORMServices($config['orm'], $container);
         $this->loadSharedCacheServices($config['shared_cache'], $container);
@@ -184,7 +185,30 @@ class CTLibExtension extends Extension
             );
         }
 
-        $container->setDefinition('xhr_exception_listener', $def);
+        $container->setDefinition('exception_listener.xhr', $def);
+    }
+
+    protected function loadRedirectExceptionListenerServices($config, $container)
+    {
+        if (!$config['enabled']) { return; }
+
+        $args = [
+            $config['redirect_to'],
+            new Reference('logger')
+        ];
+
+        $def = new Definition('CTLib\Listener\RedirectExceptionListener', $args);
+        $def->addTag('kernel.event_listener', ['event' => 'kernel.exception']);
+
+        if (isset($config['invalidate_session'])) {
+            $def
+            ->addMethodCall(
+                'setInvalidateSession',
+                [$config['invalidate_session']]
+            );
+        }
+
+        $container->setDefinition('exception_listener.redirect', $def);
     }
 
     protected function loadRouteInspectorServices($config, $container)
