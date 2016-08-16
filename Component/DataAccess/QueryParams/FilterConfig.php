@@ -6,7 +6,7 @@ use CTLib\Component\DataAccess\DataAccessInterface;
 class FilterConfig
 {
     //Constants for dealing with pagination
-    const MAX_RESULTS       = 'maxResults';
+    const MAX_RESULTS       = 'limit';
     const OFFSET            = 'offset';
     const ORDER_BY          = 'sort';
     const ORDER_DIRECTION   = 'sortDir';
@@ -69,7 +69,8 @@ class FilterConfig
     {
         $result = new self();
 
-        if (isset($queryParams[self::MAX_RESULTS])) {
+        if (isset($queryParams[self::MAX_RESULTS])
+            && $queryParams[self::MAX_RESULTS] > 0) {
             $result->setMaxResults($queryParams[self::MAX_RESULTS]);
         }
 
