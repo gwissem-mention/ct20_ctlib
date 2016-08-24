@@ -85,7 +85,7 @@ class RecordSetController extends DynaPartController
         $sessionStorage = $this->session()->get($cacheId);
 
         if ($sessionStorage) {
-            if ($sessionStorage->currentPage) {
+            if (isset($sessionStorage->currentPage)) {
                 $options['currentPage'] = (int) $sessionStorage->currentPage;
             }
             if ($sessionStorage->sorts) {
