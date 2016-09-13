@@ -121,36 +121,83 @@ class AuditLogger
     }
 
     /**
-     * @param $action
-     * @param $affectedEntity
-     * @param $memberId
-     * @param $comment
+     * Method used for basic logging without entity
+     * change tracking.
+     *
+     * @param int $action
+     * @param int $affectedEntityId
+     * @param int $memberId
+     * @param string $comment
      *
      */
     public function add(
         $action,
-        $affectedEntity = null,
-        $data           = null,
-        $memberId       = null,
-        $comment        = null
+        $entity     = null,
+        $data       = null,
+        $memberId   = null,
+        $source     = null,
+        $comment    = null
     ) {
+        $className = 'NA';
+        $entityId  = 0;
+        $state     = 0;
 
-        $auditLog = new AuditLog([
-            'affectedEntityId' => $entityId,
-            'memberId'         => $memberId,
-            'action'           => $action,
-            'auditData'        => $data,
-            'comment'          => $comment
-        ]);
+        if (!$memberId) {
+            $memberId = $this->session->get('memberId');
+        }
+        $ipAddress = $this->session->get('ipAddress');
+        $userAgent = $this->session->get('user-agent');
+        if (!$memberId && $entity) {
+            $memberId = method_exists($entity, 'getExecMemberId')
+                ? $entity->getExecMemberId()
+                : 0;
+        }
 
-        $this->entityManager->insert($auditLog);
+        if ($entity) {
+            $className = (new \ReflectionClass($entity))->getShortName();
+            $entityId = $entity->{"get{$className}Id"}();
+
+            switch ($entity->getTrackingState()) {
+                case BaseEntity::CREATE:
+                    $state = "NEW";
+                    break;
+                case BaseEntity::MODIFY:
+                    $state = "MODIFIED";
+                    break;
+                default:
+                    $state = "UNCHANGED";
+                    break;
+            }
+        }
+
+        $log = '{"'.$className.'":{'
+             . '"id":'.$entityId.','
+             . '"state":"'.$state.'",'
+             . '"memberId":'.$memberId.','
+             . '"action":'.$action.','
+             . '"source":"'.$source.'",'
+             . '"ipAddress":"'.$ipAddress.'",'
+             . '"userAgent":"'.$userAgent.'",'
+             . '"data":"'.$data.'"'
+             . '}}';
+
+        $this->addLogEntry(
+            $entityId,
+            $memberId,
+            $log,
+            $action,
+            $source,
+            $comment
+        );
     }
 
     /**
-     * @param $entity
-     * @param $action
-     * @param $memberId
-     * @param $source
+     * Compile audit data with old and new values into JSON.
+     *
+     * @param TrackableEntity $entity
+     * @param int $action
+     * @param int $memberId
+     * @param string $source
      *
      * @return string
      */
@@ -240,11 +287,14 @@ class AuditLogger
     }
 
     /**
+     * Save the audit log entry to the database.
+     *
      * @param int       $entityId
      * @param int       $memberId
      * @param string    $log
      * @param int       $action
      * @param string    $source
+     * @param string    $comment
      *
      * @return AuditLog
      */
@@ -253,14 +303,16 @@ class AuditLogger
         $memberId,
         $log,
         $action,
-        $source
+        $source,
+        $comment = null
     ) {
         $auditLog = new AuditLog([
             'affectedEntityId' => $entityId,
             'memberId'         => $memberId,
             'action'           => $action,
             'auditData'        => $log,
-            'source'           => $source
+            'source'           => $source,
+            'comment'          => $comment
         ]);
 
         $this->entityManager->insert($auditLog);
