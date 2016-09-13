@@ -250,7 +250,9 @@ class AuditLogger
         }
 
         $pos = strrpos($log, ',');
-        $log = substr_replace($log, '', $pos, 1);
+        if ($pos !== false) {
+            $log = substr_replace($log, '', $pos, 1);
+        }
 
         $log .= '],';
         $log .= '"affectedEntityIds": [';
@@ -262,7 +264,9 @@ class AuditLogger
         }
 
         $pos = strrpos($log, ',');
-        $log = substr_replace($log, '', $pos, 1);
+        if ($pos !== false) {
+            $log = substr_replace($log, '', $pos, 1);
+        }
         $log .= '],';
 
         if (!$memberId) {
