@@ -121,6 +121,32 @@ class AuditLogger
     }
 
     /**
+     * @param $action
+     * @param $affectedEntity
+     * @param $memberId
+     * @param $comment
+     *
+     */
+    public function add(
+        $action,
+        $affectedEntity = null,
+        $data           = null,
+        $memberId       = null,
+        $comment        = null
+    ) {
+
+        $auditLog = new AuditLog([
+            'affectedEntityId' => $entityId,
+            'memberId'         => $memberId,
+            'action'           => $action,
+            'auditData'        => $data,
+            'comment'          => $comment
+        ]);
+
+        $this->entityManager->insert($auditLog);
+    }
+
+    /**
      * @param $entity
      * @param $action
      * @param $memberId
