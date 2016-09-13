@@ -18,9 +18,9 @@ class AuditLogger
     protected $entityManager;
 
     /**
-     * @var MemberHelper
+     * @var CtApiCaller
      */
-    protected $memberHelper;
+    protected $ctApiCaller;
 
     /**
      * @var Session
@@ -30,13 +30,16 @@ class AuditLogger
 
     /**
      * @param EntityManager $entityManager
-     * @param MemberHelper $memberHelper
+     * @param CtApiCaller $ctApiCaller
      * @param Session $session
      */
-    public function __construct($entityManager, $memberHelper, $session)
-    {
+    public function __construct(
+        $entityManager,
+        $ctApiCaller,
+        $session
+    ) {
         $this->entityManager = $entityManager;
-        $this->memberHelper  = $memberHelper;
+        $this->ctApiCaller   = $ctApiCaller;
         $this->session       = $session;
     }
 
@@ -73,7 +76,8 @@ class AuditLogger
 
         $log = $this->compileAuditData($entity, $action, $memberId, $source);
 
-        $auditEntry = $this->addLogEntry($entityId, 0, $log, $action, $source);
+        $auditEntry =
+            $this->addLogEntry($entityId, $memberId, $log, $action, $source);
 
         $entity->endNew();
 
@@ -113,7 +117,8 @@ class AuditLogger
 
         $log = $this->compileAuditData($entity, $action, $memberId, $source);
 
-        $auditEntry = $this->addLogEntry($entityId, $memberId, $log, $action, $source);
+        $auditEntry =
+            $this->addLogEntry($entityId, $memberId, $log, $action, $source);
 
         $entity->endEdit();
 
@@ -170,6 +175,8 @@ class AuditLogger
             }
         }
 
+        $addedOnWeek = $this->getDateWeek(time());
+
         $log = '{"'.$className.'":{'
              . '"id":'.$entityId.','
              . '"state":"'.$state.'",'
@@ -178,7 +185,9 @@ class AuditLogger
              . '"source":"'.$source.'",'
              . '"ipAddress":"'.$ipAddress.'",'
              . '"userAgent":"'.$userAgent.'",'
-             . '"data":"'.$data.'"'
+             . '"data":"'.$data.'",'
+             . '"comment":'.$comment.'",'
+             . '"addedOnWeek":'.$addedOnWeek.'"'
              . '}}';
 
         $this->addLogEntry(
@@ -280,12 +289,15 @@ class AuditLogger
                 : 0;
         }
 
+        $addedOnWeek = $this->getDateWeek(time());
+
         $log .= '"memberId":'.$memberId.','
-            .  '"action":'.$action.','
-            .  '"source":"'.$source.'",'
-            .  '"ipAddress":"'.$ipAddress.'",'
-            .  '"userAgent":"'.$userAgent.'"'
-            .  '}}';
+            . '"action":'.$action.','
+            . '"source":"'.$source.'",'
+            . '"ipAddress":"'.$ipAddress.'",'
+            . '"userAgent":"'.$userAgent.'"',
+            . '"addedOnWeek":'.$addedOnWeek.'"'
+            . '}}';
 
         return $log;
     }
@@ -322,5 +334,21 @@ class AuditLogger
         $this->entityManager->insert($auditLog);
 
         return $auditLog;
+    }
+
+    /**
+     * Helper method to get the DateWeek of the given timestamp.
+     *
+     * @param integer timestamp
+     *
+     * @return integer
+     */
+    private function getDateWeek($timestamp)
+    {
+        $timezone = new \DateTimeZone('UTC');
+        $datetime = new \DateTime("now", $timezone);
+        $datetime->setTimestamp($timestamp);
+        $dateWeek = $datetime->format('W');
+        return (int)$dateWeek;
     }
 }

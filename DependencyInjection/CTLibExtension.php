@@ -36,6 +36,7 @@ class CTLibExtension extends Extension
         $this->loadViewServices($config['view'], $container);
         $this->loadCTAPIServices($config['ct_api'], $container);
         $this->loadHtmlToPdfServices($config['html_to_pdf'], $container);
+        $this->loadAuditLogServices($config['audit_logger'], $container);
     }
 
     protected function loadCacheManagerServices($config, $container)
@@ -592,5 +593,20 @@ class CTLibExtension extends Extension
         $args = [$wkhtmltopdfBinPath];
         $def = new Definition('CTLib\Component\Pdf\HtmlToPdf', $args);
         $container->setDefinition('htmltopdf', $def);
+    }
+
+    protected function loadAuditLogServices($config, $container)
+    {
+        if (!$config['enabled']) {
+            return;
+        }
+
+        $args = [
+            new Reference('doctrine'),
+            new Reference('ct_api.caller'),
+            new Reference('session')
+        ];
+        $def = new Definition('CTLib\Component\AuditLog\AuditLogger', $args);
+        $container->setDefinition('audit_logger', $def);
     }
 }

@@ -39,6 +39,7 @@ class CTLibConfiguration implements ConfigurationInterface
                 ->append($this->addViewNode())
                 ->append($this->addCTAPINode())
                 ->append($this->addHtmlToPdfNode())
+                ->append($this->addAuditLoggerNode())
             ->end();
 
         return $tb;
@@ -855,4 +856,15 @@ class CTLibConfiguration implements ConfigurationInterface
         return $node;
     }
 
+    protected function addAuditLoggerNode()
+    {
+        $tb = new TreeBuilder;
+        $node = $tb->root('audit_logger');
+
+        $node
+            ->canBeEnabled()
+        ->end();
+
+        return $node;
+    }
 }
