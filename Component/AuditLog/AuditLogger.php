@@ -12,6 +12,8 @@ use CTLib\Entity\AuditLog;
  */
 class AuditLogger
 {
+    const AUDIT_LOG_API_PATH = '/auditLog';
+
     /**
      * @var EntityManager
      */
@@ -333,6 +335,13 @@ class AuditLogger
 
         $this->entityManager->insert($auditLog);
 
+        /*
+        $response = $this->ctApiCaller->post(
+            self::AUDIT_LOG_API_PATH,
+            $log
+        );
+        */
+        
         return $auditLog;
     }
 
