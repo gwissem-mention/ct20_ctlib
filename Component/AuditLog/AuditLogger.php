@@ -76,10 +76,10 @@ class AuditLogger
         $className = (new \ReflectionClass($entity))->getShortName();
         $entityId = $entity->{"get{$className}Id"}();
 
-        $log = $this->compileAuditData($entity, $action, $memberId, $source);
+        $logData = $this->compileAuditData($entity, $action, $memberId, $source);
 
         $auditEntry =
-            $this->addLogEntry($entityId, $memberId, $log, $action, $source);
+            $this->addLogEntry($entityId, $memberId, $logData, $action, $source);
 
         $entity->endNew();
 
@@ -117,10 +117,10 @@ class AuditLogger
         $className = (new \ReflectionClass($entity))->getShortName();
         $entityId = $entity->{"get{$className}Id"}();
 
-        $log = $this->compileAuditData($entity, $action, $memberId, $source);
+        $logData = $this->compileAuditData($entity, $action, $memberId, $source);
 
         $auditEntry =
-            $this->addLogEntry($entityId, $memberId, $log, $action, $source);
+            $this->addLogEntry($entityId, $memberId, $logData, $action, $source);
 
         $entity->endEdit();
 
@@ -132,10 +132,13 @@ class AuditLogger
      * change tracking.
      *
      * @param int $action
-     * @param int $affectedEntityId
+     * @param TrackableEntity $entity
+     * @param string $data
      * @param int $memberId
+     * @param string $source
      * @param string $comment
      *
+     * @return void
      */
     public function add(
         $action,
@@ -179,7 +182,7 @@ class AuditLogger
 
         $addedOnWeek = $this->getDateWeek(time());
 
-        $log = '{"'.$className.'":{'
+        $logData = '{"'.$className.'":{'
              . '"id":'.$entityId.','
              . '"state":"'.$state.'",'
              . '"memberId":'.$memberId.','
@@ -189,13 +192,13 @@ class AuditLogger
              . '"userAgent":"'.$userAgent.'",'
              . '"data":"'.$data.'",'
              . '"comment":'.$comment.'",'
-             . '"addedOnWeek":'.$addedOnWeek.'"'
+             . '"addedOnWeek":'.$addedOnWeek
              . '}}';
 
         $this->addLogEntry(
             $entityId,
             $memberId,
-            $log,
+            $logData,
             $action,
             $source,
             $comment
@@ -246,39 +249,39 @@ class AuditLogger
         $className = (new \ReflectionClass($entity))->getShortName();
         $entityId = $entity->{"get{$className}Id"}();
 
-        $log = '{"'.$className.'":{"id":'.$entityId.','
+        $logData = '{"'.$className.'":{"id":'.$entityId.','
              . '"state":"'.$state.'","properties":[';
 
         // If the property is part of the modified properties, include
         // it in the log entry.
         foreach ($properties as $prop => $value) {
             if (array_key_exists($prop, $modifiedProperties)) {
-                $log .= '"'.$prop.'":{'
+                $logData .= '"'.$prop.'":{'
                     . '"oldValue":"'.$modifiedProperties[$prop].'",'
                     . '"newValue": "'.$value.'"'
                     . '},';
             }
         }
 
-        $pos = strrpos($log, ',');
+        $pos = strrpos($logData, ',');
         if ($pos !== false) {
-            $log = substr_replace($log, '', $pos, 1);
+            $logData = substr_replace($logData, '', $pos, 1);
         }
 
-        $log .= '],';
-        $log .= '"affectedEntityIds": [';
+        $logData .= '],';
+        $logData .= '"affectedEntityIds": [';
 
         $entityIds = array_values($this->entityManager->getEntityId($entity));
 
         foreach ($entityIds as $id) {
-            $log .= $id.',';
+            $logData .= $id.',';
         }
 
-        $pos = strrpos($log, ',');
+        $pos = strrpos($logData, ',');
         if ($pos !== false) {
-            $log = substr_replace($log, '', $pos, 1);
+            $logData = substr_replace($logData, '', $pos, 1);
         }
-        $log .= '],';
+        $logData .= '],';
 
         if (!$memberId) {
             $memberId = $this->session->get('memberId');
@@ -293,7 +296,7 @@ class AuditLogger
 
         $addedOnWeek = $this->getDateWeek(time());
 
-        $log .= '"memberId":'.$memberId.','
+        $logData .= '"memberId":'.$memberId.','
             . '"action":'.$action.','
             . '"source":"'.$source.'",'
             . '"ipAddress":"'.$ipAddress.'",'
@@ -301,7 +304,7 @@ class AuditLogger
             . '"addedOnWeek":'.$addedOnWeek.'"'
             . '}}';
 
-        return $log;
+        return $logData;
     }
 
     /**
@@ -341,7 +344,7 @@ class AuditLogger
             $log
         );
         */
-        
+
         return $auditLog;
     }
 
