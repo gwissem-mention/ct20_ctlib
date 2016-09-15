@@ -10,38 +10,15 @@ namespace CTLib\Entity;
 /**
  * Base entity extended by all CellTrak entities.
  */
-abstract class BaseEntity implements TrackableEntity
+abstract class BaseEntity
 {
-    /**
-     * Constants for tracking state
-     */
-    const UNCHANGED = 0;
-    const CREATE    = 1;
-    const MODIFY    = 2;
-
-    /**
-     * @var int
-     */
-    protected $trackingState = 0;
-
-    /**
-     * @var array
-     */
-    protected $modifiedProperties = [];
-
-
     /**
      * Constructor.
      *
      * @param array $fieldValues    Associative array of entity field => value.
-     * @param bool  $track          Determines whether or not to start change tracking
      */
-    public function __construct($fieldValues=array(), $track=false)
+    public function __construct($fieldValues=array())
     {
-        if ($track) {
-            $this->beginNew();
-        }
-
         if ($fieldValues) {
             $this->update($fieldValues);
         }
@@ -126,81 +103,5 @@ abstract class BaseEntity implements TrackableEntity
             $values[$field] = $this->$getter();
         }
         return $values;
-    }
-
-    /**
-     * @param $fieldName
-     * @param $oldValue
-     */
-    protected function setModifiedProperty($fieldName, $oldValue)
-    {
-        $this->modifiedProperties[$fieldName] = $oldValue;
-    }
-
-    /**
-     * @return bool
-     */
-    public function getIsTracking()
-    {
-        return $this->getTrackingState() != self::UNCHANGED;
-    }
-
-
-    /**
-     * @inheritdoc
-     */
-    public function getTrackingState()
-    {
-        return $this->trackingState;
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function getModifiedProperties()
-    {
-        return $this->modifiedProperties;
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function beginNew()
-    {
-        if ($this->trackingState != self::UNCHANGED) {
-            return;
-        }
-        $this->trackingState = self::CREATE;
-        $this->modifiedProperties = [];
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function endNew()
-    {
-        $this->trackingState = self::UNCHANGED;
-        $this->modifiedProperties = [];
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function beginEdit()
-    {
-        if ($this->trackingState != self::UNCHANGED) {
-            return;
-        }
-        $this->trackingState = self::MODIFY;
-        $this->modifiedProperties = [];
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function endEdit()
-    {
-        $this->trackingState = self::UNCHANGED;
-        $this->modifiedProperties = [];
     }
 }
