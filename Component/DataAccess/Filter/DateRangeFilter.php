@@ -42,29 +42,29 @@ class DateRangeFilter implements DataAccessFilterInterface
     protected $dateFormat;
 
     /**
-     * @var boolean
+     * @var string
      */
-    protected $includeWeekIds;
+    protected $weekIdFieldName;
 
     /**
      * @param string $fieldName
      * @param string $timezone
      * @param string $dateFormat
      * @param string $fieldType
-     * @param boolean $includeWeekIds
+     * @param string|null $weekIdFieldName
      */
     public function __construct(
         $fieldName,
         $timezone,
         $dateFormat,
         $fieldType=DateRangeFilter::TYPE_DATETIME,
-        $includeWeekIds=false
+        $weekIdFieldName = null
     ) {
-        $this->dateField    = $fieldName;
-        $this->timezone     = $timezone;
-        $this->fieldType    = $fieldType;
-        $this->dateFormat   = $dateFormat;
-        $this->includeWeekIds    = $includeWeekIds;
+        $this->dateField       = $fieldName;
+        $this->timezone        = $timezone;
+        $this->fieldType       = $fieldType;
+        $this->dateFormat      = $dateFormat;
+        $this->weekIdFieldName = $weekIdFieldName;
     }
 
     /**
@@ -131,7 +131,7 @@ class DateRangeFilter implements DataAccessFilterInterface
             'lte'
         );
 
-        if ($this->includeWeekIds) {
+        if ($this->weekIdFieldName) {
             if ($date["value"] == self::EARLIER_THAN_THIS_WEEK) {
                 // in finding an ISO StartWeekId issue with iDate()
                 // - 01/01/2000 - will result in a weekId of 52 NOT 1
@@ -142,7 +142,7 @@ class DateRangeFilter implements DataAccessFilterInterface
                 $startWeekIds = $this->getWeekIds($startTime, $stopTime);
             }
             $dac->addFilter(
-                'startDateWeek',
+                $this->weekIdFieldName,
                 $startWeekIds,
                 'in'
             );

@@ -4,7 +4,7 @@ namespace CTLib\Component\Doctrine\ORM;
 use CTLib\Util\Arr,
     Doctrine\ORM\Query\ParameterTypeInferer,
     Doctrine\ORM\Tools\Pagination\Paginator;
-    
+
 class DataProviderQueryBuilder extends QueryBuilder
 {
     protected $modelFields = array();
@@ -51,7 +51,7 @@ class DataProviderQueryBuilder extends QueryBuilder
 
         $this->modelFields[$alias] = array($source, $objectId);
         return $this;
-    }    
+    }
 
     /**
      * Returns model used in this query.
@@ -138,7 +138,7 @@ class DataProviderQueryBuilder extends QueryBuilder
     public function getPaginatedResult($fetchJoinCollection = true)
     {
         $paginator = new Paginator($this, $fetchJoinCollection);
-
+        $paginator->setUseOutputWalkers(false);
         return $paginator;
     }
 }

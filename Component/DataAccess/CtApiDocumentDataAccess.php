@@ -137,7 +137,7 @@ class CtApiDocumentDataAccess implements DataAccessInterface
      */
     public function addFilter($field, $value=null, $operator='eq')
     {
-        if (!is_callable($field) && !$value) {
+        if (!is_callable($field) && is_null($value)) {
             throw new \InvalidArgumentException('Invalid filter value');
         }
 

@@ -53,6 +53,11 @@ class MapProviderManager
     /**
      * @var array
      */
+    protected $timeZoners;
+
+    /**
+     * @var array
+     */
     protected $apis;
 
     /**
@@ -65,11 +70,12 @@ class MapProviderManager
         $this->defaultCountry   = $defaultCountry;
         $this->logger           = $logger;
         $this->localizer        = $localizer;
-        $this->providers        = array();
-        $this->geocoders        = array();
-        $this->reverseGeocoders = array();
-        $this->routers          = array();
-        $this->apis             = array();
+        $this->providers        = [];
+        $this->geocoders        = [];
+        $this->reverseGeocoders = [];
+        $this->routers          = [];
+        $this->timeZoners       = [];
+        $this->apis             = [];
     }
 
     /** Register map service provider
@@ -160,6 +166,24 @@ class MapProviderManager
         $this->routers[$country] = array(
             'providerId' => $providerId
         );
+    }
+
+    /**
+     * Register map service time zone provider
+     *
+     * @param string $country
+     * @param string $providerId
+     * @throws \Exception
+     */
+    public function registerTimeZoner($country, $providerId)
+    {
+        if (!isset($this->providers[$providerId])) {
+            throw new \Exception("Can not find provider with provider id: {$providerId}");
+        }
+
+        $this->timeZoners[$country] = [
+            'providerId' => $providerId
+        ];
     }
 
     /** Register map service router
@@ -344,6 +368,28 @@ class MapProviderManager
         }
 
         return $batchResults;
+    }
+
+    /**
+     * Get time zone of given location
+     *
+     * @param float $latitude
+     * @param float $longitude
+     * @param string|null $country
+     * @return mixed
+     * @throws \Exception
+     */
+    public function getTimeZone($latitude, $longitude, $country = null)
+    {
+        if (!$country) {
+            $country = $this->defaultCountry;
+        }
+
+        $timeZoneProvider = $this->getTimeZoneProvider($country);
+
+        $timeZone = $timeZoneProvider->getTimeZone($latitude, $longitude);
+
+        return $timeZone;
     }
 
     /**
@@ -617,6 +663,26 @@ class MapProviderManager
         $this->logger->debug("Route provider is {$router['providerId']}.");
 
         return $routeProvider;
+    }
+
+    /**
+     * Get time zone provider
+     * @param $country
+     * @return mixed
+     * @throws \Exception
+     */
+    protected function getTimeZoneProvider($country)
+    {
+        if (!isset($this->timeZoners[$country])) {
+            throw new \Exception("Can not find time zone provider for country {$country}");
+        }
+
+        $timeZoner = $this->timeZoners[$country];
+        $timeZoneProvider = $this->providers[$timeZoner['providerId']];
+
+        $this->logger->debug("Time zone provider is {$timeZoner['providerId']}.");
+
+        return $timeZoneProvider;
     }
 
     /**

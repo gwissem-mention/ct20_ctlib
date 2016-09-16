@@ -71,7 +71,13 @@ class DataProvider
     public function addFields(array $fields)
     {
         foreach ($fields as $field) {
-            $this->addField($field);
+            $alias = null;
+
+            if (is_array($field)) {
+                list($field, $alias) = $field;
+            }
+
+            $this->addField($field, $alias);
         }
     }
 
