@@ -482,7 +482,7 @@ class ActionCode
      */
     public static function getAllActionCodes()
     {
-        $reflection = new \ReflectionClass('AppBundle\Component\ActionLogger\ActionCode');
+        $reflection = new \ReflectionClass('CTLib\Component\ActionLog\ActionCode');
 
         $constants = array_values($reflection->getConstants());
 
