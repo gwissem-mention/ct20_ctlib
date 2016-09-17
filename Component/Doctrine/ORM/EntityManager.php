@@ -483,10 +483,13 @@ class EntityManager extends \Doctrine\ORM\EntityManager
      */
     public function startTracking($entity)
     {
-        $className = (new \ReflectionClass($entity))->getShortName();
-        $entityId = $entity->{"get{$className}Id"}();
+        $entityId = $this
+            ->entityMetaHelper
+            ->getLogicalIdentifierFieldNames($entity);
+
+        $className = $this->entityMetaHelper->getShortClassName();
         $copy = unserialize(serialize($entity));
-        $this->trackedEntities[$className.'_'.$entityId] = $copy;
+        $this->trackedEntities[$className.'_'.$entityId[0]] = $copy;
     }
 
     /**
@@ -502,18 +505,21 @@ class EntityManager extends \Doctrine\ORM\EntityManager
      */
     public function finishTracking($entity)
     {
-        $className = (new \ReflectionClass($entity))->getShortName();
-        $entityId = $entity->{"get{$className}Id"}();
+        $entityId = $this
+            ->entityMetaHelper
+            ->getLogicalIdentifierFieldNames($entity);
 
-        if (!isset($this->entities[$className.'_'.$entityId])) {
-            throw new \Exception("Entity $className with id $entityId is not being tracked");
+        $className = $this->entityMetaHelper->getShortClassName();
+
+        if (!isset($this->entities[$className.'_'.$entityId[0]])) {
+            throw new \Exception("Entity $className with id {$entityId[0]} is not being tracked");
         }
 
-        $origEntity = $this->entities[$className.'_'.$entityId];
+        $origEntity = $this->entities[$className.'_'.$entityId[0]];
 
         $delta = $this->compileDelta($entity, $origEntity);
 
-        unset($this->trackedEntities[$className.'_'.$entityId]);
+        unset($this->trackedEntities[$className.'_'.$entityId[0]]);
 
         return $delta;
     }

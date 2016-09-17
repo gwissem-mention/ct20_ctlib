@@ -1,6 +1,6 @@
 <?php
 
-namespace CTLib\Component\AuditLog;
+namespace CTLib\Component\ActionLog;
 
 /**
  * Class to hold all possible action constants.

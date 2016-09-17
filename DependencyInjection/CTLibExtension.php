@@ -36,7 +36,7 @@ class CTLibExtension extends Extension
         $this->loadViewServices($config['view'], $container);
         $this->loadCTAPIServices($config['ct_api'], $container);
         $this->loadHtmlToPdfServices($config['html_to_pdf'], $container);
-        $this->loadAuditLogServices($config['audit_logger'], $container);
+        $this->loadActionLogServices($config['action_logger'], $container);
     }
 
     protected function loadCacheManagerServices($config, $container)
@@ -595,7 +595,7 @@ class CTLibExtension extends Extension
         $container->setDefinition('htmltopdf', $def);
     }
 
-    protected function loadAuditLogServices($config, $container)
+    protected function loadActionLogServices($config, $container)
     {
         if (!$config['enabled']) {
             return;
@@ -606,7 +606,13 @@ class CTLibExtension extends Extension
             new Reference('ct_api.caller'),
             new Reference('session')
         ];
-        $def = new Definition('CTLib\Component\AuditLog\AuditLogger', $args);
-        $container->setDefinition('audit_logger', $def);
+        $def = new Definition('CTLib\Component\ActionLog\ActionLogger', $args);
+        $container->setDefinition('action_logger', $def);
+
+        $args = [
+            new Reference('ct_api.caller')
+        ];
+        $def = new Definition('CTLib\Component\ActionLog\ActionLogReader', $args);
+        $container->setDefinition('action_log_reader', $def);
     }
 }
