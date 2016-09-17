@@ -856,10 +856,10 @@ class CTLibConfiguration implements ConfigurationInterface
         return $node;
     }
 
-    protected function addAuditLoggerNode()
+    protected function addActionLoggerNode()
     {
         $tb = new TreeBuilder;
-        $node = $tb->root('action_logger');
+        $node = $tb->root('action_log');
 
         $node
             ->canBeEnabled()

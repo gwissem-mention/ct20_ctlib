@@ -36,7 +36,7 @@ class CTLibExtension extends Extension
         $this->loadViewServices($config['view'], $container);
         $this->loadCTAPIServices($config['ct_api'], $container);
         $this->loadHtmlToPdfServices($config['html_to_pdf'], $container);
-        $this->loadActionLogServices($config['action_logger'], $container);
+        $this->loadActionLogServices($config['action_log'], $container);
     }
 
     protected function loadCacheManagerServices($config, $container)
@@ -602,17 +602,17 @@ class CTLibExtension extends Extension
         }
 
         $args = [
-            new Reference('doctrine'),
+            new Reference('doctrine.orm.default_entity_manager'),
             new Reference('ct_api.caller'),
             new Reference('session')
         ];
         $def = new Definition('CTLib\Component\ActionLog\ActionLogger', $args);
-        $container->setDefinition('action_logger', $def);
+        $container->setDefinition('action_log.action_logger', $def);
 
         $args = [
             new Reference('ct_api.caller')
         ];
         $def = new Definition('CTLib\Component\ActionLog\ActionLogReader', $args);
-        $container->setDefinition('action_log_reader', $def);
+        $container->setDefinition('action_log.action_log_reader', $def);
     }
 }

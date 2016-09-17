@@ -483,13 +483,14 @@ class EntityManager extends \Doctrine\ORM\EntityManager
      */
     public function startTracking($entity)
     {
-        $entityId = $this
-            ->entityMetaHelper
+        $entityIds = $this
+            ->getEntityMetaHelper()
             ->getLogicalIdentifierFieldNames($entity);
 
-        $className = $this->entityMetaHelper->getShortClassName();
+        $className = $this->getEntityMetaHelper()->getShortClassName($entity);
+        $entityKey = $className.'_'.$entity->{"get{$entityIds[0]}"}();
         $copy = unserialize(serialize($entity));
-        $this->trackedEntities[$className.'_'.$entityId[0]] = $copy;
+        $this->trackedEntities[$entityKey] = $copy;
     }
 
     /**
@@ -505,21 +506,22 @@ class EntityManager extends \Doctrine\ORM\EntityManager
      */
     public function finishTracking($entity)
     {
-        $entityId = $this
-            ->entityMetaHelper
+        $entityIds = $this
+            ->getEntityMetaHelper()
             ->getLogicalIdentifierFieldNames($entity);
 
-        $className = $this->entityMetaHelper->getShortClassName();
+        $className = $this->getEntityMetaHelper()->getShortClassName($entity);
+        $entityKey = $className.'_'.$entity->{"get{$entityIds[0]}"}();
 
-        if (!isset($this->entities[$className.'_'.$entityId[0]])) {
-            throw new \Exception("Entity $className with id {$entityId[0]} is not being tracked");
+        if (!isset($this->trackedEntities[$entityKey])) {
+            throw new \Exception("Entity $className with id {$entity->{"get{$entityIds[0]}"}()} is not being tracked");
         }
 
-        $origEntity = $this->entities[$className.'_'.$entityId[0]];
+        $origEntity = $this->trackedEntities[$entityKey];
 
         $delta = $this->compileDelta($entity, $origEntity);
 
-        unset($this->trackedEntities[$className.'_'.$entityId[0]]);
+        unset($this->trackedEntities[$entityKey]);
 
         return $delta;
     }
@@ -549,7 +551,7 @@ class EntityManager extends \Doctrine\ORM\EntityManager
         $properties     = [];
         $origProperties = [];
 
-        $metadata = $this->entityMetaHelper->getMetadata($entity);
+        $metadata = $this->getEntityMetaHelper()->getMetadata($entity);
 
         $methods = get_class_methods($entity);
 
@@ -573,10 +575,10 @@ class EntityManager extends \Doctrine\ORM\EntityManager
         // it in the log entry.
         foreach ($properties as $prop => $value) {
             if ($value != $origProperties[$prop]) {
-                $values .= '"'.$prop.'":{'
+                $values .= '{"'.$prop.'":{'
                     . '"oldValue":"'.$origProperties[$prop].'",'
                     . '"newValue": "'.$value.'"'
-                    . '},';
+                    . '}},';
             }
         }
 

@@ -170,13 +170,13 @@ class ActionLogReader
         foreach ($this->queryFilters as $field => $value) {
             if (is_array($value)) {
                 if ($field == 'dateRange') {
-                    $dac->addFilter('addedOn', $value[0], 'gte');
-                    $dac->addFilter('addedOn', $value[1], 'lte');
+                    $this->dataAccess->addFilter('addedOn', $value[0], 'gte');
+                    $this->dataAccess->addFilter('addedOn', $value[1], 'lte');
                 } else {
-                    $dac->addFilter($field, $value, 'in');
+                    $this->dataAccess->addFilter($field, $value, 'in');
                 }
             } else {
-                $dac->addFilter($field, $value);
+                $this->dataAccess->addFilter($field, $value);
             }
         }
 

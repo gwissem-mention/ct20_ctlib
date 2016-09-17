@@ -20,7 +20,7 @@ class ActionLogger
     /**
      * @var EntityManager
      */
-     protected $EntityManager;
+     protected $entityManager;
 
     /**
      * @var CtApiCaller
@@ -76,25 +76,30 @@ class ActionLogger
         $comment    = null
     ) {
         if (!$action) {
-            throw new \Exception('AuditLogger::add - action is required');
+            throw new \Exception('ActionLogger::add - action is required');
         }
 
-        $logData = $this->compileActionLogDocumentPart(
-            $action,
-            $entity,
-            $memberId,
-            $source,
-            $comment
-        );
+        $logData = '';
+        $entityId = null;
 
         if ($entity) {
-            $entityId = $this
+            $entityIds = $this
                 ->entityMetaHelper
                 ->getLogicalIdentifierFieldNames($entity);
-            $logData .= ',"affectedEntityId":'.$entityId[0];
+            $logData = '"affectedEntityId":'
+                .$entity->{"get{$entityIds[0]}"}();
+            $entityId = $entity->{"get{$entityIds[0]}"}();
         }
 
-        $logData .= '}';
+        $logData = $this->compileActionLogDocument(
+            $action,
+            $entity,
+            $entityId,
+            $memberId,
+            $source,
+            $comment,
+            $logData
+        );
 
         $this->addLogEntry($logData);
     }
@@ -128,25 +133,32 @@ class ActionLogger
             return;
         }
 
-        if (!$entity) {
-            throw new \Exception('AuditLogger::addWithTracking requires and entity passed as an argument');
+        if (!$action) {
+            throw new \Exception('ActionLogger::addWithTracking - action is required');
         }
 
-        $logData = $this->compileActionLogDocumentPart(
-            $action,
-            $entity,
-            $memberId,
-            $source,
-            $comment
-        );
+        if (!$entity) {
+            throw new \Exception('ActionLogger::addWithTracking requires and entity passed as an argument');
+        }
 
-        $entityId = $this
+        $entityIds = $this
             ->entityMetaHelper
             ->getLogicalIdentifierFieldNames($entity);
 
-        $logData =. ',"affectedEntityId":'.$entityId[0].',';
-        $logData .= $delta
-        $logData .= '}';
+        $entityId = $entity->{"get{$entityIds[0]}"}();
+
+        $logData = '"affectedEntityId":'.$entityId.',';
+        $logData .= $delta;
+
+        $logData = $this->compileActionLogDocument(
+            $action,
+            $entity,
+            $entityId,
+            $memberId,
+            $source,
+            $comment,
+            $logData
+        );
 
         $this->addLogEntry($logData);
     }
@@ -157,18 +169,22 @@ class ActionLogger
      *
      * @param int $action
      * @param BaseEntity $entity
+     * @param int $entityId
      * @param int $memberId
      * @param string $source
      * @param string $comment
+     * @param string $logData
      *
      * @return string
      */
-    protected function compileActionLogDocumentPart(
+    protected function compileActionLogDocument(
         $action,
         $entity     = null,
+        $entityId   = null,
         $memberId   = null,
         $source     = null,
-        $comment    = null
+        $comment    = null,
+        $logData    = ''
     ) {
         if (!$memberId) {
             $memberId = $this->session->get('memberId');
@@ -185,17 +201,29 @@ class ActionLogger
 
         $addedOnWeek = $this->getDateWeek(time());
 
-        $logData = '{'
-             . '"actionCode":'.$action.','
+        $doc = '{';
+
+        if ($entityId) {
+            $doc .= '"_id":'.$entityId;
+        } else {
+            $doc .= '"_id":'.$memberId;
+        }
+
+        $doc .= ',"actionCode":'.$action.','
              . '"memberId":'.$memberId.','
              . '"source":"'.$source.'",'
              . '"ipAddress":"'.$ipAddress.'",'
              . '"userAgent":"'.$userAgent.'",'
-             . '"comment":'.$comment.'",'
+             . '"comment":"'.$comment.'",'
              . '"addedOn":'.time().','
              . '"addedOnWeek":'.$addedOnWeek;
 
-        return $logData;
+        if ($logData) {
+            $doc .= ','.$logData;
+        }
+        $doc .= '}';
+
+        return $doc;
     }
 
     /**
@@ -208,7 +236,7 @@ class ActionLogger
      */
     protected function addLogEntry($log)
     {
-        $response = $this->ctApiCaller->post(
+        $this->ctApiCaller->post(
             self::AUDIT_LOG_API_PATH,
             $log
         );
