@@ -15,6 +15,9 @@ class ActionLogReader
 {
     const AUDIT_LOG_API_PATH = '/actionLogs';
 
+    const SORT_ASC  = 'ASC';
+    const SORT_DESC = 'DESC';
+
     /**
      * @var CtApiCaller
      */
@@ -29,6 +32,11 @@ class ActionLogReader
      * @var array
      */
     protected $queryFilters;
+
+    /**
+     * @var string
+     */
+    protected $sortOrder;
 
 
     /**
@@ -54,8 +62,9 @@ class ActionLogReader
      *
      * @return array
      */
-    public function getLogsForAction($action)
+    public function getLogsForAction($action, $sortOrder=self::SORT_ASC)
     {
+        $this->sortOrder = $sortOrder;
         $this->queryFilters['actionCode'] = $action;
         return $this->getData();
     }
@@ -69,15 +78,20 @@ class ActionLogReader
      *
      * @return array
      */
-    public function getLogsForEntity($entityId, $action=null)
-    {
+    public function getLogsForEntity(
+        $entityId,
+        $action=null,
+        $sortOrder=self::SORT_ASC
+    ) {
+        $this->sortOrder = $sortOrder;
+
         $this->queryFilters['affectedEntityId'] = $entityId;
 
         if ($action) {
             $this->queryFilters['actionCode'] = $action;
         }
 
-        return $this->getData();
+        return $this->getData($sortOrder);
     }
 
     /**
@@ -89,8 +103,13 @@ class ActionLogReader
      *
      * @return array
      */
-    public function getLogsForMember($memberId, $action=null)
-    {
+    public function getLogsForMember(
+        $memberId,
+        $action=null,
+        $sortOrder=self::SORT_ASC
+    ) {
+        $this->sortOrder = $sortOrder;
+
         $this->queryFilters['memberId'] = $memberId;
 
         if ($action) {
@@ -166,6 +185,8 @@ class ActionLogReader
             ->addField('comment')
             ->addField('ipAddress')
             ->addField('addedOn');
+
+        $this->dataAccess->addSort('addedOn', $this->sortOrder);
 
         foreach ($this->queryFilters as $field => $value) {
             if (is_array($value)) {
