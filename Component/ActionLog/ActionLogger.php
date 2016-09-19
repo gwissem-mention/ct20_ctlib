@@ -86,9 +86,8 @@ class ActionLogger
             $entityIds = $this
                 ->entityMetaHelper
                 ->getLogicalIdentifierFieldNames($entity);
-            $logData = '"affectedEntityId":'
-                .$entity->{"get{$entityIds[0]}"}();
             $entityId = $entity->{"get{$entityIds[0]}"}();
+            $logData = '"affectedEntityId":'.$entityId;
         }
 
         $logData = $this->compileActionLogDocument(
