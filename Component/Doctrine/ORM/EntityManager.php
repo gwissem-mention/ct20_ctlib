@@ -540,7 +540,7 @@ class EntityManager extends \Doctrine\ORM\EntityManager
     {
         // Ensure we have the same type of entities.
         if (get_class($entity) != get_class($origEntity)) {
-            throw new \Exception("Incompatible entities");
+            throw new \Exception("Incompatible entities - {$entity, $origEntity}");
         }
 
         // The instances are identical, so nothing to do.
