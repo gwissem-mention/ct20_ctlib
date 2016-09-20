@@ -7,7 +7,7 @@ namespace CTLib\Component\Doctrine\ORM;
  *
  * @author David McLean <dmclean@celltrak.com>
  */
-class EntityDelta
+class EntityDelta implements \JsonSerializable
 {
     /**
      * @var array
@@ -23,8 +23,8 @@ class EntityDelta
      */
     public function add($fieldName, $oldValue, $newValue)
     {
-        $fields[$fieldName]['oldValue'] = $oldValue;
-        $fields[$fieldName]['newValue'] = $newValue;
+        $this->fields[$fieldName]['oldValue'] = $oldValue;
+        $this->fields[$fieldName]['newValue'] = $newValue;
     }
 
     /**
@@ -34,7 +34,7 @@ class EntityDelta
      */
     public function hasDiff($fieldName)
     {
-        return isset($fields[$fieldName]);
+        return isset($this->fields[$fieldName]);
     }
 
     /**
@@ -49,6 +49,19 @@ class EntityDelta
         if (!$this->hasDiff($fieldName)) {
             throw new \InvalidArgumentException("EntityDelta: $fieldName does not exist in delta");
         }
-        return $fields[$fieldName];
+        return $this->fields[$fieldName];
+    }
+
+    public function getDelta()
+    {
+        return $this->fields;
+    }
+
+    /**
+     *
+     */
+    public function jsonSerialize()
+    {
+        return $this->fields;
     }
 }

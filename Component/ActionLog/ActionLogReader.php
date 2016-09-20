@@ -176,8 +176,7 @@ class ActionLogReader
         $this->dataAccess
             ->addField('actionCode')
             ->addField('memberId')
-            ->addField('affectedEntityId')
-            ->addField('properties')
+            ->addField('affectedEntity')
             ->addField('source')
             ->addField('comment')
             ->addField('ipAddress')
