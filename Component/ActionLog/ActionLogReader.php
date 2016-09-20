@@ -19,11 +19,6 @@ class ActionLogReader
     const SORT_DESC = 'DESC';
 
     /**
-     * @var CtApiCaller
-     */
-    protected $ctApiCaller;
-
-    /**
      * @var CtApiDocumentDataAccess
      */
     protected $dataAccess;
@@ -44,14 +39,13 @@ class ActionLogReader
      */
     public function __construct($ctApiCaller)
     {
-        $this->ctApiCaller = $ctApiCaller;
-
         $this->dataAccess = new CtApiDocumentDataAccess(
-            $this->ctApiCaller,
+            $ctApiCaller,
             self::AUDIT_LOG_API_PATH
         );
 
         $this->queryFilters = [];
+        $this->sortOrder    = self::SORT_ASC;
     }
 
     /**
@@ -62,10 +56,28 @@ class ActionLogReader
      *
      * @return array
      */
-    public function getLogsForAction($action, $sortOrder=self::SORT_ASC)
-    {
+    public function getLogsForAction(
+        $action,
+        $fromTimestamp = null,
+        $toTimestamp   = null,
+        $sortOrder     = self::SORT_ASC
+    ) {
         $this->sortOrder = $sortOrder;
+
         $this->queryFilters['actionCode'] = $action;
+
+        $dateRange = [];
+
+        if ($fromTimestamp) {
+            $dateRange[] = $fromTimestamp;
+        }
+        if ($toTimestamp) {
+            $dateRange[] = $toTimestamp;
+        }
+        if ($dateRange) {
+            $this->queryFilters['dateRange'] = $dateRange;
+        }
+
         return $this->getData();
     }
 
@@ -73,19 +85,37 @@ class ActionLogReader
      * Retrieve ActionLog documents for a given entityId
      * from mongo via API.
      *
-     * @param int $entityId
+     * @param BaseEntity $entity
      * @param int $action
      *
      * @return array
      */
     public function getLogsForEntity(
-        $entityId,
-        $action=null,
-        $sortOrder=self::SORT_ASC
+        $entity,
+        $fromTimestamp = null,
+        $toTimestamp   = null,
+        $action        = null,
+        $sortOrder     = self::SORT_ASC
     ) {
         $this->sortOrder = $sortOrder;
 
-        $this->queryFilters['affectedEntityId'] = $entityId;
+        $className = (new \ReflectionClass($entity))->getShortName();
+        $entityId = $entity->{"get{$className}Id"}();
+
+        $this->queryFilters['affectedEntity.id'] = $entityId;
+        $this->queryFilters['affectedEntity.class'] = $className;
+
+        $dateRange = [];
+
+        if ($fromTimestamp) {
+            $dateRange[] = $fromTimestamp;
+        }
+        if ($toTimestamp) {
+            $dateRange[] = $toTimestamp;
+        }
+        if ($dateRange) {
+            $this->queryFilters['dateRange'] = $dateRange;
+        }
 
         if ($action) {
             $this->queryFilters['actionCode'] = $action;
@@ -105,64 +135,31 @@ class ActionLogReader
      */
     public function getLogsForMember(
         $memberId,
-        $action=null,
-        $sortOrder=self::SORT_ASC
+        $fromTimestamp = null,
+        $toTimestamp   = null,
+        $action        = null,
+        $sortOrder     = self::SORT_ASC
     ) {
         $this->sortOrder = $sortOrder;
 
         $this->queryFilters['memberId'] = $memberId;
 
+        $dateRange = [];
+
+        if ($fromTimestamp) {
+            $dateRange[] = $fromTimestamp;
+        }
+        if ($toTimestamp) {
+            $dateRange[] = $toTimestamp;
+        }
+        if ($dateRange) {
+            $this->queryFilters['dateRange'] = $dateRange;
+        }
+
         if ($action) {
             $this->queryFilters['actionCode'] = $action;
         }
 
-        return $this->getData();
-    }
-
-    /**
-     * @param int $memberId
-     *
-     * @return ActionLogReader
-     */
-    public function addMember($memberId)
-    {
-        $this->queryFilters['memberId'] = $memberId;
-        return $this;
-    }
-
-    /**
-     * @param int $startDate
-     * @param int $endDate
-     *
-     * @return ActionLogReader
-     */
-    public function addDateRange($startDate, $endDate)
-    {
-        $this->queryFilters['dateRange'] = [$startDate, $endDate];
-        return $this;
-    }
-
-    /**
-     * @param string $source
-     *
-     * @return ActionLogReader
-     */
-    public function addSource($source)
-    {
-        $this->queryFilters['source'] = $source;
-        return $this;
-    }
-
-    /**
-     * @return array
-     *
-     * @throws \Exception
-     */
-    public function getResults()
-    {
-        if (!count($this->queryFilters)) {
-            throw new \Exception('ActionLogReader::getResults() - filter criteria is required');
-        }
         return $this->getData();
     }
 

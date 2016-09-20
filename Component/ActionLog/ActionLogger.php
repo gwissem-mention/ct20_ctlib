@@ -2,6 +2,8 @@
 
 namespace CTLib\Component\ActionLog;
 
+use CTLib\Util\Util;
+
 /**
  * Class ActionLogger
  *
@@ -15,12 +17,9 @@ class ActionLogger
     const SOURCE_INTERFACE = 'IFC';
     const SOURCE_HQ        = 'HQ';
 
-    const AUDIT_LOG_API_PATH = '/actionLogs';
+    const SYSTEM_MEMBER_ID   = 0;
 
-    /**
-     * @var EntityManager
-     */
-     protected $entityManager;
+    const AUDIT_LOG_API_PATH = '/actionLogs';
 
     /**
      * @var CtApiCaller
@@ -37,21 +36,63 @@ class ActionLogger
      */
     protected $entityMetaHelper;
 
+    /**
+     * @var string
+     */
+    protected $source;
+
 
     /**
      * @param EntityManager $entityManager
      * @param CtApiCaller $ctApiCaller
      * @param Session $session
+     * @param string $source
      */
     public function __construct(
         $entityManager,
         $ctApiCaller,
-        $session
+        $session,
+        $source
     ) {
-        $this->entityManager    = $entityManager;
         $this->ctApiCaller      = $ctApiCaller;
         $this->session          = $session;
-        $this->entityMetaHelper = $this->entityManager->getEntityMetaHelper();
+        $this->entityMetaHelper = $entityManager->getEntityMetaHelper();
+        $this->source           = $source;
+    }
+
+    /**
+     * Method used for basic logging without entity
+     * change tracking.
+     *
+     * @param int $action
+     * @param int $memberId
+     * @param string $comment
+     *
+     * @return void
+     *
+     * @throws \Exception
+     */
+    public function add(
+        $action,
+        $memberId,
+        $comment = null
+    ) {
+        if (!$action) {
+            throw new \InvalidArgumentException('ActionLogger::add - action is required');
+        }
+        if (!$memberId) {
+            throw new \InvalidArgumentException('ActionLogger::add - memberId is required');
+        }
+
+        $logData = $this->compileActionLogDocument(
+            $action,
+            $memberId,
+            null,
+            null,
+            $comment
+        );
+
+        $this->addLogEntry($logData);
     }
 
     /**
@@ -61,47 +102,39 @@ class ActionLogger
      * @param int $action
      * @param BaseEntity $entity
      * @param int $memberId
-     * @param string $source
      * @param string $comment
      *
      * @return void
      *
      * @throws \Exception
      */
-    public function add(
+    public function addForEntity(
         $action,
-        $entity     = null,
-        $memberId   = null,
-        $source     = null,
-        $comment    = null
+        $entity,
+        $memberId,
+        $comment = null
     ) {
         if (!$action) {
-            throw new \Exception('ActionLogger::add - action is required');
+            throw new \InvalidArgumentException('ActionLogger::addForEntity - action is required');
         }
-
-        $logData = '';
-        $entityId = null;
-
-        if ($entity) {
-            $entityIds = $this
-                ->entityMetaHelper
-                ->getLogicalIdentifierFieldNames($entity);
-            $entityId = $entity->{"get{$entityIds[0]}"}();
-            $logData = '"affectedEntityId":'.$entityId;
+        if (!$entity) {
+            throw new \InvalidArgumentException('ActionLogger::addForEntity - entity is required');
+        }
+        if (!$memberId) {
+            throw new \InvalidArgumentException('ActionLogger::addForEntity - memberId is required');
         }
 
         $logData = $this->compileActionLogDocument(
             $action,
-            $entity,
-            $entityId,
             $memberId,
-            $source,
-            $comment,
-            $logData
+            $entity,
+            null,
+            $comment
         );
 
         $this->addLogEntry($logData);
     }
+
 
     /**
      * Method used to add to action_log when an entity has
@@ -112,51 +145,35 @@ class ActionLogger
      * @param BaseEntity $entity
      * @param string $delta
      * @param int $memberId
-     * @param string $source
      * @param string $comment
      *
      * @return void
      *
      * @throws \Exception
      */
-    public function addWithTracking(
+    public function addForEntityDelta(
         $action,
+        $memberId,
         $entity,
         $delta,
-        $memberId   = null,
-        $source     = null,
-        $comment    = null
+        $comment = null
     ) {
-        // No changes, don't bother logging.
-        if (!$delta) {
-            return;
-        }
-
         if (!$action) {
-            throw new \Exception('ActionLogger::addWithTracking - action is required');
+            throw new \InvalidArgumentException('ActionLogger::addForEntityDelta - action is required');
         }
-
         if (!$entity) {
-            throw new \Exception('ActionLogger::addWithTracking requires and entity passed as an argument');
+            throw new \InvalidArgumentException('ActionLogger::addForEntityDelta requires an entity passed as an argument');
         }
-
-        $entityIds = $this
-            ->entityMetaHelper
-            ->getLogicalIdentifierFieldNames($entity);
-
-        $entityId = $entity->{"get{$entityIds[0]}"}();
-
-        $logData = '"affectedEntityId":'.$entityId.',';
-        $logData .= $delta;
+        if (!$memberId) {
+            throw new \InvalidArgumentException('ActionLogger::addForEntityDelta - memberId is required');
+        }
 
         $logData = $this->compileActionLogDocument(
             $action,
-            $entity,
-            $entityId,
             $memberId,
-            $source,
-            $comment,
-            $logData
+            $entity,
+            $delta,
+            $comment
         );
 
         $this->addLogEntry($logData);
@@ -167,62 +184,66 @@ class ActionLogger
      * document.
      *
      * @param int $action
-     * @param BaseEntity $entity
-     * @param int $entityId
      * @param int $memberId
-     * @param string $source
+     * @param BaseEntity $entity
+     * @param array $delta
      * @param string $comment
-     * @param string $logData
      *
      * @return string
      */
     protected function compileActionLogDocument(
         $action,
-        $entity     = null,
-        $entityId   = null,
-        $memberId   = null,
-        $source     = null,
-        $comment    = null,
-        $logData    = ''
+        $memberId,
+        $entity  = null,
+        $delta   = null,
+        $comment = null
     ) {
-        if (!$memberId) {
-            $memberId = $this->session->get('memberId');
+        if ($this->session) {
+            $ipAddress = $this->session->get('ipAddress');
+            $userAgent = $this->session->get('user-agent');
         }
 
-        if (!$memberId && $entity) {
-            $memberId = method_exists($entity, 'getExecMemberId')
-                ? $entity->getExecMemberId()
-                : 0;
+        $addedOnWeek = Util::getDateWeek(time());
+
+        $entityId = null;
+
+        if ($entity) {
+            $entityIds = $this
+                ->entityMetaHelper
+                ->getLogicalIdentifierFieldNames($entity);
+
+            if (count($entityIds) > 1) {
+                throw new RuntimeException('Multi-id entities not supported');
+            }
+
+            $entityId = $entity->{"get{$entityIds[0]}"}();
         }
 
-        $ipAddress = $this->session->get('ipAddress');
-        $userAgent = $this->session->get('user-agent');
-
-        $addedOnWeek = $this->getDateWeek(time());
-
-        $doc = '{';
+        $doc = [];
 
         if ($entityId) {
-            $doc .= '"_id":'.$entityId;
+            $doc['_id'] = $entityId;
         } else {
-            $doc .= '"_id":'.$memberId;
+            $doc['_id'] = $memberId;
         }
 
-        $doc .= ',"actionCode":'.$action.','
-             . '"memberId":'.$memberId.','
-             . '"source":"'.$source.'",'
-             . '"ipAddress":"'.$ipAddress.'",'
-             . '"userAgent":"'.$userAgent.'",'
-             . '"comment":"'.$comment.'",'
-             . '"addedOn":'.time().','
-             . '"addedOnWeek":'.$addedOnWeek;
+        $doc['actionCode']  = $action;
+        $doc['memberId']    = $memberId;
+        $doc['source']      = $this->source;
+        $doc['ipAddress']   = $ipAddress;
+        $doc['userAgent']   = $userAgent;
+        $doc['comment']     = $comment;
+        $doc['addedOn']     = time();
+        $doc['addedOnWeek'] = $addedOnWeek;
 
-        if ($logData) {
-            $doc .= ','.$logData;
+        if ($entity) {
+            $doc['affectedEntity']['class'] =
+                $this->entityMetaHelper->getShortClassName($entity);
+            $doc['affectedEntity']['id'] = $entityId;
+            $doc['affectedEntity']['properties'] = $delta;
         }
-        $doc .= '}';
 
-        return $doc;
+        return json_encode($doc);
     }
 
     /**
@@ -239,21 +260,5 @@ class ActionLogger
             self::AUDIT_LOG_API_PATH,
             $log
         );
-    }
-
-    /**
-     * Helper method to get the DateWeek of the given timestamp.
-     *
-     * @param integer timestamp
-     *
-     * @return integer
-     */
-    protected function getDateWeek($timestamp)
-    {
-        $timezone = new \DateTimeZone('UTC');
-        $datetime = new \DateTime("now", $timezone);
-        $datetime->setTimestamp($timestamp);
-        $dateWeek = $datetime->format('W');
-        return (int)$dateWeek;
     }
 }

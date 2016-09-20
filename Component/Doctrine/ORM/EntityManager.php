@@ -488,8 +488,31 @@ class EntityManager extends \Doctrine\ORM\EntityManager
             ->getLogicalIdentifierFieldNames($entity);
 
         $className = $this->getEntityMetaHelper()->getShortClassName($entity);
-        $entityKey = $className.'_'.$entity->{"get{$entityIds[0]}"}();
-        $copy = unserialize(serialize($entity));
+        // Generate an object identifier based on class and all entity ids.
+        $entityKey = $className;
+        foreach ($entityIds as $entityId) {
+            $entityKey .= '_'.$entity->{"get{$entityId}"}();
+        }
+
+        $metadata = $this->getEntityMetaHelper()->getMetadata($entity);
+        $fields = array_flip($metadata->fieldNames);
+
+        $copy = new \StdClass;
+
+        // Get all the entity's current property values,
+        // and create new object.
+        foreach ($fields as $fieldName => $columnName) {
+            if (isset($entityIds[$fieldName])) {
+                continue;
+            }
+            // We are not tracking child objects.
+            if ($metadata->hasAssociation($fieldName)) {
+                continue;
+            }
+            // Retrieve the field's value currently set in the entity.
+            $copy->$fieldName = $entity->{"get{$fieldName}"}();
+        }
+
         $this->trackedEntities[$entityKey] = $copy;
     }
 
@@ -511,10 +534,14 @@ class EntityManager extends \Doctrine\ORM\EntityManager
             ->getLogicalIdentifierFieldNames($entity);
 
         $className = $this->getEntityMetaHelper()->getShortClassName($entity);
-        $entityKey = $className.'_'.$entity->{"get{$entityIds[0]}"}();
+        // Generate an object identifier based on class and all entity ids.
+        $entityKey = $className;
+        foreach ($entityIds as $entityId) {
+            $entityKey .= '_'.$entity->{"get{$entityId}"}();
+        }
 
         if (!isset($this->trackedEntities[$entityKey])) {
-            throw new \Exception("Entity $className with id {$entity->{"get{$entityIds[0]}"}()} is not being tracked");
+            throw new \InvalidArgumentException("Entity $className with id {$entity->{"get{$entityIds[0]}"}()} is not being tracked");
         }
 
         $origEntity = $this->trackedEntities[$entityKey];
@@ -527,67 +554,48 @@ class EntityManager extends \Doctrine\ORM\EntityManager
     }
 
     /**
-     * Compile delta for entity properties with old and new values as JSON.
+     * Compile delta for entity properties with old and new values
+     * in an array.
      *
      * @param BaseEntity $entity
      * @param BaseEntity $origEntity
      *
-     * @return string|null
+     * @return array
      *
      * @throws \Exception
      */
     protected function compileDelta($entity, $origEntity)
     {
-        // Ensure we have the same type of entities.
-        if (get_class($entity) != get_class($origEntity)) {
-            throw new \Exception("Incompatible entities - {$entity, $origEntity}");
-        }
-
         // The instances are identical, so nothing to do.
         if ($entity == $origEntity) {
             return null;
         }
 
-        $properties     = [];
-        $origProperties = [];
-
         $metadata = $this->getEntityMetaHelper()->getMetadata($entity);
+        $fields = array_flip($metadata->fieldNames);
+        $delta = [];
 
-        $methods = get_class_methods($entity);
-
-        // Get all the entity's current property values, as well
-        // as the original values.
-        foreach ($methods as $method) {
-            if (strpos($method, 'get') === 0) {
-                $propName = lcfirst(substr($method, 3, strlen($method) - 3));
-                // We don't want association methods.
-                if ($metadata->hasAssociation($propName)) {
-                    continue;
-                }
-                $properties[$propName] = $entity->$method();
-                $origProperties[$propName] = $origEntity->$method();
+        // Compare all the entity's current property values with those
+        // of the copy. If the property is part of the modified properties,
+        // include it in the delta.
+        foreach ($fields as $fieldName => $columnName) {
+            // The id will not have changed.
+            if (isset($entityIds[$fieldName])) {
+                continue;
             }
-        }
-
-        $values = '';
-
-        // If the property is part of the modified properties, include
-        // it in the log entry.
-        foreach ($properties as $prop => $value) {
-            if ($value != $origProperties[$prop]) {
-                $values .= '{"'.$prop.'":{'
-                    . '"oldValue":"'.$origProperties[$prop].'",'
-                    . '"newValue": "'.$value.'"'
-                    . '}},';
+            // We are not tracking child objects.
+            if ($metadata->hasAssociation($fieldName)) {
+                continue;
             }
+            // Retrieve the field's value currently set in the entity.
+            if ($origEntity->$fieldName != $entity->{"get{$fieldName}"}()) {
+
+            }
+
+            $delta[$fieldName]['oldValue'] = $origEntity->$fieldName;
+            $delta[$fieldName]['newValue'] = $entity->{"get{$fieldName}"}();
         }
 
-        if (!$values) {
-            return null;
-        }
-
-        $pos = strrpos($values, ',');
-        $values = substr_replace($values, '', $pos, 1);
-        return '"properties":[' . $values . ']';
+        return $delta;
     }
 }

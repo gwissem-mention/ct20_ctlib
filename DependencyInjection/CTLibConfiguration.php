@@ -863,6 +863,14 @@ class CTLibConfiguration implements ConfigurationInterface
 
         $node
             ->canBeEnabled()
+            ->children()
+                ->scalarNode('entity_manager')
+                    ->isRequired()
+                ->end()
+                ->scalarNode('source')
+                    ->isRequired()
+                ->end()
+            ->end()
         ->end();
 
         return $node;
