@@ -576,12 +576,13 @@ class EntityManager extends \Doctrine\ORM\EntityManager
 
         $metadata = $this->getEntityMetaHelper()->getMetadata($entity);
         $fields = array_flip($metadata->fieldNames);
+        $fields = $metadata->fieldNames;
         $delta = new EntityDelta();
 
         // Compare all the entity's current property values with those
         // of the copy. If the property is part of the modified properties,
         // include it in the delta.
-        foreach ($fields as $fieldName => $columnName) {
+        foreach ($fields as $fieldName) {
             // The id will not have changed.
             if (isset($entityIds[$fieldName])) {
                 continue;

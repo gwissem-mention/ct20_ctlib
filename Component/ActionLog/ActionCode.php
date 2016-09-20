@@ -37,6 +37,7 @@ class ActionCode
     const EXPORT_PAYROLL                        = 1033;
     const REJECT_DETACHED_FORM                  = 1034;
     const STOP_ACTIVITY_MANUAL                  = 1035;
+    const ADD_ACTIVITY_NOTE                     = 1036;
 
     //const VIEW_ACTIVITY_ALERTS                  = 1040;
     const ACKNOWLEDGE_ALERT                     = 1041;
