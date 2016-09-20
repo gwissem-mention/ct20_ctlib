@@ -121,7 +121,7 @@ class ActionLogReader
             $this->queryFilters['actionCode'] = $action;
         }
 
-        return $this->getData($sortOrder);
+        return $this->getData();
     }
 
     /**
