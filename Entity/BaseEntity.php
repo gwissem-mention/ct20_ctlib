@@ -1,9 +1,4 @@
 <?php
-/**
- * CellTrak VisitManager 2.x.
- *
- * @package CTLib
- */
 
 namespace CTLib\Entity;
 
@@ -12,6 +7,12 @@ namespace CTLib\Entity;
  */
 abstract class BaseEntity
 {
+    /**
+     * @var EntityDelta
+     */
+    protected $delta = null;
+
+
     /**
      * Constructor.
      *
@@ -103,5 +104,21 @@ abstract class BaseEntity
             $values[$field] = $this->$getter();
         }
         return $values;
+    }
+
+    /**
+     * @param EntityDelta $delta
+     */
+    public function setDelta($delta)
+    {
+        $this->delta = $delta;
+    }
+
+    /**
+     * @return EntityDel\ta
+     */
+    public function getDelta()
+    {
+        return $this->delta;
     }
 }

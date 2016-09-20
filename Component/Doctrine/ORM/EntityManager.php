@@ -496,12 +496,13 @@ class EntityManager extends \Doctrine\ORM\EntityManager
 
         $metadata = $this->getEntityMetaHelper()->getMetadata($entity);
         $fields = array_flip($metadata->fieldNames);
+        $fields = $metadata->fieldNames;
 
         $copy = new \StdClass;
 
         // Get all the entity's current property values,
         // and create new object.
-        foreach ($fields as $fieldName => $columnName) {
+        foreach ($fields as $fieldName) {
             if (isset($entityIds[$fieldName])) {
                 continue;
             }
@@ -523,7 +524,7 @@ class EntityManager extends \Doctrine\ORM\EntityManager
      *
      * @param BaseEntity $entity
      *
-     * @return string
+     * @return EntityDelta
      *
      * @throws \Exception
      */
@@ -548,6 +549,8 @@ class EntityManager extends \Doctrine\ORM\EntityManager
 
         $delta = $this->compileDelta($entity, $origEntity);
 
+        $entity->setDelta($delta);
+
         unset($this->trackedEntities[$entityKey]);
 
         return $delta;
@@ -560,7 +563,7 @@ class EntityManager extends \Doctrine\ORM\EntityManager
      * @param BaseEntity $entity
      * @param BaseEntity $origEntity
      *
-     * @return array
+     * @return EntityDelta
      *
      * @throws \Exception
      */
@@ -573,7 +576,7 @@ class EntityManager extends \Doctrine\ORM\EntityManager
 
         $metadata = $this->getEntityMetaHelper()->getMetadata($entity);
         $fields = array_flip($metadata->fieldNames);
-        $delta = [];
+        $delta = new EntityDelta();
 
         // Compare all the entity's current property values with those
         // of the copy. If the property is part of the modified properties,
@@ -589,11 +592,12 @@ class EntityManager extends \Doctrine\ORM\EntityManager
             }
             // Retrieve the field's value currently set in the entity.
             if ($origEntity->$fieldName != $entity->{"get{$fieldName}"}()) {
-
+                $delta->add(
+                    $fieldName,
+                    $origEntity->$fieldName,
+                    $entity->{"get{$fieldName}"}()
+                );
             }
-
-            $delta[$fieldName]['oldValue'] = $origEntity->$fieldName;
-            $delta[$fieldName]['newValue'] = $entity->{"get{$fieldName}"}();
         }
 
         return $delta;

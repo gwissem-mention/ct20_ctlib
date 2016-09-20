@@ -143,7 +143,7 @@ class ActionLogger
      *
      * @param int $action
      * @param BaseEntity $entity
-     * @param string $delta
+     * @param EntityDelta $delta
      * @param int $memberId
      * @param string $comment
      *
@@ -186,7 +186,7 @@ class ActionLogger
      * @param int $action
      * @param int $memberId
      * @param BaseEntity $entity
-     * @param array $delta
+     * @param EntityDelta $delta
      * @param string $comment
      *
      * @return string
