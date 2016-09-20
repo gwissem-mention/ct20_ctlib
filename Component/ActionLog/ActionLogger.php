@@ -222,9 +222,9 @@ class ActionLogger
         $doc = [];
 
         if ($entityId) {
-            $doc['_id'] = $entityId;
+            $doc['_id'] = $entityId.'_'.$action;
         } else {
-            $doc['_id'] = $memberId;
+            $doc['_id'] = $memberId.'_'.$action;
         }
 
         $doc['actionCode']  = $action;
