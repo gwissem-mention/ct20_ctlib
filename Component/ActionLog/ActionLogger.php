@@ -240,7 +240,9 @@ class ActionLogger
             $doc['affectedEntity']['class'] =
                 $this->entityMetaHelper->getShortClassName($entity);
             $doc['affectedEntity']['id'] = $entityId;
-            $doc['affectedEntity']['properties'][] = $delta->getDelta();
+            if ($delta) {
+                $doc['affectedEntity']['properties'][] = $delta->getDelta();
+            }
         }
 
         return json_encode($doc);
