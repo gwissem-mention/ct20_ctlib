@@ -140,7 +140,7 @@ class ActionLogger
     public function addForEntityDelta(
         $action,
         $entity,
-        $delta,
+        array $delta,
         $memberId = self::SYSTEM_MEMBER_ID,
         $comment = null
     ) {
@@ -191,20 +191,13 @@ class ActionLogger
                 ->getLogicalIdentifierFieldNames($entity);
 
             if (count($entityIds) > 1) {
-                throw new RuntimeException('Multi-id entities not supported');
+                throw new \RuntimeException('Multi-id entities not supported');
             }
 
             $entityId = $entity->{"get{$entityIds[0]}"}();
         }
 
         $doc = [];
-
-        if ($entityId) {
-            $doc['_id'] = $entityId.'_'.$action;
-        } else {
-            $doc['_id'] = $memberId.'_'.$action;
-        }
-
         $doc['actionCode']  = $action;
         $doc['memberId']    = $memberId;
         $doc['source']      = $this->source;

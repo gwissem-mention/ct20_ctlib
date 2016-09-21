@@ -52,11 +52,6 @@ class EntityDelta implements \JsonSerializable
         return $this->fields[$fieldName];
     }
 
-    public function getDelta()
-    {
-        return $this->fields;
-    }
-
     /**
      *
      */

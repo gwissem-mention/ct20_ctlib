@@ -2,6 +2,8 @@
 
 namespace CTLib\Component\ActionLog;
 
+use CTLib\Component\DataAccess\CtApiDocumentDataAccess;
+
 /**
  * Class ActionLogReader
  *
@@ -12,9 +14,9 @@ class ActionLogReader
     const AUDIT_LOG_API_PATH = '/actionLogs';
 
     /**
-     * @var ActionLogQueryBuilder
+     * @var CtApiDocumentDataAccess
      */
-    protected $queryBuilder;
+    protected $dataAccess;
 
 
     /**
@@ -22,7 +24,7 @@ class ActionLogReader
      */
     public function __construct($ctApiCaller)
     {
-        $this->queryBuilder = new ActionLogQueryBuilder(
+        $this->dataAccess = new CtApiDocumentDataAccess(
             $ctApiCaller,
             self::AUDIT_LOG_API_PATH
         );
@@ -39,17 +41,18 @@ class ActionLogReader
      *
      * @return array
      */
-    public function getLogsForAction(
+    public function createActionLogQueryBuilder(
         $action,
         $fromTimestamp = null,
         $toTimestamp   = null,
         $sortOrder     = ActionLogQueryBuilder::SORT_ASC
     ) {
-        $this->addDefaultFields()
+        return $this
+            ->createQueryBuilder()
             ->addActionCodeFilter($action)
             ->setDateRangeFilter($fromTimestamp, $toTimestamp)
             ->setSortOrder($sortOrder);
-        return $this->queryBuilder->getResult();
+            ->getResult();
     }
 
     /**
@@ -64,26 +67,23 @@ class ActionLogReader
      *
      * @return array
      */
-    public function getLogsForEntity(
+    public function createEntityLogQueryBuilder(
         $entity,
         $fromTimestamp = null,
         $toTimestamp   = null,
         $action        = null,
         $sortOrder     = ActionLogQueryBuilder::SORT_ASC
     ) {
-        $className = (new \ReflectionClass($entity))->getShortName();
-        $entityId = $entity->{"get{$className}Id"}();
-
-        $this->addDefaultFields()
-            ->setEntityFilter($className, $entityId)
+        $qb = $this->createQueryBuilder();
+        $qb->setEntityFilter($entity)
             ->setDateRangeFilter($fromTimestamp, $toTimestamp)
             ->setSortOrder($sortOrder);
 
         if ($action) {
-            $this->queryBuilder->addActionCodeFilter($action);
+            $qb->addActionCodeFilter($action);
         }
 
-        return $this->queryBuilder->getResult();
+        return $qb->getResult();
     }
 
     /**
@@ -98,23 +98,23 @@ class ActionLogReader
      *
      * @return array
      */
-    public function getLogsForMember(
+    public function createMemberLogQueryBuilder(
         $memberId,
         $fromTimestamp = null,
         $toTimestamp   = null,
         $action        = null,
         $sortOrder     = ActionLogQueryBuilder::SORT_ASC
     ) {
-        $this->addDefaultFields()
-            ->setMemberIdFilter($memberId)
+        $qb = $this->createQueryBuilder();
+        $qb->setMemberIdFilter($memberId)
             ->setDateRangeFilter($fromTimestamp, $toTimestamp)
             ->setSortOrder($sortOrder);
 
         if ($action) {
-            $this->queryBuilder->addActionCodeFilter($action);
+            $qb->addActionCodeFilter($action);
         }
 
-        return $this->queryBuilder->getResult();
+        return $qb->getResult();
     }
 
     /**
@@ -129,7 +129,7 @@ class ActionLogReader
      *
      * @return array
      */
-    public function getEntityLogsForMember(
+    public function createEntityLogsForMemberQueryBuilder(
         $entity,
         $memberId,
         $fromTimestamp = null,
@@ -137,34 +137,27 @@ class ActionLogReader
         $action        = null,
         $sortOrder     = ActionLogQueryBuilder::SORT_ASC
     ) {
-        $className = (new \ReflectionClass($entity))->getShortName();
-        $entityId = $entity->{"get{$className}Id"}();
-
-        $this->addDefaultFields()
-            ->addEntityFilter($className, $entityId)
+        $qb = $this->createQueryBuilder();
+        $qb->addEntityFilter($entity)
             ->setMemberIdFilter($memberId)
             ->setDateRangeFilter($fromTimestamp, $toTimestamp)
             ->setSortOrder($sortOrder);
 
         if ($action) {
-            $this->queryBuilder->addActionCodeFilter($action);
+            $qb->addActionCodeFilter($action);
         }
 
-        return $this->queryBuilder->getResult();
+        return $qb->getResult();
     }
 
-    protected function addDefaultFields()
+    /**
+     * @return ActionLogQueryBuilder
+     */
+    protected function createQueryBuilder()
     {
-        $this->queryBuilder
-            ->addField('actionCode')
-            ->addField('memberId')
-            ->addField('affectedEntity')
-            ->addField('source')
-            ->addField('comment')
-            ->addField('addedOn')
-            ->addField('addedOnWeek')
-            ->addField('addedOn');
-
-        return $this->queryBuilder;
+        return new ActionLogQueryBuilder(
+            $this->dataAccess,
+            self::AUDIT_LOG_API_PATH
+        );
     }
 }

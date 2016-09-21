@@ -2,10 +2,6 @@
 
 namespace CTLib\Component\ActionLog;
 
-use CTLib\Component\DataAccess\DataProvider;
-use CTLib\Component\DataAccess\JsonDataOutput;
-use CTLib\Component\DataAccess\CtApiDocumentDataAccess;
-
 /**
  * Class ActionLogQueryBuilder
  * Helper class to construct neccessary data to query
@@ -40,19 +36,16 @@ class ActionLogQueryBuilder
 
 
     /**
-     * @param CtApiCaller $ctApiCaller
-     * @param string $uri
+     * @param CtApiDocumentDataAccess $dataAccess
      */
-    public function __construct($ctApiCaller, $uri)
+    public function __construct($dataAccess)
     {
-        $this->dataAccess = new CtApiDocumentDataAccess(
-            $ctApiCaller,
-            $uri
-        );
-
+        $this->dataAccess = $dataAccess;
         $this->queryFields  = [];
         $this->queryFilters = [];
         $this->sortOrder    = self::SORT_ASC;
+
+        $this->addDefaultFields();
     }
 
     /**
@@ -100,14 +93,16 @@ class ActionLogQueryBuilder
     }
 
     /**
-     * @param string $entityClass
-     * @param int $entityId
+     * @param BaseEntity $entityClass
      *
      * @return ActionLogQueryBuilder
      */
-    public function setEntityFilter($entityClass, $entityId)
+    public function setEntityFilter($entity)
     {
-        $this->queryFilters['affectedEntity.class'] = $entityClass;
+        $className = get_class($entity);
+        $entityId = $entity->{"get{$className}Id"}();
+
+        $this->queryFilters['affectedEntity.class'] = $className;
         $this->queryFilters['affectedEntity.id'] = $entityId;
         return $this;
     }
@@ -168,15 +163,30 @@ class ActionLogQueryBuilder
     }
 
     /**
+     * @return ActionLogQueryBuilder
+     */
+    protected function addDefaultFields()
+    {
+        $this->dataAccess
+            ->addField('actionCode')
+            ->addField('memberId')
+            ->addField('affectedEntity')
+            ->addField('source')
+            ->addField('comment')
+            ->addField('addedOn')
+            ->addField('addedOnWeek')
+            ->addField('addedOn');
+
+        return $this;
+    }
+
+    /**
      * Make the actual request to the API, and return the results.
      *
      * @return array
      */
     public function getResult()
     {
-        $out = new JsonDataOutput();
-        $dp = new DataProvider();
-
         foreach ($this->queryFields as $field) {
             $this->dataAccess->addField($field);
         }
@@ -196,10 +206,6 @@ class ActionLogQueryBuilder
             }
         }
 
-        $dp->addFields($this->dataAccess->getFields());
-
-        $results = $dp->getResult($this->dataAccess, $out);
-
-        return json_decode($results, true);
+        return $this->dataAccess->getData();
     }
 }
