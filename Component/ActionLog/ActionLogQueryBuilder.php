@@ -198,6 +198,8 @@ class ActionLogQueryBuilder
 
         $dp->addFields($this->dataAccess->getFields());
 
-        return $dp->getResult($this->dataAccess, $out);
+        $results = $dp->getResult($this->dataAccess, $out);
+
+        return json_decode($results, true);
     }
 }
