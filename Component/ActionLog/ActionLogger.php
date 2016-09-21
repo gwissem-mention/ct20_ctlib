@@ -3,6 +3,7 @@
 namespace CTLib\Component\ActionLog;
 
 use CTLib\Util\Util;
+use CTLib\Component\Doctrine\ORM\EntityDelta;
 
 /**
  * Class ActionLogger
@@ -140,7 +141,7 @@ class ActionLogger
     public function addForEntityDelta(
         $action,
         $entity,
-        array $delta,
+        EntityDelta $delta,
         $memberId = self::SYSTEM_MEMBER_ID,
         $comment = null
     ) {
