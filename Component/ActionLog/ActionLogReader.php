@@ -41,7 +41,7 @@ class ActionLogReader
      *
      * @return array
      */
-    public function createActionLogQueryBuilder(
+    public function getLogsForAction(
         $action,
         $fromTimestamp = null,
         $toTimestamp   = null,
@@ -51,7 +51,7 @@ class ActionLogReader
             ->createQueryBuilder()
             ->addActionCodeFilter($action)
             ->setDateRangeFilter($fromTimestamp, $toTimestamp)
-            ->setSortOrder($sortOrder);
+            ->setSortOrder($sortOrder)
             ->getResult();
     }
 
@@ -67,7 +67,7 @@ class ActionLogReader
      *
      * @return array
      */
-    public function createEntityLogQueryBuilder(
+    public function getLogsForEntity(
         $entity,
         $fromTimestamp = null,
         $toTimestamp   = null,
@@ -98,7 +98,7 @@ class ActionLogReader
      *
      * @return array
      */
-    public function createMemberLogQueryBuilder(
+    public function getLogsForMember(
         $memberId,
         $fromTimestamp = null,
         $toTimestamp   = null,
@@ -129,7 +129,7 @@ class ActionLogReader
      *
      * @return array
      */
-    public function createEntityLogsForMemberQueryBuilder(
+    public function getEntityLogsForMember(
         $entity,
         $memberId,
         $fromTimestamp = null,

@@ -2,6 +2,8 @@
 
 namespace CTLib\Component\ActionLog;
 
+use CTLib\Util\Util;
+
 /**
  * Class ActionLogQueryBuilder
  * Helper class to construct neccessary data to query
@@ -99,7 +101,7 @@ class ActionLogQueryBuilder
      */
     public function setEntityFilter($entity)
     {
-        $className = get_class($entity);
+        $className = Util::getClassShortName($entity);
         $entityId = $entity->{"get{$className}Id"}();
 
         $this->queryFilters['affectedEntity.class'] = $className;
