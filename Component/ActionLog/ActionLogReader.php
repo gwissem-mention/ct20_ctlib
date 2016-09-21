@@ -2,10 +2,6 @@
 
 namespace CTLib\Component\ActionLog;
 
-use CTLib\Component\DataAccess\DataProvider;
-use CTLib\Component\DataAccess\JsonDataOutput;
-use CTLib\Component\DataAccess\CtApiDocumentDataAccess;
-
 /**
  * Class ActionLogReader
  *
@@ -15,23 +11,10 @@ class ActionLogReader
 {
     const AUDIT_LOG_API_PATH = '/actionLogs';
 
-    const SORT_ASC  = 'ASC';
-    const SORT_DESC = 'DESC';
-
     /**
-     * @var CtApiDocumentDataAccess
+     * @var ActionLogQueryBuilder
      */
-    protected $dataAccess;
-
-    /**
-     * @var array
-     */
-    protected $queryFilters;
-
-    /**
-     * @var string
-     */
-    protected $sortOrder;
+    protected $queryBuilder;
 
 
     /**
@@ -39,13 +22,10 @@ class ActionLogReader
      */
     public function __construct($ctApiCaller)
     {
-        $this->dataAccess = new CtApiDocumentDataAccess(
+        $this->queryBuilder = new ActionLogQueryBuilder(
             $ctApiCaller,
             self::AUDIT_LOG_API_PATH
         );
-
-        $this->queryFilters = [];
-        $this->sortOrder    = self::SORT_ASC;
     }
 
     /**
@@ -53,6 +33,9 @@ class ActionLogReader
      * from mongo via API.
      *
      * @param int $action
+     * @param int $fromTimestamp
+     * @param int $toTimestamp
+     * @param string $sortOrder
      *
      * @return array
      */
@@ -60,25 +43,21 @@ class ActionLogReader
         $action,
         $fromTimestamp = null,
         $toTimestamp   = null,
-        $sortOrder     = self::SORT_ASC
+        $sortOrder     = ActionLogQueryBuilder::SORT_ASC
     ) {
-        $this->sortOrder = $sortOrder;
-
-        $this->queryFilters['actionCode'] = $action;
-
-        $dateRange = [];
-
-        if ($fromTimestamp) {
-            $dateRange[] = $fromTimestamp;
-        }
-        if ($toTimestamp) {
-            $dateRange[] = $toTimestamp;
-        }
-        if ($dateRange) {
-            $this->queryFilters['dateRange'] = $dateRange;
-        }
-
-        return $this->getData();
+        $this->queryBuilder
+            ->addField('actionCode')
+            ->addField('memberId')
+            ->addField('affectedEntity')
+            ->addField('source')
+            ->addField('comment')
+            ->addField('addedOn')
+            ->addField('addedOnWeek')
+            ->addField('addedOn')
+            ->addActionCodeFilter($action)
+            ->setDateRangeFilter($fromTimestamp, $toTimestamp)
+            ->setSort($sortOrder);
+        return $this->queryBuilder->getResult();
     }
 
     /**
@@ -86,7 +65,10 @@ class ActionLogReader
      * from mongo via API.
      *
      * @param BaseEntity $entity
+     * @param int $fromTimestamp
+     * @param int $toTimestamp
      * @param int $action
+     * @param string $sortOrder
      *
      * @return array
      */
@@ -95,33 +77,29 @@ class ActionLogReader
         $fromTimestamp = null,
         $toTimestamp   = null,
         $action        = null,
-        $sortOrder     = self::SORT_ASC
+        $sortOrder     = ActionLogQueryBuilder::SORT_ASC
     ) {
-        $this->sortOrder = $sortOrder;
-
         $className = (new \ReflectionClass($entity))->getShortName();
         $entityId = $entity->{"get{$className}Id"}();
 
-        $this->queryFilters['affectedEntity.id'] = $entityId;
-        $this->queryFilters['affectedEntity.class'] = $className;
-
-        $dateRange = [];
-
-        if ($fromTimestamp) {
-            $dateRange[] = $fromTimestamp;
-        }
-        if ($toTimestamp) {
-            $dateRange[] = $toTimestamp;
-        }
-        if ($dateRange) {
-            $this->queryFilters['dateRange'] = $dateRange;
-        }
+        $this->queryBuilder
+            ->addField('actionCode')
+            ->addField('memberId')
+            ->addField('affectedEntity')
+            ->addField('source')
+            ->addField('comment')
+            ->addField('addedOn')
+            ->addField('addedOnWeek')
+            ->addField('addedOn')
+            ->setEntityFilter($className, $entityId)
+            ->setDateRangeFilter($fromTimestamp, $toTimestamp)
+            ->setSort($sortOrder);
 
         if ($action) {
-            $this->queryFilters['actionCode'] = $action;
+            $this->queryBuilder->addActionCodeFilter($action);
         }
 
-        return $this->getData();
+        return $this->queryBuilder->getResult();
     }
 
     /**
@@ -129,7 +107,10 @@ class ActionLogReader
      * from mongo via API.
      *
      * @param int $memberId
+     * @param int $fromTimestamp
+     * @param int $toTimestamp
      * @param int $action
+     * @param string $sortOrder
      *
      * @return array
      */
@@ -138,67 +119,69 @@ class ActionLogReader
         $fromTimestamp = null,
         $toTimestamp   = null,
         $action        = null,
-        $sortOrder     = self::SORT_ASC
+        $sortOrder     = ActionLogQueryBuilder::SORT_ASC
     ) {
-        $this->sortOrder = $sortOrder;
-
-        $this->queryFilters['memberId'] = $memberId;
-
-        $dateRange = [];
-
-        if ($fromTimestamp) {
-            $dateRange[] = $fromTimestamp;
-        }
-        if ($toTimestamp) {
-            $dateRange[] = $toTimestamp;
-        }
-        if ($dateRange) {
-            $this->queryFilters['dateRange'] = $dateRange;
-        }
-
-        if ($action) {
-            $this->queryFilters['actionCode'] = $action;
-        }
-
-        return $this->getData();
-    }
-
-    /**
-     * Make the actual request to the API, and return the results.
-     *
-     * @return array
-     */
-    protected function getData()
-    {
-        $out = new JsonDataOutput();
-        $dp = new DataProvider();
-
-        $this->dataAccess
+        $this->queryBuilder
             ->addField('actionCode')
             ->addField('memberId')
             ->addField('affectedEntity')
             ->addField('source')
             ->addField('comment')
-            ->addField('ipAddress')
-            ->addField('addedOn');
+            ->addField('addedOn')
+            ->addField('addedOnWeek')
+            ->addField('addedOn')
+            ->setMemberIdFilter($memberId)
+            ->setDateRangeFilter($fromTimestamp, $toTimestamp)
+            ->setSort($sortOrder);
 
-        $this->dataAccess->addSort('addedOn', $this->sortOrder);
-
-        foreach ($this->queryFilters as $field => $value) {
-            if (is_array($value)) {
-                if ($field == 'dateRange') {
-                    $this->dataAccess->addFilter('addedOn', $value[0], 'gte');
-                    $this->dataAccess->addFilter('addedOn', $value[1], 'lte');
-                } else {
-                    $this->dataAccess->addFilter($field, $value, 'in');
-                }
-            } else {
-                $this->dataAccess->addFilter($field, $value);
-            }
+        if ($action) {
+            $this->queryBuilder->addActionCodeFilter($action);
         }
 
-        $dp->addFields($this->dataAccess->getFields());
+        return $this->queryBuilder->getResult();
+    }
 
-        return $dp->getResult($this->dataAccess, $out);
+    /**
+     * Retrieve ActionLog documents for a given entityId
+     * from mongo via API.
+     *
+     * @param BaseEntity $entity
+     * @param int $fromTimestamp
+     * @param int $toTimestamp
+     * @param int $action
+     * @param string $sortOrder
+     *
+     * @return array
+     */
+    public function getEntityLogsForMember(
+        $entity,
+        $memberId,
+        $fromTimestamp = null,
+        $toTimestamp   = null,
+        $action        = null,
+        $sortOrder     = ActionLogQueryBuilder::SORT_ASC
+    ) {
+        $className = (new \ReflectionClass($entity))->getShortName();
+        $entityId = $entity->{"get{$className}Id"}();
+
+        $this->queryBuilder
+            ->addField('actionCode')
+            ->addField('memberId')
+            ->addField('affectedEntity')
+            ->addField('source')
+            ->addField('comment')
+            ->addField('addedOn')
+            ->addField('addedOnWeek')
+            ->addField('addedOn')
+            ->addEntityFilter($className, $entityId)
+            ->setMemberIdFilter($memberId)
+            ->setDateRangeFilter($fromTimestamp, $toTimestamp)
+            ->setSort($sortOrder);
+
+        if ($action) {
+            $this->queryBuilder->addActionCodeFilter($action);
+        }
+
+        return $this->queryBuilder->getResult();
     }
 }
