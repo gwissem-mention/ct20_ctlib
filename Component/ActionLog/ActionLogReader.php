@@ -45,15 +45,7 @@ class ActionLogReader
         $toTimestamp   = null,
         $sortOrder     = ActionLogQueryBuilder::SORT_ASC
     ) {
-        $this->queryBuilder
-            ->addField('actionCode')
-            ->addField('memberId')
-            ->addField('affectedEntity')
-            ->addField('source')
-            ->addField('comment')
-            ->addField('addedOn')
-            ->addField('addedOnWeek')
-            ->addField('addedOn')
+        $this->addDefaultFields()
             ->addActionCodeFilter($action)
             ->setDateRangeFilter($fromTimestamp, $toTimestamp)
             ->setSort($sortOrder);
@@ -82,15 +74,7 @@ class ActionLogReader
         $className = (new \ReflectionClass($entity))->getShortName();
         $entityId = $entity->{"get{$className}Id"}();
 
-        $this->queryBuilder
-            ->addField('actionCode')
-            ->addField('memberId')
-            ->addField('affectedEntity')
-            ->addField('source')
-            ->addField('comment')
-            ->addField('addedOn')
-            ->addField('addedOnWeek')
-            ->addField('addedOn')
+        $this->addDefaultFields()
             ->setEntityFilter($className, $entityId)
             ->setDateRangeFilter($fromTimestamp, $toTimestamp)
             ->setSort($sortOrder);
@@ -121,15 +105,7 @@ class ActionLogReader
         $action        = null,
         $sortOrder     = ActionLogQueryBuilder::SORT_ASC
     ) {
-        $this->queryBuilder
-            ->addField('actionCode')
-            ->addField('memberId')
-            ->addField('affectedEntity')
-            ->addField('source')
-            ->addField('comment')
-            ->addField('addedOn')
-            ->addField('addedOnWeek')
-            ->addField('addedOn')
+        $this->addDefaultFields()
             ->setMemberIdFilter($memberId)
             ->setDateRangeFilter($fromTimestamp, $toTimestamp)
             ->setSort($sortOrder);
@@ -164,15 +140,7 @@ class ActionLogReader
         $className = (new \ReflectionClass($entity))->getShortName();
         $entityId = $entity->{"get{$className}Id"}();
 
-        $this->queryBuilder
-            ->addField('actionCode')
-            ->addField('memberId')
-            ->addField('affectedEntity')
-            ->addField('source')
-            ->addField('comment')
-            ->addField('addedOn')
-            ->addField('addedOnWeek')
-            ->addField('addedOn')
+        $this->addDefaultFields()
             ->addEntityFilter($className, $entityId)
             ->setMemberIdFilter($memberId)
             ->setDateRangeFilter($fromTimestamp, $toTimestamp)
@@ -183,5 +151,20 @@ class ActionLogReader
         }
 
         return $this->queryBuilder->getResult();
+    }
+
+    protected function addDefaultFields()
+    {
+        $this->queryBuilder
+            ->addField('actionCode')
+            ->addField('memberId')
+            ->addField('affectedEntity')
+            ->addField('source')
+            ->addField('comment')
+            ->addField('addedOn')
+            ->addField('addedOnWeek')
+            ->addField('addedOn');
+
+        return $this->queryBuilder;
     }
 }
