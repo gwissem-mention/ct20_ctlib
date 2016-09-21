@@ -139,7 +139,7 @@ class ActionLogQueryBuilder
      *
      * @return ActionLogQueryBuilder
      */
-    public function setSort($sortOrder)
+    public function setSortOrder($sortOrder)
     {
         $this->sortOrder = $sortOrder;
         return $this;
