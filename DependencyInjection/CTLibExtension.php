@@ -608,13 +608,13 @@ class CTLibExtension extends Extension
         ];
         $def = new Definition('CTLib\Component\ActionLog\ActionLogger', $args);
         $container->setDefinition('action_log.action_logger', $def);
-        //$container->setAlias('action_logger', $def);
+        $container->setAlias('action_logger', 'action_log.action_logger');
 
         $args = [
             new Reference('ct_api.caller')
         ];
         $def = new Definition('CTLib\Component\ActionLog\ActionLogReader', $args);
         $container->setDefinition('action_log.action_log_reader', $def);
-        //$container->setAlias('action_log_reader', $def);
+        $container->setAlias('action_log_reader', 'action_log.action_log_reader');
     }
 }

@@ -48,7 +48,7 @@ class ActionLogReader
         $this->addDefaultFields()
             ->addActionCodeFilter($action)
             ->setDateRangeFilter($fromTimestamp, $toTimestamp)
-            ->setSort($sortOrder);
+            ->setSortOrder($sortOrder);
         return $this->queryBuilder->getResult();
     }
 
@@ -77,7 +77,7 @@ class ActionLogReader
         $this->addDefaultFields()
             ->setEntityFilter($className, $entityId)
             ->setDateRangeFilter($fromTimestamp, $toTimestamp)
-            ->setSort($sortOrder);
+            ->setSortOrder($sortOrder);
 
         if ($action) {
             $this->queryBuilder->addActionCodeFilter($action);
@@ -108,7 +108,7 @@ class ActionLogReader
         $this->addDefaultFields()
             ->setMemberIdFilter($memberId)
             ->setDateRangeFilter($fromTimestamp, $toTimestamp)
-            ->setSort($sortOrder);
+            ->setSortOrder($sortOrder);
 
         if ($action) {
             $this->queryBuilder->addActionCodeFilter($action);
@@ -144,7 +144,7 @@ class ActionLogReader
             ->addEntityFilter($className, $entityId)
             ->setMemberIdFilter($memberId)
             ->setDateRangeFilter($fromTimestamp, $toTimestamp)
-            ->setSort($sortOrder);
+            ->setSortOrder($sortOrder);
 
         if ($action) {
             $this->queryBuilder->addActionCodeFilter($action);
