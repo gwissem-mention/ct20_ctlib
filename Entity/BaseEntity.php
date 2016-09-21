@@ -105,20 +105,4 @@ abstract class BaseEntity
         }
         return $values;
     }
-
-    /**
-     * @param EntityDelta $delta
-     */
-    public function setDelta($delta)
-    {
-        $this->delta = $delta;
-    }
-
-    /**
-     * @return EntityDel\ta
-     */
-    public function getDelta()
-    {
-        return $this->delta;
-    }
 }

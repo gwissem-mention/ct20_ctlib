@@ -483,19 +483,13 @@ class EntityManager extends \Doctrine\ORM\EntityManager
      */
     public function startTracking($entity)
     {
-        $entityIds = $this
-            ->getEntityMetaHelper()
-            ->getLogicalIdentifierFieldNames($entity);
-
+        $entityIds = $this->getEntityId($entity);
         $className = $this->getEntityMetaHelper()->getShortClassName($entity);
         // Generate an object identifier based on class and all entity ids.
         $entityKey = $className;
-        foreach ($entityIds as $entityId) {
-            $entityKey .= '_'.$entity->{"get{$entityId}"}();
-        }
+        $entityKey .= '_' . implode('_', $entityIds);
 
         $metadata = $this->getEntityMetaHelper()->getMetadata($entity);
-        $fields = array_flip($metadata->fieldNames);
         $fields = $metadata->fieldNames;
 
         $copy = new \StdClass;
@@ -504,10 +498,6 @@ class EntityManager extends \Doctrine\ORM\EntityManager
         // and create new object.
         foreach ($fields as $fieldName) {
             if (isset($entityIds[$fieldName])) {
-                continue;
-            }
-            // We are not tracking child objects.
-            if ($metadata->hasAssociation($fieldName)) {
                 continue;
             }
             // Retrieve the field's value currently set in the entity.
@@ -530,16 +520,11 @@ class EntityManager extends \Doctrine\ORM\EntityManager
      */
     public function finishTracking($entity)
     {
-        $entityIds = $this
-            ->getEntityMetaHelper()
-            ->getLogicalIdentifierFieldNames($entity);
-
+        $entityIds = $this->getEntityId($entity);
         $className = $this->getEntityMetaHelper()->getShortClassName($entity);
         // Generate an object identifier based on class and all entity ids.
         $entityKey = $className;
-        foreach ($entityIds as $entityId) {
-            $entityKey .= '_'.$entity->{"get{$entityId}"}();
-        }
+        $entityKey .= '_' . implode('_', $entityIds);
 
         if (!isset($this->trackedEntities[$entityKey])) {
             throw new \InvalidArgumentException("Entity $className with id {$entity->{"get{$entityIds[0]}"}()} is not being tracked");
@@ -547,9 +532,7 @@ class EntityManager extends \Doctrine\ORM\EntityManager
 
         $origEntity = $this->trackedEntities[$entityKey];
 
-        $delta = $this->compileDelta($entity, $origEntity);
-
-        $entity->setDelta($delta);
+        $delta = $this->compileDelta($entity, $origEntity, $entityIds);
 
         unset($this->trackedEntities[$entityKey]);
 
@@ -562,12 +545,11 @@ class EntityManager extends \Doctrine\ORM\EntityManager
      *
      * @param BaseEntity $entity
      * @param BaseEntity $origEntity
+     * @param array      $entityIds
      *
      * @return EntityDelta
-     *
-     * @throws \Exception
      */
-    protected function compileDelta($entity, $origEntity)
+    protected function compileDelta($entity, $origEntity, $entityIds)
     {
         // The instances are identical, so nothing to do.
         if ($entity == $origEntity) {
@@ -575,7 +557,6 @@ class EntityManager extends \Doctrine\ORM\EntityManager
         }
 
         $metadata = $this->getEntityMetaHelper()->getMetadata($entity);
-        $fields = array_flip($metadata->fieldNames);
         $fields = $metadata->fieldNames;
         $delta = new EntityDelta();
 
@@ -585,10 +566,6 @@ class EntityManager extends \Doctrine\ORM\EntityManager
         foreach ($fields as $fieldName) {
             // The id will not have changed.
             if (isset($entityIds[$fieldName])) {
-                continue;
-            }
-            // We are not tracking child objects.
-            if ($metadata->hasAssociation($fieldName)) {
                 continue;
             }
             // Retrieve the field's value currently set in the entity.

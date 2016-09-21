@@ -27,11 +27,6 @@ class ActionLogger
     protected $ctApiCaller;
 
     /**
-     * @var Session
-     */
-    protected $session;
-
-    /**
      * @var EntityMetaHelper
      */
     protected $entityMetaHelper;
@@ -45,17 +40,14 @@ class ActionLogger
     /**
      * @param EntityManager $entityManager
      * @param CtApiCaller $ctApiCaller
-     * @param Session $session
      * @param string $source
      */
     public function __construct(
         $entityManager,
         $ctApiCaller,
-        $session,
         $source
     ) {
         $this->ctApiCaller      = $ctApiCaller;
-        $this->session          = $session;
         $this->entityMetaHelper = $entityManager->getEntityMetaHelper();
         $this->source           = $source;
     }
@@ -74,14 +66,11 @@ class ActionLogger
      */
     public function add(
         $action,
-        $memberId,
+        $memberId = self::SYSTEM_MEMBER_ID,
         $comment = null
     ) {
         if (!$action) {
             throw new \InvalidArgumentException('ActionLogger::add - action is required');
-        }
-        if (!$memberId) {
-            throw new \InvalidArgumentException('ActionLogger::add - memberId is required');
         }
 
         $logData = $this->compileActionLogDocument(
@@ -111,7 +100,7 @@ class ActionLogger
     public function addForEntity(
         $action,
         $entity,
-        $memberId,
+        $memberId = self::SYSTEM_MEMBER_ID,
         $comment = null
     ) {
         if (!$action) {
@@ -119,9 +108,6 @@ class ActionLogger
         }
         if (!$entity) {
             throw new \InvalidArgumentException('ActionLogger::addForEntity - entity is required');
-        }
-        if (!$memberId) {
-            throw new \InvalidArgumentException('ActionLogger::addForEntity - memberId is required');
         }
 
         $logData = $this->compileActionLogDocument(
@@ -153,9 +139,9 @@ class ActionLogger
      */
     public function addForEntityDelta(
         $action,
-        $memberId,
         $entity,
         $delta,
+        $memberId = self::SYSTEM_MEMBER_ID,
         $comment = null
     ) {
         if (!$action) {
@@ -163,9 +149,6 @@ class ActionLogger
         }
         if (!$entity) {
             throw new \InvalidArgumentException('ActionLogger::addForEntityDelta requires an entity passed as an argument');
-        }
-        if (!$memberId) {
-            throw new \InvalidArgumentException('ActionLogger::addForEntityDelta - memberId is required');
         }
 
         $logData = $this->compileActionLogDocument(
@@ -198,11 +181,6 @@ class ActionLogger
         $delta   = null,
         $comment = null
     ) {
-        if ($this->session) {
-            $ipAddress = $this->session->get('ipAddress');
-            $userAgent = $this->session->get('user-agent');
-        }
-
         $addedOnWeek = Util::getDateWeek(time());
 
         $entityId = null;
@@ -230,8 +208,6 @@ class ActionLogger
         $doc['actionCode']  = $action;
         $doc['memberId']    = $memberId;
         $doc['source']      = $this->source;
-        $doc['ipAddress']   = $ipAddress;
-        $doc['userAgent']   = $userAgent;
         $doc['comment']     = $comment;
         $doc['addedOn']     = time();
         $doc['addedOnWeek'] = $addedOnWeek;
