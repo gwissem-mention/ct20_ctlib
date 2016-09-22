@@ -69,7 +69,7 @@ class ActionLogQueryBuilder
     }
 
     /**
-     * @param int $acitonCode
+     * @param int $actionCode
      *
      * @return ActionLogQueryBuilder
      */
