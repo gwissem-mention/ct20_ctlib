@@ -18,12 +18,20 @@ class ActionLogReader
      */
     protected $dataAccess;
 
+    /**
+     * @var EntityMetaHelper
+     */
+    protected $entityMetaHelper;
+
 
     /**
+     * @param EntityManager $entityManager
      * @param CtApiCaller $ctApiCaller
      */
-    public function __construct($ctApiCaller)
+    public function __construct($entityManager, $ctApiCaller)
     {
+        $this->entityMetaHelper = $entityManager->getEntityMetaHelper();
+
         $this->dataAccess = new CtApiDocumentDataAccess(
             $ctApiCaller,
             self::AUDIT_LOG_API_PATH
@@ -35,24 +43,14 @@ class ActionLogReader
      * from mongo via API.
      *
      * @param int $action
-     * @param int $fromTimestamp
-     * @param int $toTimestamp
-     * @param string $sortOrder
      *
-     * @return array
+     * @return ActionLogQueryBuilder
      */
-    public function getLogsForAction(
-        $action,
-        $fromTimestamp = null,
-        $toTimestamp   = null,
-        $sortOrder     = ActionLogQueryBuilder::SORT_ASC
-    ) {
+    public function createActionLogQueryBuilder($action)
+    {
         return $this
             ->createQueryBuilder()
-            ->addActionCodeFilter($action)
-            ->setDateRangeFilter($fromTimestamp, $toTimestamp)
-            ->setSortOrder($sortOrder)
-            ->getResult();
+            ->addActionCodeFilter($action);
     }
 
     /**
@@ -60,30 +58,18 @@ class ActionLogReader
      * from mongo via API.
      *
      * @param BaseEntity $entity
-     * @param int $fromTimestamp
-     * @param int $toTimestamp
-     * @param int $action
-     * @param string $sortOrder
      *
-     * @return array
+     * @return ActionLogQueryBuilder
      */
-    public function getLogsForEntity(
-        $entity,
-        $fromTimestamp = null,
-        $toTimestamp   = null,
-        $action        = null,
-        $sortOrder     = ActionLogQueryBuilder::SORT_ASC
-    ) {
-        $qb = $this->createQueryBuilder();
-        $qb->setEntityFilter($entity)
-            ->setDateRangeFilter($fromTimestamp, $toTimestamp)
-            ->setSortOrder($sortOrder);
-
-        if ($action) {
-            $qb->addActionCodeFilter($action);
+    public function createEntityLogQueryBuilder($entity)
+    {
+        if (!$entity) {
+            throw new \InvalidArgumentException('ActionLogReader::createEntityLogQueryBuilder requires an entity passed as an argument');
         }
 
-        return $qb->getResult();
+        return $this
+            ->createQueryBuilder()
+            ->setEntityFilter($entity);
     }
 
     /**
@@ -91,30 +77,14 @@ class ActionLogReader
      * from mongo via API.
      *
      * @param int $memberId
-     * @param int $fromTimestamp
-     * @param int $toTimestamp
-     * @param int $action
-     * @param string $sortOrder
      *
-     * @return array
+     * @return ActionLogQueryBuilder
      */
-    public function getLogsForMember(
-        $memberId,
-        $fromTimestamp = null,
-        $toTimestamp   = null,
-        $action        = null,
-        $sortOrder     = ActionLogQueryBuilder::SORT_ASC
-    ) {
-        $qb = $this->createQueryBuilder();
-        $qb->setMemberIdFilter($memberId)
-            ->setDateRangeFilter($fromTimestamp, $toTimestamp)
-            ->setSortOrder($sortOrder);
-
-        if ($action) {
-            $qb->addActionCodeFilter($action);
-        }
-
-        return $qb->getResult();
+    public function createMemberLogQueryBuilder($memberId)
+    {
+        return $this
+            ->createQueryBuilder()
+            ->setMemberIdFilter($memberId);
     }
 
     /**
@@ -122,42 +92,30 @@ class ActionLogReader
      * from mongo via API.
      *
      * @param BaseEntity $entity
-     * @param int $fromTimestamp
-     * @param int $toTimestamp
-     * @param int $action
-     * @param string $sortOrder
+     * @param int $memberId
      *
-     * @return array
+     * @return ActionLogQueryBuilder
      */
-    public function getEntityLogsForMember(
-        $entity,
-        $memberId,
-        $fromTimestamp = null,
-        $toTimestamp   = null,
-        $action        = null,
-        $sortOrder     = ActionLogQueryBuilder::SORT_ASC
-    ) {
-        $qb = $this->createQueryBuilder();
-        $qb->addEntityFilter($entity)
-            ->setMemberIdFilter($memberId)
-            ->setDateRangeFilter($fromTimestamp, $toTimestamp)
-            ->setSortOrder($sortOrder);
-
-        if ($action) {
-            $qb->addActionCodeFilter($action);
+    public function createEntityLogsForMemberQueryBuilder($entity, $memberId)
+    {
+        if (!$entity) {
+            throw new \InvalidArgumentException('ActionLogReader::createEntityLogsForMemberQueryBuilder requires an entity passed as an argument');
         }
 
-        return $qb->getResult();
+        return $this
+            ->createQueryBuilder()
+            ->addEntityFilter($entity)
+            ->setMemberIdFilter($memberId);
     }
 
     /**
      * @return ActionLogQueryBuilder
      */
-    protected function createQueryBuilder()
+    public function createQueryBuilder()
     {
         return new ActionLogQueryBuilder(
             $this->dataAccess,
-            self::AUDIT_LOG_API_PATH
+            $this->entityMetaHelper
         );
     }
 }

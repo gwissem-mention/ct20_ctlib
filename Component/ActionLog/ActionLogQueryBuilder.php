@@ -22,6 +22,11 @@ class ActionLogQueryBuilder
     protected $dataAccess;
 
     /**
+     * @var EntityMetaHelper
+     */
+    protected $entityMetaHelper;
+
+    /**
      * @var array
      */
     protected $queryFields;
@@ -38,14 +43,16 @@ class ActionLogQueryBuilder
 
 
     /**
+     * @param EntityMetaHelper $entityMetaHelper
      * @param CtApiDocumentDataAccess $dataAccess
      */
-    public function __construct($dataAccess)
+    public function __construct($dataAccess, $entityMetaHelper)
     {
-        $this->dataAccess = $dataAccess;
-        $this->queryFields  = [];
-        $this->queryFilters = [];
-        $this->sortOrder    = self::SORT_ASC;
+        $this->dataAccess       = $dataAccess;
+        $this->entityMetaHelper = $entityMetaHelper;
+        $this->queryFields      = [];
+        $this->queryFilters     = [];
+        $this->sortOrder        = self::SORT_ASC;
 
         $this->addDefaultFields();
     }
@@ -101,8 +108,17 @@ class ActionLogQueryBuilder
      */
     public function setEntityFilter($entity)
     {
-        $className = Util::getClassShortName($entity);
-        $entityId = $entity->{"get{$className}Id"}();
+        $className = $this->entityMetaHelper->getShortClassName($entity);
+
+        $entityIds = $this
+            ->entityMetaHelper
+            ->getLogicalIdentifierFieldNames($entity);
+
+        if (count($entityIds) > 1) {
+            throw new \RuntimeException('Multi-id entities not supported');
+        }
+
+        $entityId = $entity->{"get{$entityIds[0]}"}();
 
         $this->queryFilters['affectedEntity.class'] = $className;
         $this->queryFilters['affectedEntity.id'] = $entityId;
@@ -165,24 +181,6 @@ class ActionLogQueryBuilder
     }
 
     /**
-     * @return ActionLogQueryBuilder
-     */
-    protected function addDefaultFields()
-    {
-        $this->dataAccess
-            ->addField('actionCode')
-            ->addField('memberId')
-            ->addField('affectedEntity')
-            ->addField('source')
-            ->addField('comment')
-            ->addField('addedOn')
-            ->addField('addedOnWeek')
-            ->addField('addedOn');
-
-        return $this;
-    }
-
-    /**
      * Make the actual request to the API, and return the results.
      *
      * @return array
@@ -209,5 +207,23 @@ class ActionLogQueryBuilder
         }
 
         return $this->dataAccess->getData();
+    }
+
+    /**
+     * @return ActionLogQueryBuilder
+     */
+    protected function addDefaultFields()
+    {
+        $this->dataAccess
+            ->addField('actionCode')
+            ->addField('memberId')
+            ->addField('affectedEntity')
+            ->addField('source')
+            ->addField('comment')
+            ->addField('addedOn')
+            ->addField('addedOnWeek')
+            ->addField('addedOn');
+
+        return $this;
     }
 }

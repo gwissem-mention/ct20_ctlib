@@ -396,17 +396,4 @@ class Util
         $dateWeek = $datetime->format('W');
         return (int)$dateWeek;
     }
-
-    /**
-     * Helper method to get the class name of an object
-     * without the namespace.
-     *
-     * @param object $entity
-     *
-     * @return string
-     */
-    public static function getClassShortName($entity)
-    {
-        return substr(strrchr(get_class($entity), '\\'), 1);
-    }
 }

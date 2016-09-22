@@ -611,6 +611,7 @@ class CTLibExtension extends Extension
         $container->setAlias('action_logger', 'action_log.action_logger');
 
         $args = [
+            new Reference($config['entity_manager']),
             new Reference('ct_api.caller')
         ];
         $def = new Definition('CTLib\Component\ActionLog\ActionLogReader', $args);
