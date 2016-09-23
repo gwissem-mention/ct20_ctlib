@@ -381,4 +381,19 @@ class Util
         return $number;
     }
 
+    /**
+     * Helper method to get the DateWeek of the given timestamp.
+     *
+     * @param integer timestamp
+     *
+     * @return integer
+     */
+    public static function getDateWeek($timestamp)
+    {
+        $timezone = new \DateTimeZone('UTC');
+        $datetime = new \DateTime("now", $timezone);
+        $datetime->setTimestamp($timestamp);
+        $dateWeek = $datetime->format('W');
+        return (int)$dateWeek;
+    }
 }

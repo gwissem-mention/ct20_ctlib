@@ -36,6 +36,7 @@ class CTLibExtension extends Extension
         $this->loadViewServices($config['view'], $container);
         $this->loadCTAPIServices($config['ct_api'], $container);
         $this->loadHtmlToPdfServices($config['html_to_pdf'], $container);
+        $this->loadActionLogServices($config['action_log'], $container);
     }
 
     protected function loadCacheManagerServices($config, $container)
@@ -592,5 +593,29 @@ class CTLibExtension extends Extension
         $args = [$wkhtmltopdfBinPath];
         $def = new Definition('CTLib\Component\Pdf\HtmlToPdf', $args);
         $container->setDefinition('htmltopdf', $def);
+    }
+
+    protected function loadActionLogServices($config, $container)
+    {
+        if (!$config['enabled']) {
+            return;
+        }
+
+        $args = [
+            new Reference($config['entity_manager']),
+            new Reference('ct_api.caller'),
+            $config['source']
+        ];
+        $def = new Definition('CTLib\Component\ActionLog\ActionLogger', $args);
+        $container->setDefinition('action_log.action_logger', $def);
+        $container->setAlias('action_logger', 'action_log.action_logger');
+
+        $args = [
+            new Reference($config['entity_manager']),
+            new Reference('ct_api.caller')
+        ];
+        $def = new Definition('CTLib\Component\ActionLog\ActionLogReader', $args);
+        $container->setDefinition('action_log.action_log_reader', $def);
+        $container->setAlias('action_log_reader', 'action_log.action_log_reader');
     }
 }

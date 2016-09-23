@@ -1,9 +1,4 @@
 <?php
-/**
- * CellTrak VisitManager 2.x.
- *
- * @package CTLib
- */
 
 namespace CTLib\Entity;
 
@@ -12,7 +7,6 @@ namespace CTLib\Entity;
  */
 abstract class BaseEntity
 {
-
     /**
      * Constructor.
      *
@@ -71,6 +65,8 @@ abstract class BaseEntity
      * @param array $fieldValues    Associative array of entity field => value.
      *
      * @return void
+     *
+     * @throws \Exception
      */
     public function update($fieldValues=array())
     {
@@ -88,6 +84,8 @@ abstract class BaseEntity
      *
      * @param array $fields     array($fieldName1, $fieldName2, ...)
      * @return array            array($fieldName1 => $fieldValue1, ...)
+     *
+     * @throws \Exception
      */
     public function multiGet($fields)
     {
@@ -101,6 +99,4 @@ abstract class BaseEntity
         }
         return $values;
     }
-
-
 }

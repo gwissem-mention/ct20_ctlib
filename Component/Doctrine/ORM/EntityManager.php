@@ -25,13 +25,18 @@ class EntityManager extends \Doctrine\ORM\EntityManager
      */
     protected $entityMetaHelper;
 
+    /**
+     * @var array $trackedEntities
+     */
+    protected $trackedEntities = [];
+
 
     /**
      * Injects QueryMetaMapCache service into EntityManager.
      *
      * Used by InjectIntoEntityManager listener.
      *
-     * @param QueryMetaMapCache $queryMetaMapCache 
+     * @param QueryMetaMapCache $queryMetaMapCache
      *
      * @return void
      */
@@ -248,7 +253,7 @@ class EntityManager extends \Doctrine\ORM\EntityManager
 
             $values[$columnName] = $value;
         }
-        
+
         $this
             ->getConnection()
             ->update($tableName, $values, $identifier);
@@ -256,14 +261,14 @@ class EntityManager extends \Doctrine\ORM\EntityManager
 
     /**
      * Updates entity's database record and object for specified update fields.
-     * 
+     *
      * NOTE: This method does not use Doctrine's UnitOfWork nor does it make
      *       the entity managed by the EntityManager.
-     * 
-     * @param  Entity $entity       
+     *
+     * @param  Entity $entity
      * @param  array $updateFields [$fieldName => $newValue, ...]
-     * 
-     * @return void               
+     *
+     * @return void
      */
     public function updateForFields($entity, $updateFields)
     {
@@ -297,7 +302,7 @@ class EntityManager extends \Doctrine\ORM\EntityManager
             $setter = "set{$fieldName}";
             $entity->{$setter}($value);
         }
-    
+
         // Convert entity's ID to columnName => $value map for use with
         // Connection#update.
         foreach ($entityId as $fieldName => $value) {
@@ -327,7 +332,7 @@ class EntityManager extends \Doctrine\ORM\EntityManager
             if ($idFieldValue instanceof \CTLib\Entity\BaseEntity) {
                 $id += $this->getEntityId($idFieldValue);
             } else {
-                $id[$idFieldName] = $idFieldValue;    
+                $id[$idFieldName] = $idFieldValue;
             }
         }
         return $id;
@@ -470,4 +475,109 @@ class EntityManager extends \Doctrine\ORM\EntityManager
         return $em;
     }
 
+
+    /**
+     * Starts tracking an entity.
+     *
+     * @param BaseEntity $entity
+     */
+    public function startTracking($entity)
+    {
+        $entityIds = $this->getEntityId($entity);
+        $className = $this->getEntityMetaHelper()->getShortClassName($entity);
+        // Generate an object identifier based on class and all entity ids.
+        $entityKey = $className;
+        $entityKey .= '_' . implode('_', $entityIds);
+
+        $metadata = $this->getEntityMetaHelper()->getMetadata($entity);
+        $fields = $metadata->fieldNames;
+
+        $copy = new \StdClass;
+
+        // Get all the entity's current property values,
+        // and create new object.
+        foreach ($fields as $fieldName) {
+            if (isset($entityIds[$fieldName])) {
+                continue;
+            }
+            // Retrieve the field's value currently set in the entity.
+            $copy->$fieldName = $entity->{"get{$fieldName}"}();
+        }
+
+        $this->trackedEntities[$entityKey] = $copy;
+    }
+
+    /**
+     * Stops tracking an entity, and gets all the
+     * changes for the entity, and returns a
+     * JSON string.
+     *
+     * @param BaseEntity $entity
+     *
+     * @return EntityDelta
+     *
+     * @throws \Exception
+     */
+    public function finishTracking($entity)
+    {
+        $entityIds = $this->getEntityId($entity);
+        $className = $this->getEntityMetaHelper()->getShortClassName($entity);
+        // Generate an object identifier based on class and all entity ids.
+        $entityKey = $className;
+        $entityKey .= '_' . implode('_', $entityIds);
+
+        if (!isset($this->trackedEntities[$entityKey])) {
+            throw new \InvalidArgumentException("Entity $className with id {$entity->{"get{$entityIds[0]}"}()} is not being tracked");
+        }
+
+        $origEntity = $this->trackedEntities[$entityKey];
+
+        $delta = $this->compileDelta($entity, $origEntity, $entityIds);
+
+        unset($this->trackedEntities[$entityKey]);
+
+        return $delta;
+    }
+
+    /**
+     * Compile delta for entity properties with old and new values
+     * in an array.
+     *
+     * @param BaseEntity $entity
+     * @param BaseEntity $origEntity
+     * @param array      $entityIds
+     *
+     * @return EntityDelta
+     */
+    protected function compileDelta($entity, $origEntity, $entityIds)
+    {
+        // The instances are identical, so nothing to do.
+        if ($entity == $origEntity) {
+            return null;
+        }
+
+        $metadata = $this->getEntityMetaHelper()->getMetadata($entity);
+        $fields = $metadata->fieldNames;
+        $delta = new EntityDelta();
+
+        // Compare all the entity's current property values with those
+        // of the copy. If the property is part of the modified properties,
+        // include it in the delta.
+        foreach ($fields as $fieldName) {
+            // The id will not have changed.
+            if (isset($entityIds[$fieldName])) {
+                continue;
+            }
+            // Retrieve the field's value currently set in the entity.
+            if ($origEntity->$fieldName != $entity->{"get{$fieldName}"}()) {
+                $delta->add(
+                    $fieldName,
+                    $origEntity->$fieldName,
+                    $entity->{"get{$fieldName}"}()
+                );
+            }
+        }
+
+        return $delta;
+    }
 }
