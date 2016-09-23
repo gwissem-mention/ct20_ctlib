@@ -204,7 +204,7 @@ class ActionLogger
 
             $doc['affectedEntity']['class'] =
                 $this->entityMetaHelper->getShortClassName($entity);
-            $doc['affectedEntity']['id'] = intval($ids);
+            $doc['affectedEntity']['id'] = $ids;
             if ($delta) {
                 $doc['affectedEntity']['properties'][] = $delta;
             }

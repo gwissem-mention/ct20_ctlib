@@ -120,7 +120,7 @@ class ActionLogQueryBuilder
         }
 
         $this->queryFilters['affectedEntity.class'] = $className;
-        $this->queryFilters['affectedEntity.id'] = intval($ids);
+        $this->queryFilters['affectedEntity.id'] = $ids;
         return $this;
     }
 
@@ -213,16 +213,16 @@ class ActionLogQueryBuilder
      */
     protected function addDefaultFields()
     {
-        $this->dataAccess
-            ->addField('actionCode')
-            ->addField('memberId')
-            ->addField('affectedEntity')
-            ->addField('source')
-            ->addField('comment')
-            ->addField('addedOn')
-            ->addField('addedOnWeek')
-            ->addField('addedOn');
-
+        $this->queryFields = [
+            'actionCode',
+            'memberId',
+            'affectedEntity',
+            'source'
+            'comment',
+            'addedOn',
+            'addedOnWeek'
+            'addedOn'
+        ];
         return $this;
     }
 }
