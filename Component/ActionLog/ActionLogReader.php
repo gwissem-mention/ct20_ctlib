@@ -42,15 +42,15 @@ class ActionLogReader
      * Retrieve ActionLog documents for a specific action
      * from mongo via API.
      *
-     * @param int $action
+     * @param array $action
      *
      * @return ActionLogQueryBuilder
      */
-    public function createActionLogQueryBuilder($action)
+    public function createActionLogQueryBuilder(array $action)
     {
         return $this
             ->createQueryBuilder()
-            ->addActionCodeFilter($action);
+            ->setActionCodeFilter($action);
     }
 
     /**
@@ -104,7 +104,7 @@ class ActionLogReader
 
         return $this
             ->createQueryBuilder()
-            ->addEntityFilter($entity)
+            ->setEntityFilter($entity)
             ->setMemberIdFilter($memberId);
     }
 

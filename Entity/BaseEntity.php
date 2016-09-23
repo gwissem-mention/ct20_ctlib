@@ -8,12 +8,6 @@ namespace CTLib\Entity;
 abstract class BaseEntity
 {
     /**
-     * @var EntityDelta
-     */
-    protected $delta = null;
-
-
-    /**
      * Constructor.
      *
      * @param array $fieldValues    Associative array of entity field => value.

@@ -167,10 +167,10 @@ class ActionCode
      * Import Mappings
      */
     const IMPORT_MAPPING_VIEW                   = 9020;
-    const IMPORT_MAPPING_CREATE                 = 8021;
-    const IMPORT_MAPPING_DELETE                 = 8022;
-    const IMPORT_MAPPING_UPDATE                 = 8023;
-    const IMPORT_MAPPING_APPLY                  = 8024;
+    const IMPORT_MAPPING_CREATE                 = 9021;
+    const IMPORT_MAPPING_DELETE                 = 9022;
+    const IMPORT_MAPPING_UPDATE                 = 9023;
+    const IMPORT_MAPPING_APPLY                  = 9024;
 
     /**
      * Get All Action Codes Defined.

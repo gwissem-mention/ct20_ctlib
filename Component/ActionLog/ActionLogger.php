@@ -184,20 +184,6 @@ class ActionLogger
     ) {
         $addedOnWeek = Util::getDateWeek(time());
 
-        $entityId = null;
-
-        if ($entity) {
-            $entityIds = $this
-                ->entityMetaHelper
-                ->getLogicalIdentifierFieldNames($entity);
-
-            if (count($entityIds) > 1) {
-                throw new \RuntimeException('Multi-id entities not supported');
-            }
-
-            $entityId = $entity->{"get{$entityIds[0]}"}();
-        }
-
         $doc = [];
         $doc['actionCode']  = $action;
         $doc['memberId']    = $memberId;
@@ -207,9 +193,18 @@ class ActionLogger
         $doc['addedOnWeek'] = $addedOnWeek;
 
         if ($entity) {
+            $entityIds = $this
+                ->entityMetaHelper
+                ->getLogicalIdentifierFieldNames($entity);
+
+            $ids = '';
+            foreach ($entityIds as $entityId) {
+                $ids .= $entity->{"get{$entityId}"}();
+            }
+
             $doc['affectedEntity']['class'] =
                 $this->entityMetaHelper->getShortClassName($entity);
-            $doc['affectedEntity']['id'] = $entityId;
+            $doc['affectedEntity']['id'] = intval($ids);
             if ($delta) {
                 $doc['affectedEntity']['properties'][] = $delta;
             }

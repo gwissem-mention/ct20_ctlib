@@ -69,24 +69,24 @@ class ActionLogQueryBuilder
     }
 
     /**
-     * @param int $actionCode
+     * @param array $actionCodes
      *
      * @return ActionLogQueryBuilder
      */
-    public function addActionCodeFilter($actionCode)
+    public function setActionCodeFilter(array $actionCodes)
     {
-        $this->queryFilters['actionCode'][] = $actionCode;
+        $this->queryFilters['actionCode'] = [$actionCode];
         return $this;
     }
 
     /**
-     * @param string $source
+     * @param array $sources
      *
      * @return ActionLogQueryBuilder
      */
-    public function addSourceFilter($source)
+    public function setSourceFilter(array $sources)
     {
-        $this->queryFilters['source'][] = $source;
+        $this->queryFilters['source'] = [$source];
         return $this;
     }
 
@@ -102,7 +102,7 @@ class ActionLogQueryBuilder
     }
 
     /**
-     * @param BaseEntity $entityClass
+     * @param BaseEntity $entity
      *
      * @return ActionLogQueryBuilder
      */
@@ -114,14 +114,13 @@ class ActionLogQueryBuilder
             ->entityMetaHelper
             ->getLogicalIdentifierFieldNames($entity);
 
-        if (count($entityIds) > 1) {
-            throw new \RuntimeException('Multi-id entities not supported');
+        $ids = '';
+        foreach ($entityIds as $entityId) {
+            $ids .= $entity->{"get{$entityId}"}();
         }
 
-        $entityId = $entity->{"get{$entityIds[0]}"}();
-
         $this->queryFilters['affectedEntity.class'] = $className;
-        $this->queryFilters['affectedEntity.id'] = $entityId;
+        $this->queryFilters['affectedEntity.id'] = intval($ids);
         return $this;
     }
 
