@@ -201,7 +201,17 @@ class ActionLogQueryBuilder
                     $this->dataAccess->addFilter($field, $value, 'in');
                 }
             } else {
-                $this->dataAccess->addFilter($field, $value);
+                // Here we are forcing affectedEntity.id value to be of type string.
+                // We do this because this field's value may be numeric or
+                // alphanumeric. If it is numeric, mongo will not find the value, as
+                // it will default to looking for a numeric value, but we store this
+                // field value as a string. The value 2 represents the data type
+                // 'string' for mongo.
+                if ($field == 'affectedEntity.id') {
+                    $this->dataAccess->addFilter($field, $value, 'eq', 2);
+                } else {
+                    $this->dataAccess->addFilter($field, $value);
+                }
             }
         }
 
@@ -217,10 +227,10 @@ class ActionLogQueryBuilder
             'actionCode',
             'memberId',
             'affectedEntity',
-            'source'
+            'source',
             'comment',
             'addedOn',
-            'addedOnWeek'
+            'addedOnWeek',
             'addedOn'
         ];
         return $this;
