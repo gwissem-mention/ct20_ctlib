@@ -206,7 +206,7 @@ class ActionLogQueryBuilder
                 // alphanumeric. If it is numeric, mongo will not find the value, as
                 // it will default to looking for a numeric value, but we store this
                 // field value as a string. The value 2 represents the data type
-                // 'string' for mongo.
+                // 'string' for mongodb.
                 if ($field == 'affectedEntity.id') {
                     $this->dataAccess->addFilter($field, $value, 'eq', 2);
                 } else {
