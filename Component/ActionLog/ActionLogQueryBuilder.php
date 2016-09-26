@@ -75,7 +75,7 @@ class ActionLogQueryBuilder
      */
     public function setActionCodeFilter(array $actionCodes)
     {
-        $this->queryFilters['actionCode'] = [$actionCodes];
+        $this->queryFilters['actionCode'] = $actionCodes;
         return $this;
     }
 
@@ -86,7 +86,7 @@ class ActionLogQueryBuilder
      */
     public function setSourceFilter(array $sources)
     {
-        $this->queryFilters['source'] = [$sources];
+        $this->queryFilters['source'] = $sources;
         return $this;
     }
 
