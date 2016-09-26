@@ -132,11 +132,16 @@ class CtApiDocumentDataAccess implements DataAccessInterface
      * @param string|callable $field
      * @param mixed|null      $value
      * @param string|null     $operator
+     * @param string|null     $type  Data type of the '$value' parameter.
      *
      * @return DataAccessInterface
      */
-    public function addFilter($field, $value=null, $operator='eq')
-    {
+    public function addFilter(
+        $field,
+        $value = null,
+        $operator = 'eq',
+        $type = null
+    ) {
         if (!is_callable($field) && is_null($value)) {
             throw new \InvalidArgumentException('Invalid filter value');
         }
@@ -153,7 +158,8 @@ class CtApiDocumentDataAccess implements DataAccessInterface
         $this->filters[] = [
             'field' => $field,
             'op'    => $operator,
-            'value' => $value
+            'value' => $value,
+            'type'  => $type
         ];
 
         return $this;
@@ -283,5 +289,5 @@ class CtApiDocumentDataAccess implements DataAccessInterface
 
         return $queryString;
     }
-    
+
 }
