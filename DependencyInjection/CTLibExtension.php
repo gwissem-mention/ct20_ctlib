@@ -622,7 +622,27 @@ class CTLibExtension extends Extension
 
     protected function loadFilteredObjectIndexServices($config, $container)
     {
-        var_dump($config);
-        die();
+        if (!$config['enabled']) {
+            return;
+        }
+
+        $groupClass = 'CTLib\Component\FilteredObjectIndex\FilteredObjectIndexGroup';
+        $loggerReference = new Reference('logger');
+
+        foreach ($config['groups'] as $groupName => $groupConfig) {
+            $args = [
+                $groupConfig['key_namespace'],
+                new Reference($groupConfig['redis_client']),
+                $loggerReference
+            ];
+            $def = new Definition($groupClass, $args);
+
+            foreach ($groupConfig['indexes'] as $index) {
+                $def->addMethodCall('addIndex', [$index]);
+            }
+
+            $serviceId = "filtered_object_index_group.{$groupName}";
+            $container->setDefinition($serviceId, $def);
+        }
     }
 }
