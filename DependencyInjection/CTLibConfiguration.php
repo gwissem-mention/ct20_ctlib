@@ -40,7 +40,7 @@ class CTLibConfiguration implements ConfigurationInterface
                 ->append($this->addCTAPINode())
                 ->append($this->addHtmlToPdfNode())
                 ->append($this->addActionLoggerNode())
-                ->append($this->addFilterObjectIndexGroupNode())
+                ->append($this->addFilteredObjectIndexNode())
             ->end();
 
         return $tb;
@@ -870,6 +870,44 @@ class CTLibConfiguration implements ConfigurationInterface
                 ->end()
                 ->scalarNode('source')
                     ->isRequired()
+                ->end()
+            ->end()
+        ->end();
+
+        return $node;
+    }
+
+    protected function addFilteredObjectIndexNode()
+    {
+        $tb = new TreeBuilder;
+        $node = $tb->root('filtered_object_index');
+
+        $node
+            ->canBeEnabled()
+            ->children()
+                ->arrayNode('groups')
+                    ->info('Define each filtered object index group')
+                    ->useAttributeAsKey('groupName')
+                    ->isRequired()
+                    ->requiresAtLeastOneElement()
+                    ->prototype('array')
+                        ->children()
+                            ->scalarNode('key_namespace')
+                                ->info('The key namespace used to prevent collisions with other redis keys')
+                                ->isRequired()
+                            ->end()
+                            ->scalarNode('redis_client')
+                                ->info('The name of the redis client service to use')
+                                ->isRequired()
+                            ->end()
+                            ->arrayNode('indexes')
+                                ->info('The list of indexes in for this group')
+                                ->isRequired()
+                                ->requiresAtLeastOneElement()
+                                ->prototype('scalar')
+                            ->end()
+                        ->end()
+                    ->end()
                 ->end()
             ->end()
         ->end();

@@ -37,6 +37,7 @@ class CTLibExtension extends Extension
         $this->loadCTAPIServices($config['ct_api'], $container);
         $this->loadHtmlToPdfServices($config['html_to_pdf'], $container);
         $this->loadActionLogServices($config['action_log'], $container);
+        $this->loadFilteredObjectIndexServices($config['filtered_object_index'], $container);
     }
 
     protected function loadCacheManagerServices($config, $container)
@@ -617,5 +618,11 @@ class CTLibExtension extends Extension
         $def = new Definition('CTLib\Component\ActionLog\ActionLogReader', $args);
         $container->setDefinition('action_log.action_log_reader', $def);
         $container->setAlias('action_log_reader', 'action_log.action_log_reader');
+    }
+
+    protected function loadFilteredObjectIndexServices($config, $container)
+    {
+        var_dump($config);
+        die();
     }
 }
