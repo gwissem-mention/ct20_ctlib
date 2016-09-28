@@ -40,6 +40,7 @@ class CTLibConfiguration implements ConfigurationInterface
                 ->append($this->addCTAPINode())
                 ->append($this->addHtmlToPdfNode())
                 ->append($this->addActionLoggerNode())
+                ->append($this->addFilterObjectIndexGroupNode())
             ->end();
 
         return $tb;
