@@ -3,6 +3,7 @@ namespace CTLib\Component\FilteredObjectIndex;
 
 use Celltrak\RedisBundle\Component\Client\CellTrakRedis;
 use CTLib\Component\Monolog\Logger;
+use CTLib\Util\GroupedFilterSet;
 
 
 class FilteredObjectIndexGroup
@@ -128,14 +129,58 @@ class FilteredObjectIndexGroup
         return $removedFromIndexes;
     }
 
-    public function getObjectsInIndex($index)
+    public function getObjectsInIndex($index, GroupedFilterSet $filterSet = null)
     {
-        # code...
-    }
+        $indexKeyPrefix = $this->qualifyCacheKey($index);
 
-    public function getObjectsInIndexes(array $indexes)
-    {
-        # code...
+        if (!$filterSet || count($filterSet) == 0) {
+            $objectIds = [];
+            $indexGlobalKey = $indexKeyPrefix . ':global';
+            $iterator = null;
+
+            while ($iObjectIds = $this->redis->sScan($iterator, $indexGlobalKey)) {
+                $objectIds = array_merge($objectIds, $iObjectIds);
+            }
+            return $objectIds;
+        }
+
+        if (count($filterSet) == 1) {
+            $filterIds = current($filterSet);
+            $indexKeys = array_map(
+                function($filterId) use ($indexKeyPrefix) {
+                    return $indexKeyPrefix . ':' . $filterId;
+                }
+            );
+            return $this->redis->sUnion(...$indexKeys);
+        }
+
+        $intersectionKeys = [];
+        $tmpUnionKeys = [];
+
+        $this->redis->multi();
+
+        foreach ($filterSet as $filterGroupId => $filterIds) {
+            if (count($filterIds) == 1) {
+                $intersectionKeys[] = $indexKeyPrefix . ':' . $filterIds[0];
+            } else {
+                $indexKeys = array_map(
+                    function($filterId) use ($indexKeyPrefix) {
+                        return $indexKeyPrefix . ':' . $filterId;
+                    }
+                );
+                $tmpUnionKey = $this->qualifyCacheKey(md5(uniqid()));
+                $intersectionKeys[] = $tmpUnionKey;
+                $tmpUnionKeys[] = $tmpUnionKey;
+                $this->redis->sUnionStore($tmpUnionKey, ...$indexKeys);
+            }
+        }
+
+        $this->redis->sInter(...$intersectionKeys);
+        $this->redis->del($tmpUnionKeys);
+        $results = $this->redis->exec();
+
+        $intersectionIndex = count($results) - 2;
+        return $results[$intersectionIndex];
     }
 
     public function flushIndex($index)
