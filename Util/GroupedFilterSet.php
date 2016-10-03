@@ -18,17 +18,17 @@ class GroupedFilterSet implements \Iterator, \Countable
         $this->filters = [];
     }
 
-    public function addFilters($filterGroupId, $filterIds)
+    public function addFilters($filterGroup, $filters)
     {
-        $filterIds = (array) $filterIds;
-        $index = array_search($filterGroupId, $this->filterGroups);
+        $filters = (array) $filters;
+        $index = array_search($filterGroup, $this->filterGroups);
 
         if ($index === false) {
-            $this->filterGroups[] = $filterGroupId;
-            $this->filters[] = $filterIds;
+            $this->filterGroups[] = $filterGroup;
+            $this->filters[] = $filters;
         } else {
-            $filterIds = array_merge($this->filters[$index], $filterIds);
-            $this->filters[$index] = $filterIds;
+            $filters = array_merge($this->filters[$index], $filters);
+            $this->filters[$index] = $filters;
         }
         return $this;
     }
