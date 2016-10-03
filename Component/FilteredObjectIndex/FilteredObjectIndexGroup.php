@@ -34,7 +34,7 @@ class FilteredObjectIndexGroup
         return $this->indexes;
     }
 
-    public function addObjectToIndex($index, $objectId, array $filterIds = [])
+    public function addObjectToIndex($index, $objectId, array $filters = [])
     {
         if (!$this->hasIndex($index)) {
             throw new \InvalidArgumentException("Index '{$index}' is not in group");
@@ -45,8 +45,8 @@ class FilteredObjectIndexGroup
         $this->redis->multi(\Redis::PIPELINE);
         $this->redis->sAdd($indexKeyPrefix . ':global', $objectId);
 
-        foreach ($filterIds as $filterId) {
-            $this->redis->sAdd($indexKeyPrefix . ":{$filterId}", $objectId);
+        foreach ($filters as $filter) {
+            $this->redis->sAdd($indexKeyPrefix . ":{$filter}", $objectId);
         }
         $results = $this->redis->exec();
 
@@ -92,7 +92,7 @@ class FilteredObjectIndexGroup
         return $removedFromIndexes;
     }
 
-    public function moveObjectToIndex($index, $objectId, array $filterIds = [])
+    public function moveObjectToIndex($index, $objectId, array $filters = [])
     {
         if (!$this->hasIndex($index)) {
             throw new \InvalidArgumentException("Index '{$index}' is not in group");
@@ -110,9 +110,9 @@ class FilteredObjectIndexGroup
         $this->redis->sAdd($indexKeyPrefix . ':global', $objectId);
         $usedKeys[] = 'global';
 
-        foreach ($filterIds as $filterId) {
-            $this->redis->sAdd($indexKeyPrefix . ":{$filterId}", $objectId);
-            $usedKeys[] = $filterId;
+        foreach ($filters as $filter) {
+            $this->redis->sAdd($indexKeyPrefix . ":{$filter}", $objectId);
+            $usedKeys[] = $filter;
         }
 
         $results = $this->redis->exec();
@@ -145,11 +145,12 @@ class FilteredObjectIndexGroup
         }
 
         if (count($filterSet) == 1) {
-            $filterIds = current($filterSet);
+            $filters = current($filterSet);
             $indexKeys = array_map(
-                function($filterId) use ($indexKeyPrefix) {
-                    return $indexKeyPrefix . ':' . $filterId;
-                }
+                function($filter) use ($indexKeyPrefix) {
+                    return $indexKeyPrefix . ':' . $filter;
+                },
+                $filters
             );
             return $this->redis->sUnion(...$indexKeys);
         }
@@ -159,14 +160,15 @@ class FilteredObjectIndexGroup
 
         $this->redis->multi();
 
-        foreach ($filterSet as $filterGroupId => $filterIds) {
-            if (count($filterIds) == 1) {
-                $intersectionKeys[] = $indexKeyPrefix . ':' . $filterIds[0];
+        foreach ($filterSet as $filterGroupId => $filters) {
+            if (count($filters) == 1) {
+                $intersectionKeys[] = $indexKeyPrefix . ':' . $filters[0];
             } else {
                 $indexKeys = array_map(
-                    function($filterId) use ($indexKeyPrefix) {
-                        return $indexKeyPrefix . ':' . $filterId;
-                    }
+                    function($filter) use ($indexKeyPrefix) {
+                        return $indexKeyPrefix . ':' . $filter;
+                    },
+                    $filters
                 );
                 $tmpUnionKey = $this->qualifyCacheKey(md5(uniqid()));
                 $intersectionKeys[] = $tmpUnionKey;
