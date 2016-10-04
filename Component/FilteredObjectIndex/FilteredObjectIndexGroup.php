@@ -5,18 +5,61 @@ use Celltrak\RedisBundle\Component\Client\CellTrakRedis;
 use CTLib\Component\Monolog\Logger;
 use CTLib\Util\GroupedFilterSet;
 
-
+/**
+ * Manages group of in-memory filtered object indexes. Indexes are used to
+ * quickly calculate object -> filter assignments.
+ *
+ * @author Mike Turoff
+ */
 class FilteredObjectIndexGroup
 {
 
-    public function __construct($keyPrefix, CellTrakRedis $redis, Logger $logger)
-    {
-        $this->keyPrefix    = $keyPrefix;
+    /**
+     * Namespace for storing index keys in Redis.
+     * @var string
+     */
+    protected $keyNamespace;
+
+    /**
+     * Redis client.
+     * @var CellTrakRedis
+     */
+    protected $redis;
+
+    /**
+     * Logger
+     * @var Logger
+     */
+    protected $logger;
+
+    /**
+     * Set of indexes in this group.
+     * @var array
+     */
+    protected $indexes;
+
+
+    /**
+     * @param string $keyNamespace
+     * @param CellTrakRedis $redis
+     * @param Logger $logger
+     */
+    public function __construct(
+        $keyNamespace,
+        CellTrakRedis $redis,
+        Logger $logger
+    ) {
+        $this->keyNamespace = $keyNamespace;
         $this->redis        = $redis;
         $this->logger       = $logger;
         $this->indexes      = [];
     }
 
+    /**
+     * Adds index into group.
+     * @param string $index
+     * @return void
+     */
     public function addIndex($index)
     {
         if (!$this->hasIndex($index)) {
@@ -24,16 +67,32 @@ class FilteredObjectIndexGroup
         }
     }
 
+    /**
+     * Indicates whether index belongs in group.
+     * @param string $index
+     * @return boolean
+     */
     public function hasIndex($index)
     {
         return in_array($index, $this->indexes);
     }
 
+    /**
+     * Returns set of indexes in group.
+     * @return array
+     */
     public function getIndexes()
     {
         return $this->indexes;
     }
 
+    /**
+     * Adds object to index.
+     * @param string $index
+     * @param mixed $objectId
+     * @param array $filters    Set of filters assigned to object.
+     * @return boolean  Indicates whether object was added.
+     */
     public function addObjectToIndex($index, $objectId, array $filters = [])
     {
         if (!$this->hasIndex($index)) {
@@ -47,6 +106,12 @@ class FilteredObjectIndexGroup
         return in_array(1, $results);
     }
 
+    /**
+     * Removes object from index.
+     * @param string $index
+     * @param mixed $objectId
+     * @return boolean  Indicates whether object was removed.
+     */
     public function removeObjectFromIndex($index, $objectId)
     {
         if (!$this->hasIndex($index)) {
@@ -62,6 +127,11 @@ class FilteredObjectIndexGroup
         return in_array(1, $results);
     }
 
+    /**
+     * Removes object from all group indexes.
+     * @param mixed $objectId
+     * @return array    Set of indexes where object was removed.
+     */
     public function removeObjectFromAllIndexes($objectId)
     {
         $groupKeys = $this->getGroupKeys();
@@ -74,6 +144,13 @@ class FilteredObjectIndexGroup
         return $this->getRemovedFromIndexes($results);
     }
 
+    /**
+     * Moves object to index ensuring it only exists in target index.
+     * @param string $index
+     * @param mixed $objectId
+     * @param array $filters    Set of filters assigned to object.
+     * @return array    Set of indexes where object was removed.
+     */
     public function moveObjectToIndex($index, $objectId, array $filters = [])
     {
         if (!$this->hasIndex($index)) {
@@ -98,6 +175,13 @@ class FilteredObjectIndexGroup
         return $this->getRemovedFromIndexes($removalResults);
     }
 
+    /**
+     * Returns objects in index.
+     * @param string $index
+     * @param GroupedFilterSet $filterSet   Retrieves objects that only match
+     *                                      specified groups + filters.
+     * @return array  [$objectId, ...]
+     */
     public function getObjectsInIndex($index, GroupedFilterSet $filterSet = null)
     {
         if (!$filterSet || count($filterSet) == 0) {
@@ -115,6 +199,11 @@ class FilteredObjectIndexGroup
         return $this->getObjectsInIndexGroupedFilters($index, $filterSet);
     }
 
+    /**
+     * Flush all objects out of index.
+     * @param string $index
+     * @return void
+     */
     public function flushIndex($index)
     {
         if (!$this->hasIndex($index)) {
@@ -125,12 +214,23 @@ class FilteredObjectIndexGroup
         $this->redis->del($indexKeys);
     }
 
+    /**
+     * Flushes all objects from all group indexes.
+     * @return void
+     */
     public function flushAllIndexes()
     {
         $groupKeys = $this->getGroupKeys();
         $this->redis->del($groupKeys);
     }
 
+    /**
+     * Adds object to index Redis sets.
+     * @param string $index
+     * @param mixed $objectId
+     * @param array $filters
+     * @return void
+     */
     protected function addObjectToIndexSets(
         $index,
         $objectId,
@@ -152,6 +252,12 @@ class FilteredObjectIndexGroup
         }
     }
 
+    /**
+     * Removes object from specified sets.
+     * @param array $setKeys
+     * @param mixed $objectId
+     * @return void
+     */
     protected function removeObjectFromSets(array $setKeys, $objectId)
     {
         // NOTE: This is a helper method used to make the set removal logic DRY.
@@ -164,6 +270,12 @@ class FilteredObjectIndexGroup
         }
     }
 
+    /**
+     * Returns set of indexes that had object removed based on Redis pipeline
+     * results.
+     * @param array $removalResults
+     * @return array  Set of indexes where object was removed.
+     */
     protected function getRemovedFromIndexes(array $removalResults)
     {
         $removedFromIndexes = [];
@@ -178,6 +290,11 @@ class FilteredObjectIndexGroup
         return $removedFromIndexes;
     }
 
+    /**
+     * Returns objects in index's "global" filter.
+     * @param string $index
+     * @return array  [$objectId, ...]
+     */
     protected function getObjectsInIndexGlobal($index)
     {
         $objectIds = [];
@@ -190,12 +307,24 @@ class FilteredObjectIndexGroup
         return $objectIds;
     }
 
+    /**
+     * Returns objects in any of the specified index's filters.
+     * @param string $index
+     * @param array $filters
+     * @return array   [$objectId, ...]
+     */
     protected function getObjectsInIndexFilters($index, array $filters)
     {
         $indexKeys = $this->qualifyIndexFilterKeys($index, $filters);
         return $this->redis->sUnion(...$indexKeys);
     }
 
+    /**
+     * Returns objects in index for specified filter set.
+     * @param string $index
+     * @param GroupedFilterSet $filterSet
+     * @return array [$objectId, ...]
+     */
     protected function getObjectsInIndexGroupedFilters(
         $index,
         GroupedFilterSet $filterSet
@@ -231,23 +360,42 @@ class FilteredObjectIndexGroup
         return $results[$intersectionIndex];
     }
 
+    /**
+     * Generates random Redis key in group's namespace.
+     * @return string
+     */
     protected function generateRandomKey()
     {
-        return $this->qualifyCacheKey(md5(uniqid()));
+        return $this->qualifyKey(md5(uniqid()));
     }
 
+    /**
+     * Returns Redis keys defined for group.
+     * @return array
+     */
     protected function getGroupKeys()
     {
-        $groupKeyPattern = $this->qualifyCacheKey('*');
+        $groupKeyPattern = $this->qualifyKey('*');
         return $this->getKeysForPattern($groupKeyPattern);
     }
 
+    /**
+     * Returns Redis keys defined for index.
+     * @param string $index
+     * @return array
+     */
     protected function getIndexKeys($index)
     {
-        $indexKeyPattern = $this->qualifyCacheKey($index) . ':*';
+        $indexKeyPattern = $this->qualifyKey($index) . ':*';
         return $this->getKeysForPattern($indexKeyPattern);
     }
 
+    /**
+     * Returns Redis keys defined for specified pattern.
+     * @param string $pattern
+     * @return array
+     * @todo Move this method to CellTrakRedis
+     */
     protected function getKeysForPattern($pattern)
     {
         $keys = [];
@@ -258,16 +406,33 @@ class FilteredObjectIndexGroup
         return $keys;
     }
 
+    /**
+     * Returns fully qualified index "global" filter key.
+     * @param string $index
+     * @return string
+     */
     protected function qualifyIndexGlobalKey($index)
     {
-        return $this->qualifyCacheKey("{$index}:global");
+        return $this->qualifyKey("{$index}:global");
     }
 
+    /**
+     * Returns fully qualified index filter key.
+     * @param string $index
+     * @param string $filter
+     * @return string
+     */
     protected function qualifyIndexFilterKey($index, $filter)
     {
-        return $this->qualifyCacheKey("{$index}:{$filter}");
+        return $this->qualifyKey("{$index}:{$filter}");
     }
 
+    /**
+     * Returns fully qualified index filter keys.
+     * @param string $index
+     * @param array $filters
+     * @return array
+     */
     protected function qualifyIndexFilterKeys($index, array $filters)
     {
         return array_map(
@@ -278,9 +443,14 @@ class FilteredObjectIndexGroup
         );
     }
 
-    protected function qualifyCacheKey($key)
+    /**
+     * Fully qualifies Redis key.
+     * @param string $key
+     * @return string
+     */
+    protected function qualifyKey($key)
     {
-        return "{$this->keyPrefix}:{$key}";
+        return "{$this->keyNamespace}:{$key}";
     }
 
 
