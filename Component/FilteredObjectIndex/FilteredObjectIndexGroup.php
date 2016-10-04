@@ -40,14 +40,8 @@ class FilteredObjectIndexGroup
             throw new \InvalidArgumentException("Index '{$index}' is not in group");
         }
 
-        $indexKeyPrefix = $this->qualifyCacheKey($index);
-
         $this->redis->multi(\Redis::PIPELINE);
-        $this->redis->sAdd($indexKeyPrefix . ':global', $objectId);
-
-        foreach ($filters as $filter) {
-            $this->redis->sAdd($indexKeyPrefix . ":{$filter}", $objectId);
-        }
+        $this->addObjectToIndexSets($index, $objectId, $filters);
         $results = $this->redis->exec();
 
         return in_array(1, $results);
@@ -62,9 +56,7 @@ class FilteredObjectIndexGroup
         $indexKeys = $this->getIndexKeys($index);
 
         $this->redis->multi(\Redis::PIPELINE);
-        foreach ($indexKeys as $indexKey) {
-            $this->redis->sRem($indexKey, $objectId);
-        }
+        $this->removeObjectFromSets($indexKeys, $objectId);
         $results = $this->redis->exec();
 
         return in_array(1, $results);
@@ -75,21 +67,11 @@ class FilteredObjectIndexGroup
         $groupKeys = $this->getGroupKeys();
 
         $this->redis->multi(\Redis::PIPELINE);
-        foreach ($groupKeys as $groupKey) {
-            $this->redis->sRem($groupKey, $objectId);
-        }
+        $this->removeObjectFromSets($groupKeys, $objectId);
         $results = $this->redis->exec();
 
         $results = array_combine($groupKeys, $results);
-        $removedFromIndexes = [];
-
-        foreach ($this->indexes as $index) {
-            $indexGlobalKey = $this->qualifyCacheKey($index) . ':global';
-            if (isset($results[$indexGlobalKey]) && $results[$indexGlobalKey]) {
-                $removedFromIndexes[] = $index;
-            }
-        }
-        return $removedFromIndexes;
+        return $this->getRemovedFromIndexes($results);
     }
 
     public function moveObjectToIndex($index, $objectId, array $filters = [])
@@ -98,91 +80,39 @@ class FilteredObjectIndexGroup
             throw new \InvalidArgumentException("Index '{$index}' is not in group");
         }
 
+        // Remove object from all group indexes and add to specified one within
+        // a single Redis pipeline.
+
+        // Retrieve all set keys for this index group.
         $groupKeys = $this->getGroupKeys();
-        $usedKeys = $groupKeys;
 
         $this->redis->multi(\Redis::PIPELINE);
-        foreach ($groupKeys as $groupKey) {
-            $this->redis->sRem($groupKey, $objectId);
-        }
-
-        $indexKeyPrefix = $this->qualifyCacheKey($index);
-        $this->redis->sAdd($indexKeyPrefix . ':global', $objectId);
-        $usedKeys[] = 'global';
-
-        foreach ($filters as $filter) {
-            $this->redis->sAdd($indexKeyPrefix . ":{$filter}", $objectId);
-            $usedKeys[] = $filter;
-        }
-
+        $this->removeObjectFromSets($groupKeys, $objectId);
+        $this->addObjectToIndexSets($index, $objectId, $filters);
         $results = $this->redis->exec();
 
-        $results = array_combine($usedKeys, $results);
-        $removedFromIndexes = [];
-
-        foreach ($this->indexes as $index) {
-            $indexGlobalKey = $this->qualifyCacheKey($index) . ':global';
-            if (isset($results[$indexGlobalKey]) && $results[$indexGlobalKey]) {
-                $removedFromIndexes[] = $index;
-            }
-        }
-        return $removedFromIndexes;
+        // To determine which indexes object was removed from, slice results to
+        // just get through Redis sRem calls.
+        $removalResults = array_slice($results, 0, count($groupKeys));
+        $removalResults = array_combine($groupKeys, $removalResults);
+        return $this->getRemovedFromIndexes($removalResults);
     }
 
     public function getObjectsInIndex($index, GroupedFilterSet $filterSet = null)
     {
-        $indexKeyPrefix = $this->qualifyCacheKey($index);
-
         if (!$filterSet || count($filterSet) == 0) {
-            $objectIds = [];
-            $indexGlobalKey = $indexKeyPrefix . ':global';
-            $iterator = null;
-
-            while ($iObjectIds = $this->redis->sScan($iterator, $indexGlobalKey)) {
-                $objectIds = array_merge($objectIds, $iObjectIds);
-            }
-            return $objectIds;
+            // Not filtering; simply return objects in global.
+            return $this->getObjectsInIndexGlobal($index);
         }
 
         if (count($filterSet) == 1) {
+            // Filtering for a single filter group only. Run simple UNION.
             $filters = current($filterSet);
-            $indexKeys = array_map(
-                function($filter) use ($indexKeyPrefix) {
-                    return $indexKeyPrefix . ':' . $filter;
-                },
-                $filters
-            );
-            return $this->redis->sUnion(...$indexKeys);
+            return $this->getObjectsInIndexFilters($index, $filters);
         }
 
-        $intersectionKeys = [];
-        $tmpUnionKeys = [];
-
-        $this->redis->multi();
-
-        foreach ($filterSet as $filterGroupId => $filters) {
-            if (count($filters) == 1) {
-                $intersectionKeys[] = $indexKeyPrefix . ':' . $filters[0];
-            } else {
-                $indexKeys = array_map(
-                    function($filter) use ($indexKeyPrefix) {
-                        return $indexKeyPrefix . ':' . $filter;
-                    },
-                    $filters
-                );
-                $tmpUnionKey = $this->qualifyCacheKey(md5(uniqid()));
-                $intersectionKeys[] = $tmpUnionKey;
-                $tmpUnionKeys[] = $tmpUnionKey;
-                $this->redis->sUnionStore($tmpUnionKey, ...$indexKeys);
-            }
-        }
-
-        $this->redis->sInter(...$intersectionKeys);
-        $this->redis->del($tmpUnionKeys);
-        $results = $this->redis->exec();
-
-        $intersectionIndex = count($results) - 2;
-        return $results[$intersectionIndex];
+        // Filtering with multiple filter groups. Run UNIONs and INTERSECTIONs.
+        return $this->getObjectsInIndexGroupedFilters($index, $filterSet);
     }
 
     public function flushIndex($index)
@@ -199,6 +129,111 @@ class FilteredObjectIndexGroup
     {
         $groupKeys = $this->getGroupKeys();
         $this->redis->del($groupKeys);
+    }
+
+    protected function addObjectToIndexSets(
+        $index,
+        $objectId,
+        array $filters = []
+    ) {
+        // NOTE: This is a helper method used to make the set addition logic
+        // DRY. It's intentially not initializing a Redis pipeline/transaction
+        // because it knows its callers will need to handle based on their
+        // specific use case.
+
+        // Add to global set.
+        $setKey = $this->qualifyIndexGlobalKey($index);
+        $this->redis->sAdd($setKey, $objectId);
+        $setCount++;
+
+        // Add to each filter set.
+        foreach ($filters as $filter) {
+            $setKey = $this->qualifyIndexFilterKey($index, $filter);
+            $this->redis->sAdd($setKey, $objectId);
+        }
+    }
+
+    protected function removeObjectFromSets(array $setKeys, $objectId)
+    {
+        // NOTE: This is a helper method used to make the set removal logic DRY.
+        // It's intentionally not initializing a Redis pipeline/transaction
+        // because it knows its callers will need to handle based on their
+        // specific use case.
+
+        foreach ($setKeys as $setKey) {
+            $this->redis->sRem($setKey, $objectId);
+        }
+    }
+
+    protected function getRemovedFromIndexes(array $removalResults)
+    {
+        $removedFromIndexes = [];
+
+        foreach ($this->indexes as $index) {
+            $indexGlobalKey = $this->qualifyIndexGlobalKey($index);
+            if (isset($results[$indexGlobalKey]) && $results[$indexGlobalKey]) {
+                $removedFromIndexes[] = $index;
+            }
+        }
+        return $removedFromIndexes;
+    }
+
+    protected function getObjectsInIndexGlobal($index)
+    {
+        $objectIds = [];
+        $indexGlobalKey = $this->qualifyIndexGlobalKey($index);
+        $iterator = null;
+
+        while ($iObjectIds = $this->redis->sScan($iterator, $indexGlobalKey)) {
+            $objectIds = array_merge($objectIds, $iObjectIds);
+        }
+        return $objectIds;
+    }
+
+    protected function getObjectsInIndexFilters($index, array $filters)
+    {
+        $indexKeys = $this->qualifyIndexFilterKeys($index, $filters);
+        return $this->redis->sUnion(...$indexKeys);
+    }
+
+    protected function getObjectsInIndexGroupedFilters(
+        $index,
+        GroupedFilterSet $filterSet
+    ) {
+        $intersectionKeys = [];
+        $tmpUnionKeys = [];
+
+        $this->redis->multi(\Redis::PIPELINE);
+
+        foreach ($filterSet as $filterGroupId => $filters) {
+            if (count($filters) == 1) {
+                // Since only a single filter for this filter group, we just
+                // need to record this index key for the ultimate INTERSECTION.
+                $indexKey = $this->qualifyIndexFilterKey($index, $filters[0]);
+                $intersectionKeys[] = $indexKey;
+            } else {
+                // Since multiple, filters for same filter group, we need to
+                // store UNION of all objects in filters in temporary key.
+                $tmpUnionKey = $this->generateRandomKey();
+                $indexKeys = $this->qualifyIndexFilterKeys($index, $filters);
+                $this->redis->sUnionStore($tmpUnionKey, ...$indexKeys);
+
+                $intersectionKeys[] = $tmpUnionKey;
+                $tmpUnionKeys[] = $tmpUnionKey;
+            }
+        }
+
+        $this->redis->sInter(...$intersectionKeys);
+        $this->redis->del($tmpUnionKeys);
+        $results = $this->redis->exec();
+
+        $intersectionIndex = count($results) - 2;
+        return $results[$intersectionIndex];
+    }
+
+    protected function generateRandomKey()
+    {
+        return $this->qualifyCacheKey(md5(uniqid()));
     }
 
     protected function getGroupKeys()
@@ -221,6 +256,26 @@ class FilteredObjectIndexGroup
             $keys = array_merge($keys, $iKeys);
         }
         return $keys;
+    }
+
+    protected function qualifyIndexGlobalKey($index)
+    {
+        return $this->qualifyCacheKey("{$index}:global");
+    }
+
+    protected function qualifyIndexFilterKey($index, $filter)
+    {
+        return $this->qualifyCacheKey("{$index}:{$filter}");
+    }
+
+    protected function qualifyIndexFilterKeys($index, array $filters)
+    {
+        return array_map(
+            function($filter) use ($index) {
+                return $this->qualifyIndexFilterKey($index, $filter);
+            },
+            $filters
+        );
     }
 
     protected function qualifyCacheKey($key)
