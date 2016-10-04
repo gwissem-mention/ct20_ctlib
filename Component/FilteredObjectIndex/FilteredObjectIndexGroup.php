@@ -107,7 +107,7 @@ class FilteredObjectIndexGroup
 
         if (count($filterSet) == 1) {
             // Filtering for a single filter group only. Run simple UNION.
-            $filters = current($filterSet);
+            $filters = $filterSet->current();
             return $this->getObjectsInIndexFilters($index, $filters);
         }
 
@@ -184,7 +184,7 @@ class FilteredObjectIndexGroup
         $indexGlobalKey = $this->qualifyIndexGlobalKey($index);
         $iterator = null;
 
-        while ($iObjectIds = $this->redis->sScan($iterator, $indexGlobalKey)) {
+        while ($iObjectIds = $this->redis->sScan($indexGlobalKey, $iterator)) {
             $objectIds = array_merge($objectIds, $iObjectIds);
         }
         return $objectIds;
