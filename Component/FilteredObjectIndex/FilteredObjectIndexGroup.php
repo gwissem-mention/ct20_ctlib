@@ -170,7 +170,8 @@ class FilteredObjectIndexGroup
 
         foreach ($this->indexes as $index) {
             $indexGlobalKey = $this->qualifyIndexGlobalKey($index);
-            if (isset($results[$indexGlobalKey]) && $results[$indexGlobalKey]) {
+            if (isset($removalResults[$indexGlobalKey])
+                && $removalResults[$indexGlobalKey]) {
                 $removedFromIndexes[] = $index;
             }
         }
