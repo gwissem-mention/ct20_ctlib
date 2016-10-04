@@ -144,7 +144,6 @@ class FilteredObjectIndexGroup
         // Add to global set.
         $setKey = $this->qualifyIndexGlobalKey($index);
         $this->redis->sAdd($setKey, $objectId);
-        $setCount++;
 
         // Add to each filter set.
         foreach ($filters as $filter) {
