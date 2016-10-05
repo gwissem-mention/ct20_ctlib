@@ -376,7 +376,7 @@ class FilteredObjectIndexGroup
     protected function getGroupKeys()
     {
         $groupKeyPattern = $this->qualifyKey('*');
-        return $this->getKeysForPattern($groupKeyPattern);
+        return $this->redis->scanForKeys($groupKeyPattern);
     }
 
     /**
@@ -387,23 +387,7 @@ class FilteredObjectIndexGroup
     protected function getIndexKeys($index)
     {
         $indexKeyPattern = $this->qualifyKey($index) . ':*';
-        return $this->getKeysForPattern($indexKeyPattern);
-    }
-
-    /**
-     * Returns Redis keys defined for specified pattern.
-     * @param string $pattern
-     * @return array
-     * @todo Move this method to CellTrakRedis
-     */
-    protected function getKeysForPattern($pattern)
-    {
-        $keys = [];
-        $iterator = null;
-        while ($iKeys = $this->redis->scan($iterator, $pattern)) {
-            $keys = array_merge($keys, $iKeys);
-        }
-        return $keys;
+        return $this->redis->scanForKeys($indexKeyPattern);
     }
 
     /**
