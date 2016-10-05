@@ -37,6 +37,7 @@ class CTLibExtension extends Extension
         $this->loadCTAPIServices($config['ct_api'], $container);
         $this->loadHtmlToPdfServices($config['html_to_pdf'], $container);
         $this->loadActionLogServices($config['action_log'], $container);
+        $this->loadFilteredObjectIndexServices($config['filtered_object_index'], $container);
     }
 
     protected function loadCacheManagerServices($config, $container)
@@ -617,5 +618,31 @@ class CTLibExtension extends Extension
         $def = new Definition('CTLib\Component\ActionLog\ActionLogReader', $args);
         $container->setDefinition('action_log.action_log_reader', $def);
         $container->setAlias('action_log_reader', 'action_log.action_log_reader');
+    }
+
+    protected function loadFilteredObjectIndexServices($config, $container)
+    {
+        if (!$config['enabled']) {
+            return;
+        }
+
+        $groupClass = 'CTLib\Component\FilteredObjectIndex\FilteredObjectIndexGroup';
+        $loggerReference = new Reference('logger');
+
+        foreach ($config['groups'] as $groupName => $groupConfig) {
+            $args = [
+                $groupConfig['key_namespace'],
+                new Reference($groupConfig['redis_client']),
+                $loggerReference
+            ];
+            $def = new Definition($groupClass, $args);
+
+            foreach ($groupConfig['indexes'] as $index) {
+                $def->addMethodCall('addIndex', [$index]);
+            }
+
+            $serviceId = "filtered_object_index_group.{$groupName}";
+            $container->setDefinition($serviceId, $def);
+        }
     }
 }
