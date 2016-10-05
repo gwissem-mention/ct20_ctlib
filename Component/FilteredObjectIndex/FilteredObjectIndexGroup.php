@@ -91,7 +91,7 @@ class FilteredObjectIndexGroup
      * @param string $index
      * @param mixed $objectId
      * @param array $filters    Set of filters assigned to object.
-     * @return boolean  Indicates whether object was added.
+     * @return void
      */
     public function addObjectToIndex($index, $objectId, array $filters = [])
     {
@@ -99,11 +99,14 @@ class FilteredObjectIndexGroup
             throw new \InvalidArgumentException("Index '{$index}' is not in group");
         }
 
-        $this->redis->multi(\Redis::PIPELINE);
-        $this->addObjectToIndexSets($index, $objectId, $filters);
-        $results = $this->redis->exec();
+        // When adding an object to an index, make sure that it's cleared out
+        // of the index first so stale filter assignments don't persist.
+        $indexKeys = $this->getIndexKeys($index);
 
-        return in_array(1, $results);
+        $this->redis->multi(\Redis::PIPELINE);
+        $this->removeObjectFromSets($indexKeys, $objectId);
+        $this->addObjectToIndexSets($index, $objectId, $filters);
+        $this->redis->exec();
     }
 
     /**
@@ -341,7 +344,7 @@ class FilteredObjectIndexGroup
                 $indexKey = $this->qualifyIndexFilterKey($index, $filters[0]);
                 $intersectionKeys[] = $indexKey;
             } else {
-                // Since multiple, filters for same filter group, we need to
+                // Since multiple filters for same filter group, we need to
                 // store UNION of all objects in filters in temporary key.
                 $tmpUnionKey = $this->generateRandomKey();
                 $indexKeys = $this->qualifyIndexFilterKeys($index, $filters);
