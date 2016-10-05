@@ -359,6 +359,8 @@ class FilteredObjectIndexGroup
         $this->redis->del($tmpUnionKeys);
         $results = $this->redis->exec();
 
+        // Only interested in the SINTER result from the overall pipeline
+        // results.
         $intersectionIndex = count($results) - 2;
         return $results[$intersectionIndex];
     }
