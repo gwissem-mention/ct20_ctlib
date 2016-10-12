@@ -203,6 +203,47 @@ class FilteredObjectIndexGroup
     }
 
     /**
+     * Indicates whether object is in index.
+     * @param string $index
+     * @param mixed $objectId
+     * @return boolean
+     */
+    public function isObjectInIndex($index, $objectId)
+    {
+        if (!$this->hasIndex($index)) {
+            throw new \InvalidArgumentException("Index '{$index}' is not in group");
+        }
+
+        $setKey = $this->qualifyIndexGlobalKey($index);
+        return $this->redis->sIsMember($setKey, $objectId);
+    }
+
+    /**
+     * Returns all indexes containing object.
+     *
+     * @param mixed $objectId
+     * @return array [$index, ...]
+     */
+    public function getIndexesWithObject($objectId)
+    {
+        $this->redis->multi(\Redis::PIPELINE);
+
+        foreach ($this->indexes as $index) {
+            $setKey = $this->qualifyIndexGlobalKey($index);
+            $this->redis->sIsMember($setKey, $objectId);
+        }
+
+        $results = $this->redis->exec();
+
+        // Combine with indexes to create $index => $found (0/1) mapping.
+        $results = array_combine($this->indexes, $results);
+        // Reduce to only those where $found = 1.
+        $results = array_filter($results);
+        // Return just the index names.
+        return array_keys($results);
+    }
+
+    /**
      * Flush all objects out of index.
      * @param string $index
      * @return void
