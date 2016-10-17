@@ -4,6 +4,7 @@ namespace CTLib\Component\ActionLog;
 
 use CTLib\Util\Util;
 use CTLib\Component\Doctrine\ORM\EntityDelta;
+use CTLib\Component\FilteredObjectIndex\EntityFilterCompiler;
 
 /**
  * Class ActionLogger
@@ -37,6 +38,11 @@ class ActionLogger
      */
     protected $source;
 
+    /**
+     * @var array
+     */
+    protected $filterCompilers = [];
+
 
     /**
      * @param EntityManager $entityManager
@@ -51,6 +57,24 @@ class ActionLogger
         $this->ctApiCaller      = $ctApiCaller;
         $this->entityMetaHelper = $entityManager->getEntityMetaHelper();
         $this->source           = $source;
+    }
+
+    /**
+    * Register a filter compiler with this service.
+    *
+    * @param string $filterCompilerId
+    * @param string $filterCompilerClass
+    * @param EntityFilterCompiler $filterCompiler
+    */
+    public function registerEntityFilterCompiler(
+        $filterCompilerId,
+        $filterCompilerClass,
+        EntityFilterCompiler $filterCompiler
+    ) {
+        $this->filterCompilers[$filterCompilerId] = [
+            $filterCompilerClass,
+            $filterCompiler
+        ];
     }
 
     /**
@@ -208,9 +232,33 @@ class ActionLogger
             if ($delta) {
                 $doc['affectedEntity']['properties'][] = $delta;
             }
+
+            $filters = $this->getEntityFilters($entity);
+            $doc['affectedEntity']['filters'] = $filters;
         }
 
         return json_encode($doc);
+    }
+
+    /**
+     * Get all the filters related to the given entity.
+     *
+     * @param $entity
+     *
+     * @return array
+     */
+    protected function getEntityFilters($entity)
+    {
+        $filters = [];
+
+        foreach ($this->filterCompilers as $filterCompiler) {
+            if ($filterCompiler->supportsEntity($entity)) {
+                $filters = $filterCompiler->compileFilters($entity);
+                break;
+            }
+        }
+
+        return $filters;
     }
 
     /**
