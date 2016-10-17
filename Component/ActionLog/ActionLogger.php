@@ -63,18 +63,13 @@ class ActionLogger
     * Register a filter compiler with this service.
     *
     * @param string $filterCompilerId
-    * @param string $filterCompilerClass
     * @param EntityFilterCompiler $filterCompiler
     */
     public function registerEntityFilterCompiler(
         $filterCompilerId,
-        $filterCompilerClass,
         EntityFilterCompiler $filterCompiler
     ) {
-        $this->filterCompilers[$filterCompilerId] = [
-            $filterCompilerClass,
-            $filterCompiler
-        ];
+        $this->filterCompilers[$filterCompilerId] = $filterCompiler;
     }
 
     /**

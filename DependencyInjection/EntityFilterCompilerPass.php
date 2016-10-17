@@ -26,10 +26,8 @@ class EntityFilterCompilerPass implements CompilerPassInterface
 
         foreach ($services as $serviceId => $tagAttributes) {
             $definition    = $container->getDefinition($serviceId);
-            $serviceClass  = $serviceDefinition->getClass();
             $args          = [
                 $serviceId,
-                $serviceClass,
                 new Reference($serviceId)
             ];
             $definition->addMethodCall('registerEntityFilterCompiler', $args);
