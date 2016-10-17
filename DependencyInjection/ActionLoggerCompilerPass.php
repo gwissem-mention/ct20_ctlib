@@ -8,25 +8,31 @@ use Symfony\Component\DependencyInjection\Reference;
 use CTLib\Util\Arr;
 
 /**
- * Compiler pass that registers caached services.
+ * Compiler pass that registers entity filter compiler services
+ * for ActionLogger service.
  *
  * @author David McLean <dmclean@celltrak.com>
  */
-class EntityFilterCompilerPass implements CompilerPassInterface
+class ActionLoggerCompilerPass implements CompilerPassInterface
 {
     /**
      * {@inheritDoc}
      */
     public function process(ContainerBuilder $container)
     {
+        if (!$container->hasDefinition('action_log.action_logger')) {
+            return;
+        }
+
         $services = $container->findTaggedServiceIds('ctlib.entity_filter_compiler');
         if (!$services) {
             return;
         }
 
+        $definition = $container->getDefinition('action_log.action_logger');
+
         foreach ($services as $serviceId => $tagAttributes) {
-            $definition    = $container->getDefinition($serviceId);
-            $args          = [
+            $args = [
                 $serviceId,
                 new Reference($serviceId)
             ];

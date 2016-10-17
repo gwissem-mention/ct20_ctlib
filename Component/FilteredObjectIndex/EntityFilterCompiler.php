@@ -12,12 +12,20 @@ interface EntityFilterCompiler
     /**
      * Determines if the compiler supports compiling
      * filters for the given entity.
+     *
+     * @param $entity
+     *
+     * @return bool
      */
-    function supportsEntity();
+    function supportsEntity($entity);
 
     /**
      * Retrieve and collect all filters associated
      * to an entity.
+     *
+     * @param $entity
+     *
+     * @return array
      */
-    function compileFilters();
+    function compileFilters($entity);
 }
