@@ -24,7 +24,7 @@ class ActionLoggerCompilerPass implements CompilerPassInterface
             return;
         }
 
-        $services = $container->findTaggedServiceIds('ctlib.entity_filter_compiler');
+        $services = $container->findTaggedServiceIds('action_logger.entity_filter_compiler');
         if (!$services) {
             return;
         }
