@@ -6,6 +6,7 @@ use Symfony\Component\DependencyInjection\ContainerBuilder;
 use CTLib\DependencyInjection\LoggerCompilerPass;
 use CTLib\DependencyInjection\EntityManagerCompilerPass;
 use CTLib\DependencyInjection\CachedComponentCompilerPass;
+use CTLib\DependencyInjection\ActionLoggerCompilerPass;
 
 class CTLib extends Bundle
 {
@@ -16,6 +17,7 @@ class CTLib extends Bundle
         $container->addCompilerPass(new LoggerCompilerPass);
         $container->addCompilerPass(new EntityManagerCompilerPass);
         $container->addCompilerPass(new CachedComponentCompilerPass);
+        $container->addCompilerPass(new ActionLoggerCompilerPass);
     }
 
 	public static function getCTLibVersion()
