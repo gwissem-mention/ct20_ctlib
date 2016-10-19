@@ -129,7 +129,7 @@ class ActionLogQueryBuilder
      *
      * @return ActionLogQueryBuilder
      */
-    public function addFiltersFilter(array $filterIds)
+    public function setFiltersFilter(array $filterIds)
     {
         $this->queryFilters['affectedEntity.filters'] = $filterIds;
         return $this;
