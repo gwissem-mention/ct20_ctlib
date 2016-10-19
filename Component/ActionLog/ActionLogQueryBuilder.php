@@ -43,8 +43,8 @@ class ActionLogQueryBuilder
 
 
     /**
-     * @param EntityMetaHelper $entityMetaHelper
      * @param CtApiDocumentDataAccess $dataAccess
+     * @param EntityMetaHelper $entityMetaHelper
      */
     public function __construct($dataAccess, $entityMetaHelper)
     {
@@ -121,6 +121,17 @@ class ActionLogQueryBuilder
 
         $this->queryFilters['affectedEntity.class'] = $className;
         $this->queryFilters['affectedEntity.id'] = $ids;
+        return $this;
+    }
+
+    /**
+     * @param array $filterIds
+     *
+     * @return ActionLogQueryBuilder
+     */
+    public function setFiltersFilter(array $filterIds)
+    {
+        $this->queryFilters['affectedEntity.filters'] = $filterIds;
         return $this;
     }
 
