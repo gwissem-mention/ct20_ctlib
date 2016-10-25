@@ -12,11 +12,6 @@ use CellTrak\RedisBundle\Component\Client\CellTrakRedis;
 abstract class FilterCache
 {
     /**
-     * @var string $namespace
-     */
-    protected $namespace;
-
-    /**
      * @var CellTrakRedis $redis
      */
     protected $redis;
@@ -54,7 +49,6 @@ abstract class FilterCache
             throw new \InvalidArgumentException("Invalid class");
         }
 
-        $this->namespace      = $namespace;
         $this->redis          = $redis;
         $this->ttl            = $ttl;
         $this->cacheKeyPrefix = "fc:$namespace:$class:";
@@ -70,8 +64,8 @@ abstract class FilterCache
     {
         $this->redis->setex(
             $this->getCacheKey($key),
-            implode(',', $value)
-            $this->ttl
+            $this->ttl,
+            json_encode($value)
         );
     }
 
@@ -84,11 +78,7 @@ abstract class FilterCache
     */
     public function get($key)
     {
-        $vals = $this->redis->get($this->getCacheKey($key));
-        if ($vals) {
-            return explode(',', $vals);
-        }
-        return null;
+        return json_decode($this->redis->get($this->getCacheKey($key)), true);
     }
 
     /**
@@ -96,11 +86,11 @@ abstract class FilterCache
     *
     * @param int $key
     *
-    * @return bool
+    * @return int
     */
     public function delete($key)
     {
-        return $this->redis-del($this->getCacheKey($key)) > 0;
+        return $this->redis->del($this->getCacheKey($key)) > 0;
     }
 
     /**
@@ -110,7 +100,8 @@ abstract class FilterCache
      */
     public function flush()
     {
-        return $this->redis->del($this->cacheKeyPrefix.'*');
+        $keys = $this->redis->scanForKeys($this->cacheKeyPrefix.'*');
+        return $this->redis->del($keys);
     }
 
     /**
