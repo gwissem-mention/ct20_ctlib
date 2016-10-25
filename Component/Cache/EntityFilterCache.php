@@ -60,7 +60,7 @@ abstract class EntityFilterCache
     * @param int   $key
     * @param array $value
     */
-    public function set($key, array $value)
+    public function setFilterIds($key, array $value)
     {
         $this->redis->setex(
             $this->getCacheKey($key),
@@ -76,7 +76,7 @@ abstract class EntityFilterCache
     *
     * @return array|null
     */
-    public function get($key)
+    public function getFilterIds($key)
     {
         return json_decode($this->redis->get($this->getCacheKey($key)), true);
     }
@@ -88,7 +88,7 @@ abstract class EntityFilterCache
     *
     * @return int
     */
-    public function delete($key)
+    public function deleteFilterIds($key)
     {
         return $this->redis->del($this->getCacheKey($key)) > 0;
     }
@@ -98,7 +98,7 @@ abstract class EntityFilterCache
      *
      * @return int
      */
-    public function flush()
+    public function flushFilterIds()
     {
         $keys = $this->redis->scanForKeys($this->cacheKeyPrefix.'*');
         return $this->redis->del($keys);
