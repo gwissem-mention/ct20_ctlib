@@ -19,6 +19,7 @@ class CTLibExtension extends Extension
 
         $this->loadCacheManagerServices($config['cache'], $container);
         $this->loadSimpleCacheServices($config['simple_cache'], $container);
+        $this->loadEntityFilterCacheServices($config['entity_filter_cache'], $container);
         $this->loadProcessLockServices($config['process_lock'], $container);
         $this->loadLoggingServices($config['logging'], $container);
         $this->loadSystemAlertServices($config['system_alerts'], $container);
@@ -68,6 +69,27 @@ class CTLibExtension extends Extension
             $args
         );
         $container->setDefinition("simple_cache", $def);
+    }
+
+    protected function loadEntityFilterCacheServices($config, $container)
+    {
+        if (!$config['enabled']) {
+            return;
+        }
+
+        $serviceClass = 'CTLib\Component\Cache\EntityFilterCache';
+
+        foreach ($config['entities'] as $entityName => $entityConfig) {
+            $args = [
+                $entityConfig['namespace'],
+                new Reference($entityConfig['redis_client']),
+                $entityConfig['ttl']
+            ];
+            $def = new Definition($serviceClass, $args);
+
+            $serviceId = "entity_filter_cache.{$entityName}";
+            $container->setDefinition($serviceId, $def);
+        }
     }
 
     protected function loadProcessLockServices($config, $container)
