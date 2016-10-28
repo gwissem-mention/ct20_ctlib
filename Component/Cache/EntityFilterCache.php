@@ -17,6 +17,11 @@ class EntityFilterCache implements CachedComponentInterface
     protected $redis;
 
     /**
+     * @var string $namespace
+     */
+    protected $namespace;
+
+    /**
      * @var int $ttl
      */
     protected $ttl;
@@ -28,7 +33,6 @@ class EntityFilterCache implements CachedComponentInterface
 
 
     /**
-     * @param string        $entityClass
      * @param string        $namespace
      * @param CellTrakRedis $redis
      * @param int           $ttl
@@ -36,14 +40,14 @@ class EntityFilterCache implements CachedComponentInterface
      * @throws InvalidArgumentException
      */
     public function __construct(
-        $entityClass,
         $namespace,
         CellTrakRedis $redis,
         $ttl
     ) {
         $this->redis          = $redis;
+        $this->namespace      = $namespace;
         $this->ttl            = $ttl;
-        $this->cacheKeyPrefix = "fc:$namespace:$entityClass:";
+        $this->cacheKeyPrefix = "fc:";
     }
 
     /**
@@ -108,6 +112,7 @@ class EntityFilterCache implements CachedComponentInterface
      */
     public function warmCache()
     {
+        // Warming cache for entity filters is not supported.
     }
 
     /**
@@ -116,7 +121,7 @@ class EntityFilterCache implements CachedComponentInterface
     public function flushCache()
     {
         $keys = $this->redis->scanForKeys(
-            $this->cacheKeyPrefix . '*'
+            $this->cacheKeyPrefix . $this->namespace . ':*'
         );
         return $this->redis->del($keys);
     }
@@ -127,20 +132,22 @@ class EntityFilterCache implements CachedComponentInterface
     public function inspectCache()
     {
         $keys = $this->redis->scanForKeys(
-            $this->cacheKeyPrefix . '*'
+            $this->cacheKeyPrefix . $this->namespace . ':*'
         );
 
-        $startPos = strlen($this->cacheKeyPrefix.':');
+        $startPos = strpos($this->namespace, ':');
+        $class = substr($this->namespace, $startPos + 1);
+        $startPos = strlen($this->cacheKeyPrefix . $this->namespace . ':');
 
-        $content .= "$entity:" . PHP_EOL;
+        $content = ucwords("$class:", "_") . PHP_EOL;
+        $content = str_replace("_", "", $content);
 
         foreach ($keys as $key) {
             $entityId = substr($key, $startPos);
             $content .= str_pad("   $entityId", 12) . " => Filters: "
                 . $this->redis->get($this->compileCacheKey($entityId))
-                . PHP_EOL;
+                . PHP_EOL.PHP_EOL;
         }
-        $content .= PHP_EOL;
 
         return ['content' => $content];
     }
@@ -150,7 +157,7 @@ class EntityFilterCache implements CachedComponentInterface
      */
     public function getCacheDescription()
     {
-        return "Manage cache for entity filters";
+        return "Manage cache for entity {$this->namespace} filters";
     }
 
     /**
@@ -160,6 +167,6 @@ class EntityFilterCache implements CachedComponentInterface
      */
     protected function compileCacheKey($entityId)
     {
-        return $this->cacheKeyPrefix . $entityId;
+        return $this->cacheKeyPrefix . $this->namespace . ":$entityId";
     }
 }

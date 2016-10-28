@@ -81,14 +81,13 @@ class CTLibExtension extends Extension
 
         foreach ($config['entities'] as $entityName => $entityConfig) {
             $args = [
-                $entityConfig['class'],
                 $entityConfig['namespace'],
                 new Reference($entityConfig['redis_client']),
                 $entityConfig['ttl']
             ];
             $def = new Definition($serviceClass, $args);
 
-            $serviceId = "entity_filter_cache.{$config['class']}";
+            $serviceId = "entity_filter_cache.{$entityName}";
             $container->setDefinition($serviceId, $def);
         }
     }
