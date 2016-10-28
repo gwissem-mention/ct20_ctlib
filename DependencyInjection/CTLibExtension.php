@@ -77,21 +77,20 @@ class CTLibExtension extends Extension
             return;
         }
 
-        $class = 'CTLib\Component\Cache\EntityFilterCache';
+        $serviceClass = 'CTLib\Component\Cache\EntityFilterCache';
 
-        $args = [
-            $config['namespace'],
-            new Reference($config['redis_client']),
-            new Reference('doctrine.orm.default_entity_manager'),
-            $config['ttl']
-        ];
-        $def = new Definition($class, $args);
+        foreach ($config['entities'] as $entityName => $entityConfig) {
+            $args = [
+                $entityConfig['class'],
+                $entityConfig['namespace'],
+                new Reference($entityConfig['redis_client']),
+                $entityConfig['ttl']
+            ];
+            $def = new Definition($serviceClass, $args);
 
-        foreach ($config['entities'] as $entity) {
-            $def->addMethodCall('addEntity', [$entity]);
+            $serviceId = "entity_filter_cache.{$config['class']}";
+            $container->setDefinition($serviceId, $def);
         }
-
-        $container->setDefinition('entity_filter_cache', $def);
     }
 
     protected function loadProcessLockServices($config, $container)

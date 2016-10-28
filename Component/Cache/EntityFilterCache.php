@@ -3,7 +3,6 @@
 namespace CTLib\Component\Cache;
 
 use CellTrak\RedisBundle\Component\Client\CellTrakRedis;
-use CTLib\Component\Doctrine\ORM\EntityManager;
 
 /**
 * Wrapper class to use redis to store cached filter data.
@@ -18,11 +17,6 @@ class EntityFilterCache implements CachedComponentInterface
     protected $redis;
 
     /**
-     * @var EntityManager
-     */
-    protected $entityManager;
-
-    /**
      * @var int $ttl
      */
     protected $ttl;
@@ -32,88 +26,36 @@ class EntityFilterCache implements CachedComponentInterface
      */
     private $cacheKeyPrefix;
 
-    /**
-     * @var array
-     */
-    protected $entities;
-
 
     /**
+     * @param string        $entityClass
      * @param string        $namespace
      * @param CellTrakRedis $redis
-     * @param EntityManager $entityManager
      * @param int           $ttl
      *
      * @throws InvalidArgumentException
      */
     public function __construct(
+        $entityClass,
         $namespace,
         CellTrakRedis $redis,
-        EntityManager $entityManager,
         $ttl
     ) {
         $this->redis          = $redis;
-        $this->entityManager  = $entityManager;
         $this->ttl            = $ttl;
-        $this->cacheKeyPrefix = "fc:$namespace:";
-        $this->entities       = [];
-    }
-
-    /**
-     * Adds a supported entity name.
-     *
-     * @param string $entityName
-     *
-     * @return void
-     */
-    public function addEntity($entityName)
-    {
-        if (!$this->supportsEntity($entityName)) {
-            $this->entities[] = $entityName;
-        }
-    }
-
-    /**
-     * Indicates whether we are currently supporting
-     * the given entity name.
-     *
-     * @param string $entityName
-     *
-     * @return boolean
-     */
-    public function supportsEntity($entityName)
-    {
-        return in_array($entityName, $this->entities);
-    }
-
-    /**
-     * Returns names of all currently supported entities.
-     *
-     * @return array
-     */
-    public function getEntities()
-    {
-        return $this->entities;
+        $this->cacheKeyPrefix = "fc:$namespace:$entityClass:";
     }
 
     /**
     * Set an entry in cache.
     *
-    * @param $entity
+    * @param int   $entityId
     * @param array $filterIds
     */
-    public function setFilterIds($entity, array $filterIds)
+    public function setFilterIds($entityId, array $filterIds)
     {
-        $class = $this->getClassName($entity);
-
-        if (!$this->supportsEntity($class)) {
-            throw new \InvalidArgumentException("Unsupported entity - $class");
-        }
-
-        $entityId = $this->getEntityId($entity);
-
         $this->redis->setex(
-            $this->compileCacheKey($class, $entityId),
+            $this->compileCacheKey($entityId),
             $this->ttl,
             json_encode($filterIds)
         );
@@ -122,23 +64,13 @@ class EntityFilterCache implements CachedComponentInterface
     /**
     * Get an entry from cache.
     *
-    * @param $entity
+    * @param int $entityId
     *
     * @return array|null
     */
-    public function getFilterIds($entity)
+    public function getFilterIds($entityId)
     {
-        $class = $this->getClassName($entity);
-
-        if (!$this->supportsEntity($class)) {
-            throw new \InvalidArgumentException("Unsupported entity - $class");
-        }
-
-        $entityId = $this->getEntityId($entity);
-
-        $filterIds = $this->redis->get(
-            $this->compileCacheKey($class, $entityId)
-        );
+        $filterIds = $this->redis->get($this->compileCacheKey($entityId));
 
         if (!$filterIds) {
             return null;
@@ -150,43 +82,25 @@ class EntityFilterCache implements CachedComponentInterface
     /**
     * Delete an entry from the cache.
     *
-    * @param $entity
+    * @param int $entityId
     *
     * @return int
     */
-    public function deleteFilterIds($entity)
+    public function deleteFilterIds($entityId)
     {
-        $class = $this->getClassName($entity);
-
-        if (!$this->supportsEntity($class)) {
-            throw new \InvalidArgumentException("Unsupported entity - $class");
-        }
-
-        $entityId = $this->getEntityId($entity);
-
-        return $this->redis->del(
-            $this->compileCacheKey($class, $entityId)
-        ) > 0;
+        return $this->redis->del($this->compileCacheKey($entityId)) > 0;
     }
 
     /**
      * Test if an entry exists in the cache.
      *
-     * @param $entity
+     * @param int $entityId
      *
      * @return boolean
      */
-    public function containsEntityId($entity)
+    public function containsEntityId($entityId)
     {
-        $class = $this->getClassName($entity);
-
-        if (!$this->supportsEntity($class)) {
-            throw new \InvalidArgumentException("Unsupported entity - $class");
-        }
-
-        $entityId = $this->getEntityId($entity);
-
-        return $this->redis->exists($this->compileCacheKey($class, $entityId[0]));
+        return $this->redis->exists($this->compileCacheKey($entityId));
     }
 
     /**
@@ -194,7 +108,6 @@ class EntityFilterCache implements CachedComponentInterface
      */
     public function warmCache()
     {
-        throw new \RuntimeException('warmCache not supported for EntityFilterCache.');
     }
 
     /**
@@ -202,16 +115,10 @@ class EntityFilterCache implements CachedComponentInterface
      */
     public function flushCache()
     {
-        $count = 0;
-
-        foreach ($this->entities as $entity) {
-            $keys = $this->redis->scanForKeys(
-                $this->cacheKeyPrefix . $entity . ':*'
-            );
-            $count += $this->redis->del($keys);
-        }
-
-        return $count;
+        $keys = $this->redis->scanForKeys(
+            $this->cacheKeyPrefix . '*'
+        );
+        return $this->redis->del($keys);
     }
 
     /**
@@ -219,25 +126,21 @@ class EntityFilterCache implements CachedComponentInterface
      */
     public function inspectCache()
     {
-        $content = '';
+        $keys = $this->redis->scanForKeys(
+            $this->cacheKeyPrefix . '*'
+        );
 
-        foreach ($this->entities as $entity) {
-            $content .= "$entity:" . PHP_EOL;
+        $startPos = strlen($this->cacheKeyPrefix.':');
 
-            $keys = $this->redis->scanForKeys(
-                $this->cacheKeyPrefix . $entity . ':*'
-            );
+        $content .= "$entity:" . PHP_EOL;
 
-            $startPos = strlen($this->cacheKeyPrefix.$entity.':');
-
-            foreach ($keys as $key) {
-                $entityId = substr($key, $startPos);
-                $content .= str_pad("   $entityId", 12) . " => Filters: "
-                    . $this->redis->get($this->compileCacheKey($entity, $entityId))
-                    . PHP_EOL;
-            }
-            $content .= PHP_EOL;
+        foreach ($keys as $key) {
+            $entityId = substr($key, $startPos);
+            $content .= str_pad("   $entityId", 12) . " => Filters: "
+                . $this->redis->get($this->compileCacheKey($entityId))
+                . PHP_EOL;
         }
+        $content .= PHP_EOL;
 
         return ['content' => $content];
     }
@@ -251,48 +154,12 @@ class EntityFilterCache implements CachedComponentInterface
     }
 
     /**
-     * @param string $class
      * @param int $entityId
      *
      * @return string
      */
-    protected function compileCacheKey($class, $entityId)
+    protected function compileCacheKey($entityId)
     {
-        return $this->cacheKeyPrefix . $class . ':' . $entityId;
-    }
-
-    /**
-     * Helper to get the given entity's primary id.
-     *
-     * @param $entity
-     *
-     * @return boolean
-     */
-    protected function getEntityId($entity)
-    {
-        if (method_exists($entity, 'getEntityId')) {
-            return $entity->getEntityId();
-        } else {
-            $entityId = $this->entityManager->getEntityLogicalId($entity);
-            $entityId = array_values($entityId);
-            return $entityId[0];
-        }
-    }
-
-    /**
-     * Helper to get the class name without the namespance.
-     *
-     * @param $entity
-     *
-     * @return string
-     */
-    protected function getClassName($entity)
-    {
-        $className = get_class($entity);
-        $pos = strrpos($className, "\\");
-        if ($pos === false) {
-            return null;
-        }
-        return substr($className, $pos + 1);
+        return $this->cacheKeyPrefix . $entityId;
     }
 }

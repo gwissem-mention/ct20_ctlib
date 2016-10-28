@@ -50,11 +50,21 @@ class CacheCommand extends BaseCommand
         $cachedComponentId = $input->getArgument('cachedComponent');
 
         if (!$cachedComponentId
-            && in_array($action, ['warmup-cache', 'flush-cache', 'inspect-cache'])) {
+            && in_array($action, ['reload-cache, warmup-cache', 'flush-cache', 'inspect-cache'])) {
                 throw new \RuntimeException("cachedComponent argument must be provided for '{$action}'");
         }
 
         switch ($action) {
+            case 'reload-cache':
+                $this->execReloadCachedComponent(
+                    $cachedComponentId,
+                    $input,
+                    $output
+                );
+                break;
+                case 'reload-all-cache':
+                    $this->execReloadCache($input, $output);
+                    break;
             case 'warmup-cache':
                 $this->execWarmupCachedComponent(
                     $cachedComponentId,
@@ -130,6 +140,10 @@ class CacheCommand extends BaseCommand
              . "\n"
 
              . "\n" . str_repeat("-", $dividerLength)
+             . "\n  " . $this->formatActionInfo("reload-cache {component}", "Flush and warm up the cache for a single given cached component")
+             . "\n  " . $this->formatActionInfo("reload-all-cache", "Flush and warm up cache for all cached components")
+
+             . "\n" . str_repeat("-", $dividerLength)
              . "\n  " . $this->formatActionInfo("warmup-cache {component}", "Warm up the cache for a single given cached component")
              . "\n  " . $this->formatActionInfo("warmup-all-cache", "Warm up cache for all cached components")
 
@@ -171,6 +185,40 @@ class CacheCommand extends BaseCommand
         $msg .= $this->cachedComponentManager->listCachedComponents();
 
         $output->writeln($msg);
+    }
+
+    /**
+     * Flush and warm up the cache for a sigle cached component.
+     *
+     * @param  string $cachedComponentId
+     * @param  InputInterface $input
+     * @param  OutputInterface $output
+     *
+     * @return void
+     */
+    protected function execReloadCachedComponent(
+        $cachedCompenentId,
+        InputInterface $input,
+        OutputInterface $output
+    ) {
+        $this->execFlushCachedComponent($cachedCompenentId, $input, $output);
+        $this->execWarmupCachedComponent($cachedCompenentId, $input, $output);
+    }
+
+    /**
+     * Flush and warm up the entire cache for all cached components.
+     *
+     * @param  InputInterface $input
+     * @param  OutputInterface $output
+     *
+     * @return void
+     */
+    protected function execReloadCache(
+        InputInterface $input,
+        OutputInterface $output
+    ) {
+        $this->execFlushCache($input, $output);
+        $this->execWarmupCache($input, $output);
     }
 
     /**
