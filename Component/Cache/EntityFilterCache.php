@@ -104,10 +104,7 @@ class EntityFilterCache implements CachedComponentInterface
     */
     public function setFilterIds($entity, array $filterIds)
     {
-        $class = $this
-            ->entityManager
-            ->getEntityMetaHelper()
-            ->getShortClassName($entity);
+        $class = $this->getClassName($entity);
 
         if (!$this->supportsEntity($class)) {
             throw new \InvalidArgumentException("Unsupported entity - $class");
@@ -131,10 +128,7 @@ class EntityFilterCache implements CachedComponentInterface
     */
     public function getFilterIds($entity)
     {
-        $class = $this
-            ->entityManager
-            ->getEntityMetaHelper()
-            ->getShortClassName($entity);
+        $class = $this->getClassName($entity);
 
         if (!$this->supportsEntity($class)) {
             throw new \InvalidArgumentException("Unsupported entity - $class");
@@ -162,10 +156,7 @@ class EntityFilterCache implements CachedComponentInterface
     */
     public function deleteFilterIds($entity)
     {
-        $class = $this
-            ->entityManager
-            ->getEntityMetaHelper()
-            ->getShortClassName($entity);
+        $class = $this->getClassName($entity);
 
         if (!$this->supportsEntity($class)) {
             throw new \InvalidArgumentException("Unsupported entity - $class");
@@ -187,10 +178,7 @@ class EntityFilterCache implements CachedComponentInterface
      */
     public function containsEntityId($entity)
     {
-        $class = $this
-            ->entityManager
-            ->getEntityMetaHelper()
-            ->getShortClassName($entity);
+        $class = $this->getClassName($entity);
 
         if (!$this->supportsEntity($class)) {
             throw new \InvalidArgumentException("Unsupported entity - $class");
@@ -273,10 +261,38 @@ class EntityFilterCache implements CachedComponentInterface
         return $this->cacheKeyPrefix . $class . ':' . $entityId;
     }
 
+    /**
+     * Helper to get the given entity's primary id.
+     *
+     * @param $entity
+     *
+     * @return boolean
+     */
     protected function getEntityId($entity)
     {
-        $entityId = $this->entityManager->getEntityLogicalId($entity);
-        $entityId = array_values($entityId);
-        return $entityId[0];
+        if (method_exists($entity, 'getEntityId')) {
+            return $entity->getEntityId();
+        } else {
+            $entityId = $this->entityManager->getEntityLogicalId($entity);
+            $entityId = array_values($entityId);
+            return $entityId[0];
+        }
+    }
+
+    /**
+     * Helper to get the class name without the namespance.
+     *
+     * @param $entity
+     *
+     * @return string
+     */
+    protected function getClassName($entity)
+    {
+        $className = get_class($entity);
+        $pos = strrpos($className, "\\");
+        if ($pos === false) {
+            return null;
+        }
+        return substr($className, $pos + 1);
     }
 }
