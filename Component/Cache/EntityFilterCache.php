@@ -3,18 +3,24 @@
 namespace CTLib\Component\Cache;
 
 use CellTrak\RedisBundle\Component\Client\CellTrakRedis;
+use CTLib\Component\Doctrine\ORM\EntityManager;
 
 /**
 * Wrapper class to use redis to store cached filter data.
 *
 * @author David McLean <dmclean@celltrak.com>
 */
-abstract class EntityFilterCache
+class EntityFilterCache implements CachedComponentInterface
 {
     /**
      * @var CellTrakRedis $redis
      */
     protected $redis;
+
+    /**
+     * @var EntityManager
+     */
+    protected $entityManager;
 
     /**
      * @var int $ttl
@@ -26,103 +32,251 @@ abstract class EntityFilterCache
      */
     private $cacheKeyPrefix;
 
+    /**
+     * @var array
+     */
+    protected $entities;
+
 
     /**
      * @param string        $namespace
-     * @param string        $class
      * @param CellTrakRedis $redis
+     * @param EntityManager $entityManager
      * @param int           $ttl
      *
      * @throws InvalidArgumentException
      */
     public function __construct(
         $namespace,
-        $class,
         CellTrakRedis $redis,
+        EntityManager $entityManager,
         $ttl
     ) {
-        if (!$namespace) {
-            throw new \InvalidArgumentException("Invalid namespace");
-        }
-
-        if (!$class) {
-            throw new \InvalidArgumentException("Invalid class");
-        }
-
         $this->redis          = $redis;
+        $this->entityManager  = $entityManager;
         $this->ttl            = $ttl;
-        $this->cacheKeyPrefix = "fc:$namespace:$class:";
+        $this->cacheKeyPrefix = "fc:$namespace:";
+        $this->entities       = [];
+    }
+
+    /**
+     * Adds a supported entity name.
+     *
+     * @param string $entityName
+     *
+     * @return void
+     */
+    public function addEntity($entityName)
+    {
+        if (!$this->supportsEntity($entityName)) {
+            $this->entities[] = $entityName;
+        }
+    }
+
+    /**
+     * Indicates whether we are currently supporting
+     * the given entity name.
+     *
+     * @param string $entityName
+     *
+     * @return boolean
+     */
+    public function supportsEntity($entityName)
+    {
+        return in_array($entityName, $this->entities);
+    }
+
+    /**
+     * Returns names of all currently supported entities.
+     *
+     * @return array
+     */
+    public function getEntities()
+    {
+        return $this->entities;
     }
 
     /**
     * Set an entry in cache.
     *
-    * @param int   $key
-    * @param array $value
+    * @param $entity
+    * @param array $filterIds
     */
-    public function setFilterIds($key, array $value)
+    public function setFilterIds($entity, array $filterIds)
     {
+        $class = $this
+            ->entityManager
+            ->getEntityMetaHelper()
+            ->getShortClassName($entity);
+
+        if (!$this->supportsEntity($class)) {
+            throw new \InvalidArgumentException("Unsupported entity - $class");
+        }
+
+        $entityId = $this->getEntityId($entity);
+
         $this->redis->setex(
-            $this->getCacheKey($key),
+            $this->compileCacheKey($class, $entityId),
             $this->ttl,
-            json_encode($value)
+            json_encode($filterIds)
         );
     }
 
     /**
     * Get an entry from cache.
     *
-    * @param int $key
+    * @param $entity
     *
     * @return array|null
     */
-    public function getFilterIds($key)
+    public function getFilterIds($entity)
     {
-        return json_decode($this->redis->get($this->getCacheKey($key)), true);
+        $class = $this
+            ->entityManager
+            ->getEntityMetaHelper()
+            ->getShortClassName($entity);
+
+        if (!$this->supportsEntity($class)) {
+            throw new \InvalidArgumentException("Unsupported entity - $class");
+        }
+
+        $entityId = $this->getEntityId($entity);
+
+        $filterIds = $this->redis->get(
+            $this->compileCacheKey($class, $entityId)
+        );
+
+        if (!$filterIds) {
+            return null;
+        }
+
+        return json_decode($filterIds, true);
     }
 
     /**
     * Delete an entry from the cache.
     *
-    * @param int $key
+    * @param $entity
     *
     * @return int
     */
-    public function deleteFilterIds($key)
+    public function deleteFilterIds($entity)
     {
-        return $this->redis->del($this->getCacheKey($key)) > 0;
-    }
+        $class = $this
+            ->entityManager
+            ->getEntityMetaHelper()
+            ->getShortClassName($entity);
 
-    /**
-     * Flush all entries for a hash.
-     *
-     * @return int
-     */
-    public function flushFilterIds()
-    {
-        $keys = $this->redis->scanForKeys($this->cacheKeyPrefix.'*');
-        return $this->redis->del($keys);
+        if (!$this->supportsEntity($class)) {
+            throw new \InvalidArgumentException("Unsupported entity - $class");
+        }
+
+        $entityId = $this->getEntityId($entity);
+
+        return $this->redis->del(
+            $this->compileCacheKey($class, $entityId)
+        ) > 0;
     }
 
     /**
      * Test if an entry exists in the cache.
      *
-     * @param int $key
+     * @param $entity
      *
      * @return boolean
      */
-    public function containsKey($key)
+    public function containsEntityId($entity)
     {
-        return $this->redis->exists($this->getCacheKey($key));
+        $class = $this
+            ->entityManager
+            ->getEntityMetaHelper()
+            ->getShortClassName($entity);
+
+        if (!$this->supportsEntity($class)) {
+            throw new \InvalidArgumentException("Unsupported entity - $class");
+        }
+
+        $entityId = $this->getEntityId($entity);
+
+        return $this->redis->exists($this->compileCacheKey($class, $entityId[0]));
     }
 
     /**
-     * @param int $key
+     * {@inheritdoc}
+     */
+    public function warmCache()
+    {
+        throw new \RuntimeException('warmCache not supported for EntityFilterCache.');
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function flushCache()
+    {
+        $count = 0;
+
+        foreach ($this->entities as $entity) {
+            $keys = $this->redis->scanForKeys(
+                $this->cacheKeyPrefix . $entity . ':*'
+            );
+            $count += $this->redis->del($keys);
+        }
+
+        return $count;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function inspectCache()
+    {
+        $content = '';
+
+        foreach ($this->entities as $entity) {
+            $content .= "$entity:" . PHP_EOL;
+
+            $keys = $this->redis->scanForKeys(
+                $this->cacheKeyPrefix . $entity . ':*'
+            );
+
+            $startPos = strlen($this->cacheKeyPrefix.$entity.':');
+
+            foreach ($keys as $key) {
+                $entityId = substr($key, $startPos);
+                $content .= str_pad("   $entityId", 12) . " => Filters: "
+                    . $this->redis->get($this->compileCacheKey($entity, $entityId))
+                    . PHP_EOL;
+            }
+            $content .= PHP_EOL;
+        }
+
+        return ['content' => $content];
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getCacheDescription()
+    {
+        return "Manage cache for entity filters";
+    }
+
+    /**
+     * @param string $class
+     * @param int $entityId
      *
      * @return string
      */
-    protected function getCacheKey($key)
+    protected function compileCacheKey($class, $entityId)
     {
-        return $this->cacheKeyPrefix . $key;
+        return $this->cacheKeyPrefix . $class . ':' . $entityId;
+    }
+
+    protected function getEntityId($entity)
+    {
+        $entityId = $this->entityManager->getEntityLogicalId($entity);
+        $entityId = array_values($entityId);
+        return $entityId[0];
     }
 }
