@@ -1,6 +1,6 @@
 <?php
 
-namespace CTLib\Component\FilteredObjectIndex;
+namespace CTLib\Component\EntityFilterCompiler;
 
 /**
 * Interface to be implemented by entity filter compiler classes.
