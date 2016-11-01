@@ -6,6 +6,7 @@ use CTLib\Util\Util;
 use CTLib\Component\Doctrine\ORM\EntityDelta;
 use CTLib\Component\EntityFilterCompiler\EntityFilterCompiler;
 
+
 /**
  * Class ActionLogger
  *
@@ -62,14 +63,12 @@ class ActionLogger
     /**
     * Register a filter compiler with this service.
     *
-    * @param string $filterCompilerId
     * @param EntityFilterCompiler $filterCompiler
     */
     public function registerEntityFilterCompiler(
-        $filterCompilerId,
         EntityFilterCompiler $filterCompiler
     ) {
-        $this->filterCompilers[$filterCompilerId] = $filterCompiler;
+        $this->filterCompilers[] = $filterCompiler;
     }
 
     /**
