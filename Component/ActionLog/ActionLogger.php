@@ -4,7 +4,7 @@ namespace CTLib\Component\ActionLog;
 
 use CTLib\Util\Util;
 use CTLib\Component\Doctrine\ORM\EntityDelta;
-use CTLib\Component\FilteredObjectIndex\EntityFilterCompiler;
+use CTLib\Component\EntityFilterCompiler\EntityFilterCompiler;
 
 /**
  * Class ActionLogger
