@@ -108,8 +108,9 @@ class ActionLogger
      * change tracking.
      *
      * @param int $action
-     * @param BaseEntity $entity
+     * @param $entity
      * @param int $memberId
+     * @param array $childEntities
      * @param string $comment
      *
      * @return void
@@ -120,6 +121,7 @@ class ActionLogger
         $action,
         $entity,
         $memberId = self::SYSTEM_MEMBER_ID,
+        $childEntities = null,
         $comment = null
     ) {
         if (!$action) {
@@ -134,6 +136,7 @@ class ActionLogger
             $memberId,
             $entity,
             null,
+            $childEntities,
             $comment
         );
 
@@ -147,9 +150,10 @@ class ActionLogger
      * Caller should be passing a valid delta value.
      *
      * @param int $action
-     * @param BaseEntity $entity
+     * @param $entity
      * @param EntityDelta $delta
      * @param int $memberId
+     * @param array $childEntities
      * @param string $comment
      *
      * @return void
@@ -161,6 +165,7 @@ class ActionLogger
         $entity,
         EntityDelta $delta,
         $memberId = self::SYSTEM_MEMBER_ID,
+        $childEntities = null,
         $comment = null
     ) {
         if (!$action) {
@@ -175,6 +180,7 @@ class ActionLogger
             $memberId,
             $entity,
             $delta,
+            $childEntities,
             $comment
         );
 
@@ -187,8 +193,9 @@ class ActionLogger
      *
      * @param int $action
      * @param int $memberId
-     * @param BaseEntity $entity
+     * @param $entity
      * @param EntityDelta $delta
+     * @param array $childEntities
      * @param string $comment
      *
      * @return string
@@ -196,8 +203,9 @@ class ActionLogger
     protected function compileActionLogDocument(
         $action,
         $memberId,
-        $entity  = null,
-        $delta   = null,
+        $entity = null,
+        $delta = null,
+        $childEntities = null,
         $comment = null
     ) {
         $addedOnWeek = Util::getDateWeek(time());
@@ -225,6 +233,20 @@ class ActionLogger
             $doc['affectedEntity']['id'] = $ids;
             if ($delta) {
                 $doc['affectedEntity']['properties'][] = $delta;
+            }
+
+            if ($childEntities) {
+                foreach ($childEntities as $childEntity) {
+                    $doc['affectedChildEntity']['class'] =
+                        $this->entityMetaHelper->getShortClassName($childEntity);
+
+                    $entityIds = $this
+                        ->entityMetaHelper
+                        ->getLogicalIdentifierFieldNames($childEntity);
+
+                    $id = $entity->{"get{$entityIds[0]}"}();
+                    $doc['affectedChildEntity']['id'] = $id;
+                }
             }
 
             $filters = $this->getEntityFilters($entity);
