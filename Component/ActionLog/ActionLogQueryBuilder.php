@@ -119,8 +119,8 @@ class ActionLogQueryBuilder
             $ids .= $entity->{"get{$entityId}"}();
         }
 
-        $this->queryFilters['affectedEntity.class'] = $className;
-        $this->queryFilters['affectedEntity.id'] = $ids;
+        $this->queryFilters['parentEntity.class'] = $className;
+        $this->queryFilters['parentEntity.id'] = $ids;
         return $this;
     }
 
@@ -131,7 +131,7 @@ class ActionLogQueryBuilder
      */
     public function setFiltersFilter(array $filterIds)
     {
-        $this->queryFilters['affectedEntity.filters'] = $filterIds;
+        $this->queryFilters['parentEntity.filters'] = $filterIds;
         return $this;
     }
 
@@ -212,13 +212,13 @@ class ActionLogQueryBuilder
                     $this->dataAccess->addFilter($field, $value, 'in');
                 }
             } else {
-                // Here we are forcing affectedEntity.id value to be of type string.
+                // Here we are forcing parentEntity.id value to be of type string.
                 // We do this because this field's value may be numeric or
                 // alphanumeric. If it is numeric, mongo will not find the value, as
                 // it will default to looking for a numeric value, but we store this
                 // field value as a string. The value 2 represents the data type
                 // 'string' for mongodb.
-                if ($field == 'affectedEntity.id') {
+                if ($field == 'parentEntity.id') {
                     $this->dataAccess->addFilter($field, $value, 'eq', 2);
                 } else {
                     $this->dataAccess->addFilter($field, $value);
@@ -238,6 +238,7 @@ class ActionLogQueryBuilder
             'actionCode',
             'memberId',
             'affectedEntity',
+            'parentEntity',
             'source',
             'comment',
             'addedOn',

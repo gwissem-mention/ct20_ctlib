@@ -97,6 +97,7 @@ class ActionLogger
             $memberId,
             null,
             null,
+            null,
             $comment
         );
 
@@ -109,8 +110,8 @@ class ActionLogger
      *
      * @param int $action
      * @param $entity
+     * @param $parentEntity
      * @param int $memberId
-     * @param array $childEntities
      * @param string $comment
      *
      * @return void
@@ -120,8 +121,8 @@ class ActionLogger
     public function addForEntity(
         $action,
         $entity,
+        $parentEntity,
         $memberId = self::SYSTEM_MEMBER_ID,
-        $childEntities = null,
         $comment = null
     ) {
         if (!$action) {
@@ -130,13 +131,16 @@ class ActionLogger
         if (!$entity) {
             throw new \InvalidArgumentException('ActionLogger::addForEntity - entity is required');
         }
+        if (!$parentEntity) {
+            throw new \InvalidArgumentException('ActionLogger::addForEntity - parentEntity is required');
+        }
 
         $logData = $this->compileActionLogDocument(
             $action,
             $memberId,
             $entity,
             null,
-            $childEntities,
+            $parentEntity,
             $comment
         );
 
@@ -152,8 +156,8 @@ class ActionLogger
      * @param int $action
      * @param $entity
      * @param EntityDelta $delta
+     * @param $parentEntity
      * @param int $memberId
-     * @param array $childEntities
      * @param string $comment
      *
      * @return void
@@ -164,8 +168,8 @@ class ActionLogger
         $action,
         $entity,
         EntityDelta $delta,
+        $parentEntity,
         $memberId = self::SYSTEM_MEMBER_ID,
-        $childEntities = null,
         $comment = null
     ) {
         if (!$action) {
@@ -174,13 +178,16 @@ class ActionLogger
         if (!$entity) {
             throw new \InvalidArgumentException('ActionLogger::addForEntityDelta requires an entity passed as an argument');
         }
+        if (!$parentEntity) {
+            throw new \InvalidArgumentException('ActionLogger::addForEntity - parentEntity is required');
+        }
 
         $logData = $this->compileActionLogDocument(
             $action,
             $memberId,
             $entity,
             $delta,
-            $childEntities,
+            $parentEntity,
             $comment
         );
 
@@ -205,7 +212,7 @@ class ActionLogger
         $memberId,
         $entity = null,
         $delta = null,
-        $childEntities = null,
+        $parentEntity = null,
         $comment = null
     ) {
         $addedOnWeek = Util::getDateWeek(time());
@@ -219,6 +226,12 @@ class ActionLogger
         $doc['addedOnWeek'] = $addedOnWeek;
 
         if ($entity) {
+            // If no parentEntity was supplied, we will use the main
+            // entity as the parent as well.
+            if (!$parentEntity) {
+                $parentEntity = $entity;
+            }
+
             $entityIds = $this
                 ->entityMetaHelper
                 ->getLogicalIdentifierFieldNames($entity);
@@ -235,22 +248,23 @@ class ActionLogger
                 $doc['affectedEntity']['properties'][] = $delta;
             }
 
-            if ($childEntities) {
-                foreach ($childEntities as $childEntity) {
-                    $doc['affectedChildEntity']['class'] =
-                        $this->entityMetaHelper->getShortClassName($childEntity);
+            // Log parent entity detail.
+            $doc['parentEntity']['class'] =
+                $this->entityMetaHelper->getShortClassName($parentEntity);
 
-                    $entityIds = $this
-                        ->entityMetaHelper
-                        ->getLogicalIdentifierFieldNames($childEntity);
+            $entityIds = $this
+                ->entityMetaHelper
+                ->getLogicalIdentifierFieldNames($parentEntity);
 
-                    $id = $entity->{"get{$entityIds[0]}"}();
-                    $doc['affectedChildEntity']['id'] = $id;
-                }
+            $ids = '';
+            foreach ($entityIds as $entityId) {
+                $ids .= $entity->{"get{$entityId}"}();
             }
 
-            $filters = $this->getEntityFilters($entity);
-            $doc['affectedEntity']['filters'] = $filters;
+            $doc['parentEntity']['id'] = $ids;
+
+            $filters = $this->getEntityFilters($parentEntity);
+            $doc['parentEntity']['filters'] = $filters;
         }
 
         return json_encode($doc);
