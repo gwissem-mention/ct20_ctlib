@@ -244,7 +244,7 @@ class ActionLogger
 
             $doc['affectedEntity']['id'] = $entityIds;
             if ($delta) {
-                $doc['affectedEntity']['properties'] = $delta;
+                $doc['affectedEntity']['delta'] = $delta;
             }
 
             // Log parent entity detail.
@@ -257,8 +257,15 @@ class ActionLogger
                 ->entityManager
                 ->getEntityId($parentEntity);
 
+            // As of now, we only have single-key primary key parent
+            // entities. We will throw an exception here if we find
+            // multiple keys. This means we added an entity that
+            // supports this, and we forgot to update this code.
+            if (count($entityIds) > 1) {
+                throw new \RuntimeException('Multi-key primary key found for entity: '.json_encode($entityIds));
+            }
+
             $doc['parentEntity']['id'] = current($entityIds);
-            $doc['parentEntity']['primaryKey'] = $entityIds;
 
             $filters = $this->getEntityFilters($parentEntity);
             $doc['parentEntity']['filters'] = $filters;
