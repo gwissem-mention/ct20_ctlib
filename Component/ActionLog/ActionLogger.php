@@ -244,7 +244,7 @@ class ActionLogger
 
             $doc['affectedEntity']['id'] = $entityIds;
             if ($delta) {
-                $doc['affectedEntity']['properties'][] = $delta;
+                $doc['affectedEntity']['properties'] = $delta;
             }
 
             // Log parent entity detail.
