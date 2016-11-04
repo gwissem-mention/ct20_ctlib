@@ -5,6 +5,8 @@ namespace CTLib\Component\ActionLog;
 use CTLib\Util\Util;
 use CTLib\Component\Doctrine\ORM\EntityDelta;
 use CTLib\Component\EntityFilterCompiler\EntityFilterCompiler;
+use CTLib\Component\Doctrine\ORM\EntityManager;
+use CTLib\Component\CtApi\CtApiCaller;
 
 /**
  * Class ActionLogger
@@ -29,9 +31,9 @@ class ActionLogger
     protected $ctApiCaller;
 
     /**
-     * @var EntityMetaHelper
+     * @var EntityManager
      */
-    protected $entityMetaHelper;
+    protected $entityManager;
 
     /**
      * @var string
@@ -50,26 +52,24 @@ class ActionLogger
      * @param string $source
      */
     public function __construct(
-        $entityManager,
-        $ctApiCaller,
+        EntityManager $entityManager,
+        CtApiCaller $ctApiCaller,
         $source
     ) {
         $this->ctApiCaller      = $ctApiCaller;
-        $this->entityMetaHelper = $entityManager->getEntityMetaHelper();
+        $this->entityManager    = $entityManager;
         $this->source           = $source;
     }
 
     /**
     * Register a filter compiler with this service.
     *
-    * @param string $filterCompilerId
     * @param EntityFilterCompiler $filterCompiler
     */
     public function registerEntityFilterCompiler(
-        $filterCompilerId,
         EntityFilterCompiler $filterCompiler
     ) {
-        $this->filterCompilers[$filterCompilerId] = $filterCompiler;
+        $this->filterCompilers[] = $filterCompiler;
     }
 
     /**
@@ -98,6 +98,7 @@ class ActionLogger
             $memberId,
             null,
             null,
+            null,
             $comment
         );
 
@@ -109,7 +110,8 @@ class ActionLogger
      * change tracking.
      *
      * @param int $action
-     * @param BaseEntity $entity
+     * @param $entity
+     * @param $parentEntity
      * @param int $memberId
      * @param string $comment
      *
@@ -120,6 +122,7 @@ class ActionLogger
     public function addForEntity(
         $action,
         $entity,
+        $parentEntity,
         $memberId = self::SYSTEM_MEMBER_ID,
         $comment = null
     ) {
@@ -129,12 +132,16 @@ class ActionLogger
         if (!$entity) {
             throw new \InvalidArgumentException('ActionLogger::addForEntity - entity is required');
         }
+        if (!$parentEntity) {
+            throw new \InvalidArgumentException('ActionLogger::addForEntity - parentEntity is required');
+        }
 
         $logData = $this->compileActionLogDocument(
             $action,
             $memberId,
             $entity,
             null,
+            $parentEntity,
             $comment
         );
 
@@ -148,8 +155,9 @@ class ActionLogger
      * Caller should be passing a valid delta value.
      *
      * @param int $action
-     * @param BaseEntity $entity
+     * @param $entity
      * @param EntityDelta $delta
+     * @param $parentEntity
      * @param int $memberId
      * @param string $comment
      *
@@ -161,6 +169,7 @@ class ActionLogger
         $action,
         $entity,
         EntityDelta $delta,
+        $parentEntity,
         $memberId = self::SYSTEM_MEMBER_ID,
         $comment = null
     ) {
@@ -170,12 +179,16 @@ class ActionLogger
         if (!$entity) {
             throw new \InvalidArgumentException('ActionLogger::addForEntityDelta requires an entity passed as an argument');
         }
+        if (!$parentEntity) {
+            throw new \InvalidArgumentException('ActionLogger::addForEntity - parentEntity is required');
+        }
 
         $logData = $this->compileActionLogDocument(
             $action,
             $memberId,
             $entity,
             $delta,
+            $parentEntity,
             $comment
         );
 
@@ -188,8 +201,9 @@ class ActionLogger
      *
      * @param int $action
      * @param int $memberId
-     * @param BaseEntity $entity
+     * @param $entity
      * @param EntityDelta $delta
+     * @param array $childEntities
      * @param string $comment
      *
      * @return string
@@ -197,8 +211,9 @@ class ActionLogger
     protected function compileActionLogDocument(
         $action,
         $memberId,
-        $entity  = null,
-        $delta   = null,
+        $entity = null,
+        $delta = null,
+        $parentEntity = null,
         $comment = null
     ) {
         $addedOnWeek = Util::getDateWeek(time());
@@ -212,24 +227,48 @@ class ActionLogger
         $doc['addedOnWeek'] = $addedOnWeek;
 
         if ($entity) {
+            // If no parentEntity was supplied, we will use the main
+            // entity as the parent as well.
+            if (!$parentEntity) {
+                $parentEntity = $entity;
+            }
+
             $entityIds = $this
-                ->entityMetaHelper
-                ->getLogicalIdentifierFieldNames($entity);
+                ->entityManager
+                ->getEntityId($entity);
 
-            $ids = '';
-            foreach ($entityIds as $entityId) {
-                $ids .= $entity->{"get{$entityId}"}();
-            }
+            $doc['affectedEntity']['class'] = $this
+                ->entityManager
+                ->getEntityMetaHelper()
+                ->getShortClassName($entity);
 
-            $doc['affectedEntity']['class'] =
-                $this->entityMetaHelper->getShortClassName($entity);
-            $doc['affectedEntity']['id'] = $ids;
+            $doc['affectedEntity']['id'] = $entityIds;
             if ($delta) {
-                $doc['affectedEntity']['properties'][] = $delta;
+                $doc['affectedEntity']['delta'] = $delta;
             }
 
-            $filters = $this->getEntityFilters($entity);
-            $doc['affectedEntity']['filters'] = $filters;
+            // Log parent entity detail.
+            $doc['parentEntity']['class'] = $this
+                ->entityManager
+                ->getEntityMetaHelper()
+                ->getShortClassName($parentEntity);
+
+            $entityIds = $this
+                ->entityManager
+                ->getEntityId($parentEntity);
+
+            // As of now, we only have single-key primary key parent
+            // entities. We will throw an exception here if we find
+            // multiple keys. This means we added an entity that
+            // supports this, and we forgot to update this code.
+            if (count($entityIds) > 1) {
+                throw new \RuntimeException('Multi-key primary key found for entity: '.json_encode($entityIds));
+            }
+
+            $doc['parentEntity']['id'] = current($entityIds);
+
+            $filters = $this->getEntityFilters($parentEntity);
+            $doc['parentEntity']['filters'] = $filters;
         }
 
         return json_encode($doc);

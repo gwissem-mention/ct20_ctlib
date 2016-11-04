@@ -2,7 +2,9 @@
 
 namespace CTLib\Component\ActionLog;
 
+use CTLib\Component\CtApi\CtApiCaller;
 use CTLib\Component\DataAccess\CtApiDocumentDataAccess;
+use CTLib\Component\Doctrine\ORM\EntityManager;
 
 /**
  * Class ActionLogReader
@@ -19,18 +21,20 @@ class ActionLogReader
     protected $dataAccess;
 
     /**
-     * @var EntityMetaHelper
+     * @var EntityManager
      */
-    protected $entityMetaHelper;
+    protected $entityManager;
 
 
     /**
      * @param EntityManager $entityManager
      * @param CtApiCaller $ctApiCaller
      */
-    public function __construct($entityManager, $ctApiCaller)
-    {
-        $this->entityMetaHelper = $entityManager->getEntityMetaHelper();
+    public function __construct(
+        EntityManager $entityManager,
+        CtApiCaller $ctApiCaller
+    ) {
+        $this->entityManager = $entityManager;
 
         $this->dataAccess = new CtApiDocumentDataAccess(
             $ctApiCaller,
@@ -115,7 +119,7 @@ class ActionLogReader
     {
         return new ActionLogQueryBuilder(
             $this->dataAccess,
-            $this->entityMetaHelper
+            $this->entityManager
         );
     }
 }

@@ -33,7 +33,6 @@ class ActionLoggerCompilerPass implements CompilerPassInterface
 
         foreach ($services as $serviceId => $tagAttributes) {
             $args = [
-                $serviceId,
                 new Reference($serviceId)
             ];
             $definition->addMethodCall('registerEntityFilterCompiler', $args);
