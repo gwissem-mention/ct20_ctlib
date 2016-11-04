@@ -5,7 +5,8 @@ namespace CTLib\Component\ActionLog;
 use CTLib\Util\Util;
 use CTLib\Component\Doctrine\ORM\EntityDelta;
 use CTLib\Component\EntityFilterCompiler\EntityFilterCompiler;
-
+use CTLib\Component\Doctrine\ORM\EntityManager;
+use CTLib\Component\CtApi\CtApiCaller;
 
 /**
  * Class ActionLogger
@@ -30,9 +31,9 @@ class ActionLogger
     protected $ctApiCaller;
 
     /**
-     * @var EntityMetaHelper
+     * @var EntityManager
      */
-    protected $entityMetaHelper;
+    protected $entityManager;
 
     /**
      * @var string
@@ -51,12 +52,12 @@ class ActionLogger
      * @param string $source
      */
     public function __construct(
-        $entityManager,
-        $ctApiCaller,
+        EntityManager $entityManager,
+        CtApiCaller $ctApiCaller,
         $source
     ) {
         $this->ctApiCaller      = $ctApiCaller;
-        $this->entityMetaHelper = $entityManager->getEntityMetaHelper();
+        $this->entityManager    = $entityManager;
         $this->source           = $source;
     }
 
@@ -233,35 +234,31 @@ class ActionLogger
             }
 
             $entityIds = $this
-                ->entityMetaHelper
-                ->getLogicalIdentifierFieldNames($entity);
+                ->entityManager
+                ->getEntityId($entity);
 
-            $ids = '';
-            foreach ($entityIds as $entityId) {
-                $ids .= $entity->{"get{$entityId}"}();
-            }
+            $doc['affectedEntity']['class'] = $this
+                ->entityManager
+                ->getEntityMetaHelper()
+                ->getShortClassName($entity);
 
-            $doc['affectedEntity']['class'] =
-                $this->entityMetaHelper->getShortClassName($entity);
-            $doc['affectedEntity']['id'] = $ids;
+            $doc['affectedEntity']['id'] = $entityIds;
             if ($delta) {
                 $doc['affectedEntity']['properties'][] = $delta;
             }
 
             // Log parent entity detail.
-            $doc['parentEntity']['class'] =
-                $this->entityMetaHelper->getShortClassName($parentEntity);
+            $doc['parentEntity']['class'] = $this
+                ->entityManager
+                ->getEntityMetaHelper()
+                ->getShortClassName($parentEntity);
 
             $entityIds = $this
-                ->entityMetaHelper
-                ->getLogicalIdentifierFieldNames($parentEntity);
+                ->entityManager
+                ->getEntityId($parentEntity);
 
-            $ids = '';
-            foreach ($entityIds as $entityId) {
-                $ids .= $entity->{"get{$entityId}"}();
-            }
-
-            $doc['parentEntity']['id'] = $ids;
+            $doc['parentEntity']['id'] = current($entityIds);
+            $doc['parentEntity']['primaryKey'] = $entityIds;
 
             $filters = $this->getEntityFilters($parentEntity);
             $doc['parentEntity']['filters'] = $filters;

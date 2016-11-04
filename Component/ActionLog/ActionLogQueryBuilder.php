@@ -3,6 +3,8 @@
 namespace CTLib\Component\ActionLog;
 
 use CTLib\Util\Util;
+use CTLib\Component\Doctrine\ORM\EntityManager;
+use CTLib\Component\DataAccess\CtApiDocumentDataAccess;
 
 /**
  * Class ActionLogQueryBuilder
@@ -22,9 +24,9 @@ class ActionLogQueryBuilder
     protected $dataAccess;
 
     /**
-     * @var EntityMetaHelper
+     * @var EntityManager
      */
-    protected $entityMetaHelper;
+    protected $entityManager;
 
     /**
      * @var array
@@ -44,12 +46,14 @@ class ActionLogQueryBuilder
 
     /**
      * @param CtApiDocumentDataAccess $dataAccess
-     * @param EntityMetaHelper $entityMetaHelper
+     * @param EntityManager $entityManager
      */
-    public function __construct($dataAccess, $entityMetaHelper)
-    {
+    public function __construct(
+        CtApiDocumentDataAccess $dataAccess,
+        EntityManager $entityManager
+    ) {
         $this->dataAccess       = $dataAccess;
-        $this->entityMetaHelper = $entityMetaHelper;
+        $this->entityManager    = $entityManager;
         $this->queryFields      = [];
         $this->queryFilters     = [];
         $this->sortOrder        = self::SORT_ASC;
@@ -108,19 +112,15 @@ class ActionLogQueryBuilder
      */
     public function setEntityFilter($entity)
     {
-        $className = $this->entityMetaHelper->getShortClassName($entity);
+        $this->queryFilters['parentEntity.class'] = $this
+            ->entityManager
+            ->getEntityMetaHelper()
+            ->getShortClassName($entity);
 
-        $entityIds = $this
-            ->entityMetaHelper
-            ->getLogicalIdentifierFieldNames($entity);
+        $this->queryFilters['parentEntity.id'] = $this
+            ->entityManager
+            ->getEntityId($entity);
 
-        $ids = '';
-        foreach ($entityIds as $entityId) {
-            $ids .= $entity->{"get{$entityId}"}();
-        }
-
-        $this->queryFilters['parentEntity.class'] = $className;
-        $this->queryFilters['parentEntity.id'] = $ids;
         return $this;
     }
 
