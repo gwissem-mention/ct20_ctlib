@@ -122,10 +122,13 @@ class ActionLogger
     public function addForEntity(
         $action,
         $entity,
-        $parentEntity = null,
+        $parentEntity,
         $memberId = self::SYSTEM_MEMBER_ID,
         $comment = null
     ) {
+        // Temporarily disabling because App code doesn't support new API, yet.
+        return;
+
         if (!$action) {
             throw new \InvalidArgumentException('ActionLogger::addForEntity - action is required');
         }
@@ -170,10 +173,13 @@ class ActionLogger
         $action,
         $entity,
         EntityDelta $delta,
-        $parentEntity = null,
+        $parentEntity,
         $memberId = self::SYSTEM_MEMBER_ID,
         $comment = null
     ) {
+        // Temporarily disabling because App code doesn't support new API, yet.
+        return;
+
         if (!$action) {
             throw new \InvalidArgumentException('ActionLogger::addForEntityDelta - action is required');
         }
@@ -181,8 +187,7 @@ class ActionLogger
             throw new \InvalidArgumentException('ActionLogger::addForEntityDelta requires an entity passed as an argument');
         }
         if (!$parentEntity) {
-            // throw new \InvalidArgumentException('ActionLogger::addForEntity - parentEntity is required');
-            $parentEntity = $entity;
+            throw new \InvalidArgumentException('ActionLogger::addForEntity - parentEntity is required');
         }
 
         $logData = $this->compileActionLogDocument(
