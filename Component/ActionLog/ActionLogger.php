@@ -122,7 +122,7 @@ class ActionLogger
     public function addForEntity(
         $action,
         $entity,
-        $parentEntity,
+        $parentEntity = null,
         $memberId = self::SYSTEM_MEMBER_ID,
         $comment = null
     ) {
@@ -133,7 +133,8 @@ class ActionLogger
             throw new \InvalidArgumentException('ActionLogger::addForEntity - entity is required');
         }
         if (!$parentEntity) {
-            throw new \InvalidArgumentException('ActionLogger::addForEntity - parentEntity is required');
+            // throw new \InvalidArgumentException('ActionLogger::addForEntity - parentEntity is required');
+            $parentEntity = $entity;
         }
 
         $logData = $this->compileActionLogDocument(
@@ -169,7 +170,7 @@ class ActionLogger
         $action,
         $entity,
         EntityDelta $delta,
-        $parentEntity,
+        $parentEntity = null,
         $memberId = self::SYSTEM_MEMBER_ID,
         $comment = null
     ) {
@@ -180,7 +181,8 @@ class ActionLogger
             throw new \InvalidArgumentException('ActionLogger::addForEntityDelta requires an entity passed as an argument');
         }
         if (!$parentEntity) {
-            throw new \InvalidArgumentException('ActionLogger::addForEntity - parentEntity is required');
+            // throw new \InvalidArgumentException('ActionLogger::addForEntity - parentEntity is required');
+            $parentEntity = $entity;
         }
 
         $logData = $this->compileActionLogDocument(
