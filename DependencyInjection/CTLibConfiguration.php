@@ -907,6 +907,12 @@ class CTLibConfiguration implements ConfigurationInterface
                 ->scalarNode('source')
                     ->isRequired()
                 ->end()
+                ->arrayNode('action_code_files')
+                    ->info('List of YAML files containing action codes')
+                    ->isRequired()
+                    ->requiresAtLeastOneElement()
+                    ->prototype('scalar')
+                ->end()
             ->end()
         ->end();
 
