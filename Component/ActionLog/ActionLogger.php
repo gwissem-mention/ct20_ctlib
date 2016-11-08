@@ -93,6 +93,8 @@ class ActionLogger
             throw new \InvalidArgumentException('ActionLogger::add - action is required');
         }
 
+        $memberId = $memberId ?: self::SYSTEM_MEMBER_ID;
+
         $logData = $this->compileActionLogDocument(
             $action,
             $memberId,
@@ -136,9 +138,10 @@ class ActionLogger
             throw new \InvalidArgumentException('ActionLogger::addForEntity - entity is required');
         }
         if (!$parentEntity) {
-            // throw new \InvalidArgumentException('ActionLogger::addForEntity - parentEntity is required');
-            $parentEntity = $entity;
+            throw new \InvalidArgumentException('ActionLogger::addForEntity - parentEntity is required');
         }
+
+        $memberId = $memberId ?: self::SYSTEM_MEMBER_ID;
 
         $logData = $this->compileActionLogDocument(
             $action,
@@ -189,6 +192,8 @@ class ActionLogger
         if (!$parentEntity) {
             throw new \InvalidArgumentException('ActionLogger::addForEntity - parentEntity is required');
         }
+
+        $memberId = $memberId ?: self::SYSTEM_MEMBER_ID;
 
         $logData = $this->compileActionLogDocument(
             $action,
