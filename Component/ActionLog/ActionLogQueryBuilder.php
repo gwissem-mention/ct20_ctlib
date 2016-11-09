@@ -122,7 +122,7 @@ class ActionLogQueryBuilder
 
         if (method_exists($entity, 'getEntityId')) {
             $this->queryFilters['parentEntity.id'] = $entity->getEntityId();
-        else {
+        } else {
             $this->queryFilters['parentEntity.id'] = $this
                 ->entityManager
                 ->getEntityId($entity);
