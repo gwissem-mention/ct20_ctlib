@@ -83,40 +83,111 @@ class ActionLogger
         $this->filterCompilers[] = $filterCompiler;
     }
 
-    /**
-     * Method used for basic logging without entity
-     * change tracking.
-     *
-     * @param int $action
-     * @param int $memberId
-     * @param string $comment
-     *
-     * @return void
-     *
-     * @throws \Exception
-     */
-    public function add(
+    public function createLogEntry(
         $actionName,
-        $memberId = self::SYSTEM_MEMBER_ID,
-        $comment = null
+        $affectedEntity,
+        $parentEntity = null
     ) {
         if (!$this->isValidActionName($actionName)) {
-            throw new \InvalidArgumentException("ActionLogger::add '{$actionName}' is not a valid action");
+            throw new \InvalidArgumentException("'{$actionName}' is not a valid action");
         }
 
-        $memberId = $memberId ?: self::SYSTEM_MEMBER_ID;
+        $actionCode = $this->getActionCodeForName($actionName);
 
-        $logData = $this->compileActionLogDocument(
-            $action,
-            $memberId,
-            null,
-            null,
-            null,
-            $comment
+        if (!$parentEntity) {
+            $parentEntity = $affectedEntity;
+        }
+
+        list(
+            $affectedEntityId,
+            $affectedEntityClass
+        ) = $this->getEntityInfo($affectedEntity);
+
+        list(
+            $parentEntityId,
+            $parentEntityClass
+        ) = $this->getEntityInfo($parentEntity);
+
+        // As of now, we only have single-key primary key parent
+        // entities. We will throw an exception here if we find
+        // multiple keys. This means we added an entity that
+        // supports this, and we forgot to update this code.
+        if (count($parentEntityId) > 1) {
+            throw new \RuntimeException('Multi-key primary key found for parent entity: '.json_encode($parentEntityId));
+        }
+
+        $parentEntityId = current($parentEntityId);
+
+        $parentEntityFilters = $this->getEntityFilters($parentEntity);
+
+        return new ActionLogEntry(
+            $actionCode,
+            $this->source,
+            $parentEntityClass,
+            $parentEntityId,
+            $parentEntityFilters,
+            $affectedEntityClass,
+            $affectedEntityId
         );
-
-        $this->addLogEntry($logData);
     }
+
+    /**
+     * Send the audit log entry to API to be saved
+     * in Mongo.
+     *
+     * @param string $log
+     *
+     * @return void
+     */
+    public function addLogEntry(ActionLogEntry $entry)
+    {
+        print("\n");
+        print(json_encode($entry));
+        print("\n");
+        return;
+
+        $this->ctApiCaller->post(
+            self::AUDIT_LOG_API_PATH,
+            json_encode($entry)
+        );
+    }
+
+    // /**
+    //  * Method used for basic logging without entity
+    //  * change tracking.
+    //  *
+    //  * @param int $action
+    //  * @param int $memberId
+    //  * @param string $comment
+    //  *
+    //  * @return void
+    //  *
+    //  * @throws \Exception
+    //  */
+    // public function add(
+    //     $actionName,
+    //     $memberId = self::SYSTEM_MEMBER_ID,
+    //     $comment = null
+    // ) {
+    //     throw new \RuntimeException("ActionLogger::add is not supported");
+    //
+    //     // if (!$this->isValidActionName($actionName)) {
+    //     //     throw new \InvalidArgumentException("ActionLogger::add '{$actionName}' is not a valid action");
+    //     // }
+    //     //
+    //     // $memberId = $memberId ?: self::SYSTEM_MEMBER_ID;
+    //     //
+    //     // $logData = $this->compileActionLogDocument(
+    //     //     $action,
+    //     //     $memberId,
+    //     //     null,
+    //     //     null,
+    //     //     null,
+    //     //     $comment
+    //     // );
+    //     //
+    //     // $this->addLogEntry($logData);
+    // }
 
     /**
      * Method used for basic logging without entity
@@ -133,39 +204,20 @@ class ActionLogger
      * @throws \Exception
      */
     public function addForEntity(
-        $action,
-        $entity,
-        $parentEntity,
-        $memberId = self::SYSTEM_MEMBER_ID,
-        $comment = null
+        $actionName,
+        $affectedEntity,
+        $memberId = ActionLogEntry::SYSTEM_MEMBER_ID,
+        $parentEntity = null
     ) {
-        // Temporarily disabling because App code doesn't support new API, yet.
-        return;
+        $logEntry =
+            $this->createLogEntry($actionName, $affectedEntity, $parentEntity);
 
-        if (!$action) {
-            throw new \InvalidArgumentException('ActionLogger::addForEntity - action is required');
-        }
-        if (!$entity) {
-            throw new \InvalidArgumentException('ActionLogger::addForEntity - entity is required');
-        }
-        if (!$parentEntity) {
-            throw new \InvalidArgumentException('ActionLogger::addForEntity - parentEntity is required');
+        if ($memberId) {
+            $logEntry->setMemberId($memberId);
         }
 
-        $memberId = $memberId ?: self::SYSTEM_MEMBER_ID;
-
-        $logData = $this->compileActionLogDocument(
-            $action,
-            $memberId,
-            $entity,
-            null,
-            $parentEntity,
-            $comment
-        );
-
-        $this->addLogEntry($logData);
+        $this->addLogEntry($logEntry);
     }
-
 
     /**
      * Method used to add to action_log when an entity has
@@ -184,38 +236,22 @@ class ActionLogger
      * @throws \Exception
      */
     public function addForEntityDelta(
-        $action,
-        $entity,
+        $actionName,
+        $affectedEntity,
         EntityDelta $delta,
-        $parentEntity,
         $memberId = self::SYSTEM_MEMBER_ID,
-        $comment = null
+        $parentEntity = null
     ) {
-        // Temporarily disabling because App code doesn't support new API, yet.
-        return;
+        $logEntry =
+            $this->createLogEntry($actionName, $affectedEntity, $parentEntity);
 
-        if (!$action) {
-            throw new \InvalidArgumentException('ActionLogger::addForEntityDelta - action is required');
-        }
-        if (!$entity) {
-            throw new \InvalidArgumentException('ActionLogger::addForEntityDelta requires an entity passed as an argument');
-        }
-        if (!$parentEntity) {
-            throw new \InvalidArgumentException('ActionLogger::addForEntity - parentEntity is required');
+        $logEntry->setAffectedEntityDelta($delta);
+
+        if ($memberId) {
+            $logEntry->setMemberId($memberId);
         }
 
-        $memberId = $memberId ?: self::SYSTEM_MEMBER_ID;
-
-        $logData = $this->compileActionLogDocument(
-            $action,
-            $memberId,
-            $entity,
-            $delta,
-            $parentEntity,
-            $comment
-        );
-
-        $this->addLogEntry($logData);
+        $this->addLogEntry($logEntry);
     }
 
     public function getNameForActionCode($actionCode)
@@ -370,6 +406,18 @@ class ActionLogger
         return json_encode($doc);
     }
 
+    protected function getEntityInfo($entity)
+    {
+        $entityId = $this->entityManager->getEntityId($entity);
+
+        $entityClass = $this
+            ->entityManager
+            ->getEntityMetaHelper()
+            ->getShortClassName($entity);
+
+        return [$entityId, $entityClass];
+    }
+
     /**
      * Get all the filters related to the given entity.
      *
@@ -391,21 +439,7 @@ class ActionLogger
         return $filters;
     }
 
-    /**
-     * Send the audit log entry to API to be saved
-     * in Mongo.
-     *
-     * @param string $log
-     *
-     * @return void
-     */
-    protected function addLogEntry($log)
-    {
-        $this->ctApiCaller->post(
-            self::AUDIT_LOG_API_PATH,
-            $log
-        );
-    }
+
 
     protected function loadActionCodes()
     {
