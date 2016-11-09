@@ -5,6 +5,7 @@ namespace CTLib\Component\ActionLog;
 use Symfony\Component\HttpKernel\Kernel;
 use Symfony\Component\Yaml\Yaml;
 use CTLib\Util\Util;
+use CTLib\Component\Cache\CompiledVariableCache;
 use CTLib\Component\Doctrine\ORM\EntityDelta;
 use CTLib\Component\EntityFilterCompiler\EntityFilterCompiler;
 use CTLib\Component\Doctrine\ORM\EntityManager;
@@ -49,6 +50,14 @@ class ActionLogger
      */
     protected $filterCompilers = [];
 
+    protected $actionCodeFiles;
+
+    protected $actionCodesLoaded;
+
+    protected $actionCodes;
+
+    protected $groupedActionCodes;
+
 
     /**
      * @param EntityManager $entityManager
@@ -62,14 +71,13 @@ class ActionLogger
         $source,
         array $actionCodeFiles
     ) {
-        $this->entityManager    = $entityManager;
-        $this->ctApiCaller      = $ctApiCaller;
-        $this->kernel           = $kernel;
-        $this->source           = $source;
-        $this->actionCodeFiles  = $actionCodeFiles;
-        $this->actionCodesLoaded = false;
-        $this->actionCodes      = [];
-        $this->qualifiedActionCodes    = [];
+        $this->entityManager        = $entityManager;
+        $this->ctApiCaller          = $ctApiCaller;
+        $this->kernel               = $kernel;
+        $this->source               = $source;
+        $this->actionCodeFiles      = $actionCodeFiles;
+        $this->actionCodesLoaded    = false;
+        $this->actionCodes          = [];
     }
 
     /**
@@ -139,7 +147,7 @@ class ActionLogger
      *
      * @return void
      */
-    public function addLogEntry(ActionLogEntry $entry)
+    public function persistLogEntry(ActionLogEntry $entry)
     {
         print("\n");
         print(json_encode($entry));
@@ -186,7 +194,7 @@ class ActionLogger
     //     //     $comment
     //     // );
     //     //
-    //     // $this->addLogEntry($logData);
+    //     // $this->persistLogEntry($logData);
     // }
 
     /**
@@ -216,7 +224,7 @@ class ActionLogger
             $logEntry->setMemberId($memberId);
         }
 
-        $this->addLogEntry($logEntry);
+        $this->persistLogEntry($logEntry);
     }
 
     /**
@@ -251,7 +259,7 @@ class ActionLogger
             $logEntry->setMemberId($memberId);
         }
 
-        $this->addLogEntry($logEntry);
+        $this->persistLogEntry($logEntry);
     }
 
     public function getNameForActionCode($actionCode)
@@ -297,13 +305,14 @@ class ActionLogger
 
     public function getGroupedActionCodes()
     {
-        if (!$this->groupedActionCodes) {
+        if (isset($this->groupedActionCodes)) {
             return $this->groupedActionCodes;
         }
 
         if (!$this->actionCodesLoaded) {
             $this->loadActionCodes();
         }
+
 
         $this->groupedActionCodes = [];
 
@@ -439,103 +448,33 @@ class ActionLogger
         return $filters;
     }
 
-
-
     protected function loadActionCodes()
     {
-        $this->actionCodes = [];
-        $this->groupedActionCodes = [];
+        $compiler       = new ActionCodesVariableCompiler();
+        $sourcePaths    = $this->getActionCodesSourcePaths();
+        $cachePath      = $this->getActionCodesCachePath();
+        $checkCacheTime = $this->kernel->isDebug();
 
-        if ($this->kernel->isDebug()) {
-            if ($this->isActionCodesCacheStale()) {
-                $this->loadActionCodesFromSource();
-                $this->cacheActionCodes();
-            } else {
-                $this->loadActionCodesFromCache();
-            }
-        } else {
-            if ($this->hasActionCodesCache()) {
-                $this->loadActionCodesFromCache();
-            } else {
-                $this->loadActionCodesFromSource();
-                $this->cacheActionCodes();
-            }
-        }
+        $variableCache = new CompiledVariableCache(
+            $compiler,
+            $sourcePaths,
+            $cachePath,
+            $checkCacheTime
+        );
 
-        $this->actionCodesLoaded = true;
+        $this->actionCodes          = $variableCache->getVariable();
+        $this->groupedActionCodes   = [];
+        $this->actionCodesLoaded    = true;
     }
 
-    protected function loadActionCodesFromSource()
+    protected function getActionCodesSourcePaths()
     {
-        foreach ($this->actionCodeFiles as $actionCodeFile) {
-            $path = $this->kernel->locateResource($actionCodeFile);
-            $contents = file_get_contents($path);
-            $actionCodes = Yaml::parse($contents);
-
-            foreach ($actionCodes as $namespace => $namespaceActionCodes) {
-                if (strpos($namespace, '.') !== false) {
-                    throw new \RuntimeException("Action code namespace '{$namespace}' cannot contain a '.'");
-                }
-
-                foreach ($namespaceActionCodes as $name => $actionCode) {
-                    if (strpos($name, '.') !== false) {
-                        throw new \RuntimeException("Action code name '{$name}' cannot contain a '.'");
-                    }
-
-                    $qualifiedName = "{$namespace}.{$name}";
-
-                    if ($inUseBy = array_search($actionCode, $this->qualifiedActionCodes)) {
-                        throw new \RuntimeException("Action code '{$actionCode}' assigned to '{$qualifiedName}' is already assigned to '{$inUseBy}'");
-                    }
-
-                    $this->actionCodes[$qualifiedName] = $actionCode;
-                }
-            }
-        }
-    }
-
-    protected function loadActionCodesFromCache()
-    {
-        $cachePath = $this->getActionCodesCachePath();
-
-        $this->actionCodes = @include $cachePath;
-    }
-
-    protected function cacheActionCodes()
-    {
-        $cachePath = $this->getActionCodesCachePath();
-
-        $contents =
-            "<?php" .
-            "\n// This file is created automatically by CTLib\ActionLog\ActionLogger. DO NOT EDIT." .
-            "\nreturn " . var_export($this->actionCodes, true) . ";";
-
-        $bytes = @file_put_contents($cachePath, $contents);
-    }
-
-    protected function isActionCodesCacheStale()
-    {
-        if (!$this->hasActionCodesCache()) {
-            return true;
-        }
-
-        $cachePath = $this->getActionCodesCachePath();
-        $cacheTime = @filemtime($cachePath);
-
-        $sourceTime = 0;
+        $paths = [];
 
         foreach ($this->actionCodeFiles as $actionCodeFile) {
-            $path = $this->kernel->locateResource($actionCodeFile);
-            $sourceTime = max($sourceTime, @filemtime($path));
+            $paths[] = $this->kernel->locateResource($actionCodeFile);
         }
-
-        return $cacheTime < $sourceTime;
-    }
-
-    protected function hasActionCodesCache()
-    {
-        $cachePath = $this->getActionCodesCachePath();
-        return is_readable($cachePath);
+        return $paths;
     }
 
     protected function getActionCodesCachePath()
@@ -543,5 +482,6 @@ class ActionLogger
         return $this->kernel->getCacheDir()
             . '/' . self::ACTION_CODES_CACHE_FILE;
     }
+
 
 }
