@@ -112,14 +112,21 @@ class ActionLogQueryBuilder
      */
     public function setEntityFilter($entity)
     {
-        $this->queryFilters['parentEntity.class'] = $this
-            ->entityManager
-            ->getEntityMetaHelper()
-            ->getShortClassName($entity);
+        $className = get_class($entity);
+        $pos = strrpos($className, "\\");
+        if ($pos !== false) {
+            $className = substr($className, $pos + 1);
+        }
 
-        $this->queryFilters['parentEntity.id'] = $this
-            ->entityManager
-            ->getEntityId($entity);
+        $this->queryFilters['parentEntity.class'] = $className;
+
+        if (method_exists($entity, 'getEntityId')) {
+            $this->queryFilters['parentEntity.id'] = $entity->getEntityId();
+        else {
+            $this->queryFilters['parentEntity.id'] = $this
+                ->entityManager
+                ->getEntityId($entity);
+        }
 
         return $this;
     }
