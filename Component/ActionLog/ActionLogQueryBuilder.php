@@ -112,13 +112,8 @@ class ActionLogQueryBuilder
      */
     public function setEntityFilter($entity)
     {
-        $className = get_class($entity);
-        $pos = strrpos($className, "\\");
-        if ($pos !== false) {
-            $className = substr($className, $pos + 1);
-        }
-
-        $this->queryFilters['parentEntity.class'] = $className;
+        $this->queryFilters['parentEntity.class'] =
+            Util::shortClassName($entity);
 
         if (method_exists($entity, 'getEntityId')) {
             $this->queryFilters['parentEntity.id'] = $entity->getEntityId();

@@ -233,14 +233,15 @@ class ActionLogger
                 $parentEntity = $entity;
             }
 
-            $entityIds = $this
-                ->entityManager
-                ->getEntityId($entity);
+            if (method_exists($entity, 'getEntityId')) {
+                $entityIds = (array)$entity->getEntityId();
+            } else {
+                $entityIds = $this
+                    ->entityManager
+                    ->getEntityId($entity);
+            }
 
-            $doc['affectedEntity']['class'] = $this
-                ->entityManager
-                ->getEntityMetaHelper()
-                ->getShortClassName($entity);
+            $doc['affectedEntity']['class'] = Util::shortClassName($entity);
 
             $doc['affectedEntity']['id'] = $entityIds;
             if ($delta) {
@@ -248,14 +249,15 @@ class ActionLogger
             }
 
             // Log parent entity detail.
-            $doc['parentEntity']['class'] = $this
-                ->entityManager
-                ->getEntityMetaHelper()
-                ->getShortClassName($parentEntity);
+            $doc['parentEntity']['class'] = Util::shortClassName($parentEntity);
 
-            $entityIds = $this
-                ->entityManager
-                ->getEntityId($parentEntity);
+            if (method_exists($parentEntity, 'getEntityId')) {
+                $entityIds = (array)$parentEntity->getEntityId();
+            } else {
+                $entityIds = $this
+                    ->entityManager
+                    ->getEntityId($parentEntity);
+            }
 
             // As of now, we only have single-key primary key parent
             // entities. We will throw an exception here if we find
