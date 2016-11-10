@@ -10,6 +10,8 @@ use CTLib\Component\Doctrine\ORM\EntityDelta;
 use CTLib\Component\EntityFilterCompiler\EntityFilterCompiler;
 use CTLib\Component\Doctrine\ORM\EntityManager;
 use CTLib\Component\CtApi\CtApiCaller;
+use CTLib\Component\Monolog\Logger;
+
 
 /**
  * Class ActionLogger
@@ -69,13 +71,15 @@ class ActionLogger
         CtApiCaller $ctApiCaller,
         Kernel $kernel,
         $source,
-        array $actionCodeFiles
+        array $actionCodeFiles,
+        Logger $logger
     ) {
         $this->entityManager        = $entityManager;
         $this->ctApiCaller          = $ctApiCaller;
         $this->kernel               = $kernel;
         $this->source               = $source;
         $this->actionCodeFiles      = $actionCodeFiles;
+        $this->logger               = $logger;
         $this->actionCodesLoaded    = false;
         $this->actionCodes          = [];
     }
@@ -159,43 +163,6 @@ class ActionLogger
             json_encode($entry)
         );
     }
-
-    // /**
-    //  * Method used for basic logging without entity
-    //  * change tracking.
-    //  *
-    //  * @param int $action
-    //  * @param int $memberId
-    //  * @param string $comment
-    //  *
-    //  * @return void
-    //  *
-    //  * @throws \Exception
-    //  */
-    // public function add(
-    //     $actionName,
-    //     $memberId = self::SYSTEM_MEMBER_ID,
-    //     $comment = null
-    // ) {
-    //     throw new \RuntimeException("ActionLogger::add is not supported");
-    //
-    //     // if (!$this->isValidActionName($actionName)) {
-    //     //     throw new \InvalidArgumentException("ActionLogger::add '{$actionName}' is not a valid action");
-    //     // }
-    //     //
-    //     // $memberId = $memberId ?: self::SYSTEM_MEMBER_ID;
-    //     //
-    //     // $logData = $this->compileActionLogDocument(
-    //     //     $action,
-    //     //     $memberId,
-    //     //     null,
-    //     //     null,
-    //     //     null,
-    //     //     $comment
-    //     // );
-    //     //
-    //     // $this->persistLogEntry($logData);
-    // }
 
     /**
      * Method used for basic logging without entity
@@ -335,86 +302,6 @@ class ActionLogger
         }
     }
 
-
-    /**
-     * Helper method to construct a partial actionLog JSON
-     * document.
-     *
-     * @param int $action
-     * @param int $memberId
-     * @param $entity
-     * @param EntityDelta $delta
-     * @param array $childEntities
-     * @param string $comment
-     *
-     * @return string
-     */
-    protected function compileActionLogDocument(
-        $action,
-        $memberId,
-        $entity = null,
-        $delta = null,
-        $parentEntity = null,
-        $comment = null
-    ) {
-        $addedOnWeek = Util::getDateWeek(time());
-
-        $doc = [];
-        $doc['actionCode']  = $action;
-        $doc['memberId']    = $memberId;
-        $doc['source']      = $this->source;
-        $doc['comment']     = $comment;
-        $doc['addedOn']     = time();
-        $doc['addedOnWeek'] = $addedOnWeek;
-
-        if ($entity) {
-            // If no parentEntity was supplied, we will use the main
-            // entity as the parent as well.
-            if (!$parentEntity) {
-                $parentEntity = $entity;
-            }
-
-            $entityIds = $this
-                ->entityManager
-                ->getEntityId($entity);
-
-            $doc['affectedEntity']['class'] = $this
-                ->entityManager
-                ->getEntityMetaHelper()
-                ->getShortClassName($entity);
-
-            $doc['affectedEntity']['id'] = $entityIds;
-            if ($delta) {
-                $doc['affectedEntity']['delta'] = $delta;
-            }
-
-            // Log parent entity detail.
-            $doc['parentEntity']['class'] = $this
-                ->entityManager
-                ->getEntityMetaHelper()
-                ->getShortClassName($parentEntity);
-
-            $entityIds = $this
-                ->entityManager
-                ->getEntityId($parentEntity);
-
-            // As of now, we only have single-key primary key parent
-            // entities. We will throw an exception here if we find
-            // multiple keys. This means we added an entity that
-            // supports this, and we forgot to update this code.
-            if (count($entityIds) > 1) {
-                throw new \RuntimeException('Multi-key primary key found for entity: '.json_encode($entityIds));
-            }
-
-            $doc['parentEntity']['id'] = current($entityIds);
-
-            $filters = $this->getEntityFilters($parentEntity);
-            $doc['parentEntity']['filters'] = $filters;
-        }
-
-        return json_encode($doc);
-    }
-
     protected function getEntityInfo($entity)
     {
         $entityId = $this->entityManager->getEntityId($entity);
@@ -462,9 +349,9 @@ class ActionLogger
             $checkCacheTime
         );
 
-        $this->actionCodes          = $variableCache->getVariable();
-        $this->groupedActionCodes   = [];
-        $this->actionCodesLoaded    = true;
+        $this->actionCodes = $variableCache->getVariable();
+        $this->groupedActionCodes = [];
+        $this->actionCodesLoaded = true;
     }
 
     protected function getActionCodesSourcePaths()
