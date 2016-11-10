@@ -221,7 +221,7 @@ class ActionLogQueryBuilder
                 // field value as a string. The value 2 represents the data type
                 // 'string' for mongodb.
                 if ($field == 'parentEntity.id') {
-                    $this->dataAccess->addFilter($field, $value, 'eq', 2);
+                    $this->dataAccess->addFilter($field, $value, 'eq');
                 } else {
                     $this->dataAccess->addFilter($field, $value);
                 }
