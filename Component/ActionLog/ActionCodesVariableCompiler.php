@@ -4,9 +4,20 @@ namespace CTLib\Component\ActionLog;
 use CTLib\Component\Cache\VariableCompilerInterface;
 use Symfony\Component\Yaml\Yaml;
 
+/**
+ * Compiles action codes from source YAMLs.
+ *
+ * @author Mike Turoff
+ */
 class ActionCodesVariableCompiler implements VariableCompilerInterface
 {
 
+    /**
+     * Compiles action code set from source YAML files.
+     *
+     * @param array $sourcePaths
+     * @return array
+     */
     public function compile(array $sourcePaths)
     {
         $allActionCodes = [];
