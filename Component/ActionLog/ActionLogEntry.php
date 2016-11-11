@@ -15,7 +15,7 @@ class ActionLogEntry implements \JsonSerializable
     /**
      * "User ID" used to record system actions.
      */
-    const SYSTEM_USER_ID = "__SYS__";
+    const SYSTEM_USER_ID = "__SYSTEM__";
 
     /**
      * Code representing logged action.
@@ -96,6 +96,18 @@ class ActionLogEntry implements \JsonSerializable
     protected $userIpAddress;
 
     /**
+     * Session ID of user that executed action.
+     * @var string
+     */
+    protected $userSessionId;
+
+    /**
+     * User agent that executed action.
+     * @var string
+     */
+    protected $userAgent;
+
+    /**
      * Comment by user when executing action.
      * @var string
      */
@@ -139,8 +151,25 @@ class ActionLogEntry implements \JsonSerializable
         $this->userId               = self::SYSTEM_USER_ID;
         $this->userRole             = null;
         $this->userIpAddress        = null;
+        $this->userSessionId        = null;
+        $this->userAgent            = null;
         $this->comment              = null;
         $this->extra                = [];
+    }
+
+    /**
+     * Sets all user properties based on passed $user.
+     * @param ActionLogUserInterface $user
+     * @return ActionLogEntry
+     */
+    public function setUser(ActionLogUserInterface $user)
+    {
+        $this->userId           = $user->getUserIdForActionLog();
+        $this->userRole         = $user->getRoleForActionLog();
+        $this->userIpAddress    = $user->getIpAddressForActionLog();
+        $this->userSessionId    = $user->getSessionIdForActionLog();
+        $this->userAgent        = $user->getAgentForActionLog();
+        return $this;
     }
 
     /**
@@ -173,6 +202,28 @@ class ActionLogEntry implements \JsonSerializable
     public function setUserIpAddress($userIpAddress)
     {
         $this->userIpAddress = $userIpAddress;
+        return $this;
+    }
+
+    /**
+     * Sets userSessionId.
+     * @param string $userSessionId
+     * @return ActionLogEntry
+     */
+    public function setUserSessionId($userSessionId)
+    {
+        $this->userSessionId = $userSessionId;
+        return $this;
+    }
+
+    /**
+     * Sets userAgent.
+     * @param string $userAgent
+     * @return ActionLogEntry
+     */
+    public function setUserAgent($userAgent)
+    {
+        $this->userAgent = $userAgent;
         return $this;
     }
 
@@ -229,7 +280,9 @@ class ActionLogEntry implements \JsonSerializable
         $user = [
             'id'        => $this->userId,
             'role'      => $this->userRole,
-            'ipAddress' => $this->userIpAddress
+            'ipAddress' => $this->userIpAddress,
+            'sessionId' => $this->userSessionId,
+            'agent'     => $this->userAgent
         ];
 
         $affectedEntity = [

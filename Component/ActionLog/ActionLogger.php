@@ -153,6 +153,7 @@ class ActionLogger
     public function createLogEntry(
         $actionName,
         $affectedEntity,
+        ActionLogUserInterface $user = null,
         $parentEntity = null
     ) {
         if (!$this->isValidActionName($actionName)) {
@@ -189,7 +190,7 @@ class ActionLogger
 
         $parentEntityFilters = $this->getEntityFilters($parentEntity);
 
-        return new ActionLogEntry(
+        $entry = new ActionLogEntry(
             $actionCode,
             $this->source,
             $affectedEntityClass,
@@ -198,6 +199,12 @@ class ActionLogger
             $parentEntityId,
             $parentEntityFilters
         );
+
+        if ($user) {
+            $entry->setUser($user);
+        }
+
+        return $entry;
     }
 
     /**
@@ -232,16 +239,17 @@ class ActionLogger
     public function addForEntity(
         $actionName,
         $affectedEntity,
-        $userId = null,
+        ActionLogUserInterface $user = null,
         $parentEntity = null
     ) {
         $logEntry =
-            $this->createLogEntry($actionName, $affectedEntity, $parentEntity);
-
-        if ($userId) {
-            $logEntry->setUserId($userId);
-        }
-
+            $this
+            ->createLogEntry(
+                $actionName,
+                $affectedEntity,
+                $user,
+                $parentEntity
+            );
         $this->persistLogEntry($logEntry);
     }
 
@@ -264,18 +272,18 @@ class ActionLogger
         $actionName,
         $affectedEntity,
         EntityDelta $delta,
-        $userId = null,
+        ActionLogUserInterface $user = null,
         $parentEntity = null
     ) {
         $logEntry =
-            $this->createLogEntry($actionName, $affectedEntity, $parentEntity);
-
-        $logEntry->setAffectedEntityDelta($delta);
-
-        if ($userId) {
-            $logEntry->setUserId($userId);
-        }
-
+            $this
+            ->createLogEntry(
+                $actionName,
+                $affectedEntity,
+                $user,
+                $parentEntity
+            )
+            ->setAffectedEntityDelta($delta);
         $this->persistLogEntry($logEntry);
     }
 
