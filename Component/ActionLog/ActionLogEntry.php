@@ -84,6 +84,12 @@ class ActionLogEntry implements \JsonSerializable
     protected $userId;
 
     /**
+     * Role of user that executed action.
+     * @var mixed
+     */
+    protected $userRole;
+
+    /**
      * IP Address of user that executed action.
      * @var string
      */
@@ -131,6 +137,7 @@ class ActionLogEntry implements \JsonSerializable
         $this->addedOn              = time();
         $this->addedOnWeek          = Util::getDateWeek($this->addedOn);
         $this->userId               = self::SYSTEM_USER_ID;
+        $this->userRole             = null;
         $this->userIpAddress        = null;
         $this->comment              = null;
         $this->extra                = [];
@@ -144,6 +151,17 @@ class ActionLogEntry implements \JsonSerializable
     public function setUserId($userId)
     {
         $this->userId = $userId;
+        return $this;
+    }
+
+    /**
+     * Sets userRole.
+     * @param string $userRole
+     * @return ActionLogEntry
+     */
+    public function setUserRole($userRole)
+    {
+        $this->userRole = $userRole;
         return $this;
     }
 
@@ -210,6 +228,7 @@ class ActionLogEntry implements \JsonSerializable
     {
         $user = [
             'id'        => $this->userId,
+            'role'      => $this->userRole,
             'ipAddress' => $this->userIpAddress
         ];
 
