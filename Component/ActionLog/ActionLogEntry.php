@@ -84,6 +84,12 @@ class ActionLogEntry implements \JsonSerializable
     protected $userId;
 
     /**
+     * IP Address of user that executed action.
+     * @var string
+     */
+    protected $ipAddress;
+
+    /**
      * Comment by user when executing action.
      * @var string
      */
@@ -125,6 +131,7 @@ class ActionLogEntry implements \JsonSerializable
         $this->addedOn              = time();
         $this->addedOnWeek          = Util::getDateWeek($this->addedOn);
         $this->userId               = self::SYSTEM_USER_ID;
+        $this->ipAddress            = null;
         $this->comment              = null;
         $this->extra                = [];
     }
@@ -137,6 +144,17 @@ class ActionLogEntry implements \JsonSerializable
     public function setUserId($userId)
     {
         $this->userId = $userId;
+        return $this;
+    }
+
+    /**
+     * Sets ipAddress.
+     * @param string $ipAddress
+     * @return ActionLogEntry
+     */
+    public function setIpAddress($ipAddress)
+    {
+        $this->ipAddress = $ipAddress;
         return $this;
     }
 
@@ -206,6 +224,7 @@ class ActionLogEntry implements \JsonSerializable
             'actionCode'        => $this->actionCode,
             'source'            => $this->source,
             'userId'            => $this->userId,
+            'ipAddress'         => $this->ipAddress,
             'comment'           => $this->comment,
             'addedOn'           => $this->addedOn,
             'addedOnWeek'       => $this->addedOnWeek,
