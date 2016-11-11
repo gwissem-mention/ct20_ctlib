@@ -192,11 +192,11 @@ class ActionLogger
         return new ActionLogEntry(
             $actionCode,
             $this->source,
+            $affectedEntityClass,
+            $affectedEntityId,
             $parentEntityClass,
             $parentEntityId,
-            $parentEntityFilters,
-            $affectedEntityClass,
-            $affectedEntityId
+            $parentEntityFilters
         );
     }
 
@@ -226,7 +226,7 @@ class ActionLogger
      *
      * @param string $actionName
      * @param mixed $affectedEntity
-     * @param int $memberId
+     * @param mixed $userId
      * @param mixed $parentEntity
      *
      * @return void
@@ -236,14 +236,14 @@ class ActionLogger
     public function addForEntity(
         $actionName,
         $affectedEntity,
-        $memberId = ActionLogEntry::SYSTEM_MEMBER_ID,
+        $userId = null,
         $parentEntity = null
     ) {
         $logEntry =
             $this->createLogEntry($actionName, $affectedEntity, $parentEntity);
 
-        if ($memberId) {
-            $logEntry->setMemberId($memberId);
+        if ($userId) {
+            $logEntry->setUserId($userId);
         }
 
         $this->persistLogEntry($logEntry);
@@ -257,7 +257,7 @@ class ActionLogger
      * @param string $actionName
      * @param mixed $affectedEntity
      * @param EntityDelta $delta
-     * @param int $memberId
+     * @param mixed $userId
      * @param mixed $parentEntity
      *
      * @return void
@@ -268,7 +268,7 @@ class ActionLogger
         $actionName,
         $affectedEntity,
         EntityDelta $delta,
-        $memberId = self::SYSTEM_MEMBER_ID,
+        $userId = null,
         $parentEntity = null
     ) {
         $logEntry =
@@ -276,8 +276,8 @@ class ActionLogger
 
         $logEntry->setAffectedEntityDelta($delta);
 
-        if ($memberId) {
-            $logEntry->setMemberId($memberId);
+        if ($userId) {
+            $logEntry->setUserId($userId);
         }
 
         $this->persistLogEntry($logEntry);
