@@ -1,5 +1,4 @@
 <?php
-
 namespace CTLib\Component\ActionLog;
 
 use Symfony\Component\HttpKernel\Kernel;
@@ -20,22 +19,33 @@ use CTLib\Component\Monolog\Logger;
  */
 class ActionLogger
 {
+
+    /**
+     * Log sources.
+     * @TODO See if we can remove these.
+     */
     const SOURCE_OTP       = 'OTP';
     const SOURCE_CTP       = 'CTP';
     const SOURCE_API       = 'API';
     const SOURCE_INTERFACE = 'IFC';
     const SOURCE_HQ        = 'HQ';
 
+    /**
+     * "Member ID" used to record system actions.
+     * @TODO See if we can remove this since we have it in ActionLogEntry.
+     */
     const SYSTEM_MEMBER_ID   = 0;
 
+    /**
+     * API endpoint for posting action logs.
+     */
     const AUDIT_LOG_API_PATH = '/actionLogs';
 
+    /**
+     * Name of file to cache compiled action codes.
+     */
     const ACTION_CODES_CACHE_FILE   = 'actionCodes_cache.php';
 
-    /**
-     * @var CtApiCaller
-     */
-    protected $ctApiCaller;
 
     /**
      * @var EntityManager
@@ -43,58 +53,103 @@ class ActionLogger
     protected $entityManager;
 
     /**
+     * @var CtApiCaller
+     */
+    protected $ctApiCaller;
+
+    /**
+     * @var Kernel
+     */
+    protected $kernel;
+
+    /**
+     * @var Logger
+     */
+    protected $logger;
+
+    /**
+     * Tags log entries with this source.
      * @var string
      */
     protected $source;
 
     /**
+     * Set of registered source YAML file paths containing the action codes.
+     * @var array
+     */
+    protected $actionCodeFiles;
+
+    /**
+     * Indicates whether action codes have been loaded into memory.
+     * @var boolean
+     */
+    protected $actionCodesLoaded = false;
+
+    /**
+     * Set of action codes in form [$actionName => $actionCode, ...]
+     * @var array
+     */
+    protected $actionCodes = [];
+
+    /**
+     * Set of action codes nested within parent grouping.
+     * @var array
+     */
+    protected $groupedActionCodes = [];
+
+    /**
+     * Set of registered EntityFilterCompilers used to apply entity's filters
+     * to log entry.
      * @var array
      */
     protected $filterCompilers = [];
-
-    protected $actionCodeFiles;
-
-    protected $actionCodesLoaded;
-
-    protected $actionCodes;
-
-    protected $groupedActionCodes;
 
 
     /**
      * @param EntityManager $entityManager
      * @param CtApiCaller $ctApiCaller
+     * @param Kernel $kernel
+     * @param Logger $logger
      * @param string $source
+     * @param array $actionCodeFiles
      */
     public function __construct(
         EntityManager $entityManager,
         CtApiCaller $ctApiCaller,
         Kernel $kernel,
+        Logger $logger,
         $source,
-        array $actionCodeFiles,
-        Logger $logger
+        array $actionCodeFiles
     ) {
         $this->entityManager        = $entityManager;
         $this->ctApiCaller          = $ctApiCaller;
         $this->kernel               = $kernel;
+        $this->logger               = $logger;
         $this->source               = $source;
         $this->actionCodeFiles      = $actionCodeFiles;
-        $this->logger               = $logger;
-        $this->actionCodesLoaded    = false;
-        $this->actionCodes          = [];
     }
 
     /**
-    * Register a filter compiler with this service.
-    *
-    * @param EntityFilterCompiler $filterCompiler
-    */
+     * Registers a filter compiler with this service.
+     *
+     * @param EntityFilterCompiler $filterCompiler
+     * @return void
+     */
     public function registerEntityFilterCompiler(
         EntityFilterCompiler $filterCompiler
     ) {
         $this->filterCompilers[] = $filterCompiler;
     }
 
+    /**
+     * Creates a log entry (but does not persist it).
+     *
+     * @param string $actionName
+     * @param mixed $affectedEntity
+     * @param mixed $parentEntity   If null, $affectedEntity will be used as
+     *                              parent.
+     * @return ActionLogEntry
+     */
     public function createLogEntry(
         $actionName,
         $affectedEntity,
@@ -106,19 +161,21 @@ class ActionLogger
 
         $actionCode = $this->getActionCodeForName($actionName);
 
-        if (!$parentEntity) {
-            $parentEntity = $affectedEntity;
-        }
-
         list(
             $affectedEntityClass,
             $affectedEntityId
         ) = $this->getEntityInfo($affectedEntity);
 
-        list(
-            $parentEntityClass,
-            $parentEntityId
-        ) = $this->getEntityInfo($parentEntity);
+        if ($parentEntity) {
+            list(
+                $parentEntityClass,
+                $parentEntityId
+            ) = $this->getEntityInfo($parentEntity);
+        } else {
+            $parentEntity = $affectedEntity;
+            $parentEntityClass = $affectedEntityClass;
+            $parentEntityId = $affectedEntityId;
+        }
 
         // As of now, we only have single-key primary key parent
         // entities. We will throw an exception here if we find
@@ -147,8 +204,7 @@ class ActionLogger
      * Send the audit log entry to API to be saved
      * in Mongo.
      *
-     * @param string $log
-     *
+     * @param ActionLogEntry $entry
      * @return void
      */
     public function persistLogEntry(ActionLogEntry $entry)
@@ -168,11 +224,10 @@ class ActionLogger
      * Method used for basic logging without entity
      * change tracking.
      *
-     * @param int $action
-     * @param $entity
-     * @param $parentEntity
+     * @param string $actionName
+     * @param mixed $affectedEntity
      * @param int $memberId
-     * @param string $comment
+     * @param mixed $parentEntity
      *
      * @return void
      *
@@ -199,12 +254,11 @@ class ActionLogger
      * been 'tracked' via our EntityManager tracking mechanism.
      * Caller should be passing a valid delta value.
      *
-     * @param int $action
-     * @param $entity
+     * @param string $actionName
+     * @param mixed $affectedEntity
      * @param EntityDelta $delta
-     * @param $parentEntity
      * @param int $memberId
-     * @param string $comment
+     * @param mixed $parentEntity
      *
      * @return void
      *
@@ -229,20 +283,12 @@ class ActionLogger
         $this->persistLogEntry($logEntry);
     }
 
-    public function getNameForActionCode($actionCode)
-    {
-        if (!$this->actionCodesLoaded) {
-            $this->loadActionCodes();
-        }
-
-        return array_search($actionCode, $this->actionCodes);
-    }
-
-    public function isValidActionCode($actionCode)
-    {
-        return $this->getNameForActionCode($actionCode) ? true : false;
-    }
-
+    /**
+     * Returns action code mapped to name.
+     *
+     * @param string $actionName
+     * @return integer|null
+     */
     public function getActionCodeForName($actionName)
     {
         if (!$this->actionCodesLoaded) {
@@ -256,11 +302,49 @@ class ActionLogger
         }
     }
 
+    /**
+     * Indicates whether action name is registered.
+     *
+     * @param string $actionName
+     * @return boolean
+     */
     public function isValidActionName($actionName)
     {
         return $this->getActionCodeForName($actionName) ? true : false;
     }
 
+    /**
+     * Returns action name mapped to code.
+     *
+     * @param integer $actionCode
+     * @return string|null
+     */
+    public function getNameForActionCode($actionCode)
+    {
+        if (!$this->actionCodesLoaded) {
+            $this->loadActionCodes();
+        }
+
+        $actionName = array_search($actionCode, $this->actionCodes);
+        return $actionName ?: null;
+    }
+
+    /**
+     * Indicates whether action code is registered.
+     *
+     * @param integer $actionCode
+     * @return boolean
+     */
+    public function isValidActionCode($actionCode)
+    {
+        return $this->getNameForActionCode($actionCode) ? true : false;
+    }
+
+    /**
+     * Returns all registered action codes.
+     *
+     * @return array  [$actionName => $actionCode, ...]
+     */
     public function getActionCodes()
     {
         if (!$this->actionCodesLoaded) {
@@ -270,6 +354,11 @@ class ActionLogger
         return $this->actionCodes;
     }
 
+    /**
+     * Returns all registered action codes nested within parent group.
+     *
+     * @return array
+     */
     public function getGroupedActionCodes()
     {
         if (isset($this->groupedActionCodes)) {
@@ -290,6 +379,12 @@ class ActionLogger
         return $this->groupedActionCodes;
     }
 
+    /**
+     * Returns registered action codes for specified parent group.
+     *
+     * @param string $group
+     * @return array [$actionName => $actionCode, ...]
+     */
     public function getActionCodesForGroup($group)
     {
         $groupedActionCodes = $this->getGroupedActionCodes();
@@ -301,6 +396,12 @@ class ActionLogger
         }
     }
 
+    /**
+     * Returns entity class and ID field/value array.
+     *
+     * @param mixed $entity
+     * @return array [$entityClass, $entityId]
+     */
     protected function getEntityInfo($entity)
     {
         $entityClass = Util::shortClassName($entity);
@@ -337,6 +438,11 @@ class ActionLogger
         return $filters;
     }
 
+    /**
+     * Loads registered action codes.
+     *
+     * @return void
+     */
     protected function loadActionCodes()
     {
         $compiler       = new ActionCodesVariableCompiler();
@@ -356,6 +462,11 @@ class ActionLogger
         $this->actionCodesLoaded = true;
     }
 
+    /**
+     * Returns paths of action code source YAML files.
+     *
+     * @return array
+     */
     protected function getActionCodesSourcePaths()
     {
         $paths = [];
@@ -366,6 +477,11 @@ class ActionLogger
         return $paths;
     }
 
+    /**
+     * Returns path to action code cache file.
+     *
+     * @return string
+     */
     protected function getActionCodesCachePath()
     {
         return $this->kernel->getCacheDir()
