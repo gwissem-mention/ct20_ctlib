@@ -18,10 +18,10 @@ class ActionLogEntry implements \JsonSerializable
     const SYSTEM_USER_ID = "__SYSTEM__";
 
     /**
-     * Code representing logged action.
-     * @var integer
+     * Logged action.
+     * @var string
      */
-    protected $actionCode;
+    protected $action;
 
     /**
      * Source of log entry.
@@ -121,7 +121,7 @@ class ActionLogEntry implements \JsonSerializable
 
 
     /**
-     * @param integer $actionCode
+     * @param string $action
      * @param string $source
      * @param string $affectedEntityClass
      * @param array $affectedEntityId
@@ -130,7 +130,7 @@ class ActionLogEntry implements \JsonSerializable
      * @param array $parentEntityFilters
      */
     public function __construct(
-        $actionCode,
+        $action,
         $source,
         $affectedEntityClass,
         array $affectedEntityId,
@@ -138,7 +138,7 @@ class ActionLogEntry implements \JsonSerializable
         $parentEntityId,
         array $parentEntityFilters
     ) {
-        $this->actionCode           = $actionCode;
+        $this->action               = $action;
         $this->source               = $source;
         $this->affectedEntityClass  = $affectedEntityClass;
         $this->affectedEntityId     = $affectedEntityId;
@@ -298,7 +298,7 @@ class ActionLogEntry implements \JsonSerializable
         ];
 
         return [
-            'actionCode'        => $this->actionCode,
+            'action'            => $this->action,
             'source'            => $this->source,
             'user'              => $user,
             'comment'           => $this->comment,

@@ -630,7 +630,7 @@ class CTLibExtension extends Extension
             new Reference('kernel'),
             new Reference('logger'),
             $config['source'],
-            $config['action_code_files']
+            $config['action_files']
         ];
         $def = new Definition('CTLib\Component\ActionLog\ActionLogger', $args);
         $container->setDefinition('action_log.action_logger', $def);
