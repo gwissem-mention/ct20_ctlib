@@ -209,15 +209,11 @@ class ActionLogger
      */
     public function persistLogEntry(ActionLogEntry $entry)
     {
-        print("\n");
-        print(json_encode($entry));
-        print("\n");
-        return;
+        $encodedEntry = json_encode($entry);
 
-        $this->ctApiCaller->post(
-            self::AUDIT_LOG_API_PATH,
-            json_encode($entry)
-        );
+        $this->logger->debug("ActionLogger: persist {$encodedEntry}");
+
+        $this->ctApiCaller->post(self::AUDIT_LOG_API_PATH, $encodedEntry);
     }
 
     /**
