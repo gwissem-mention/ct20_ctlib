@@ -112,14 +112,16 @@ class ActionLogQueryBuilder
      */
     public function setEntityFilter($entity)
     {
-        $this->queryFilters['parentEntity.class'] = $this
-            ->entityManager
-            ->getEntityMetaHelper()
-            ->getShortClassName($entity);
+        $this->queryFilters['parentEntity.class'] =
+            Util::shortClassName($entity);
 
-        $this->queryFilters['parentEntity.id'] = $this
-            ->entityManager
-            ->getEntityId($entity);
+        if (method_exists($entity, 'getEntityId')) {
+            $this->queryFilters['parentEntity.id'] = $entity->getEntityId();
+        } else {
+            $this->queryFilters['parentEntity.id'] = $this
+                ->entityManager
+                ->getEntityId($entity);
+        }
 
         return $this;
     }
@@ -219,7 +221,7 @@ class ActionLogQueryBuilder
                 // field value as a string. The value 2 represents the data type
                 // 'string' for mongodb.
                 if ($field == 'parentEntity.id') {
-                    $this->dataAccess->addFilter($field, $value, 'eq', 2);
+                    $this->dataAccess->addFilter($field, $value, 'eq');
                 } else {
                     $this->dataAccess->addFilter($field, $value);
                 }

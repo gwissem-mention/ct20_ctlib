@@ -111,13 +111,13 @@ class ActionLogger
         }
 
         list(
-            $affectedEntityId,
-            $affectedEntityClass
+            $affectedEntityClass,
+            $affectedEntityId
         ) = $this->getEntityInfo($affectedEntity);
 
         list(
-            $parentEntityId,
-            $parentEntityClass
+            $parentEntityClass,
+            $parentEntityId
         ) = $this->getEntityInfo($parentEntity);
 
         // As of now, we only have single-key primary key parent
@@ -125,7 +125,7 @@ class ActionLogger
         // multiple keys. This means we added an entity that
         // supports this, and we forgot to update this code.
         if (count($parentEntityId) > 1) {
-            throw new \RuntimeException('Multi-key primary key found for parent entity: '.json_encode($parentEntityId));
+            throw new \RuntimeException('Multi-key primary key found for parent entity: ' . json_encode($parentEntityId));
         }
 
         $parentEntityId = current($parentEntityId);
@@ -280,7 +280,6 @@ class ActionLogger
             $this->loadActionCodes();
         }
 
-
         $this->groupedActionCodes = [];
 
         foreach ($this->actionCodes as $actionName => $actionCode) {
@@ -304,14 +303,17 @@ class ActionLogger
 
     protected function getEntityInfo($entity)
     {
-        $entityId = $this->entityManager->getEntityId($entity);
+        $entityClass = Util::shortClassName($entity);
 
-        $entityClass = $this
-            ->entityManager
-            ->getEntityMetaHelper()
-            ->getShortClassName($entity);
+        if (method_exists($entity, 'getEntityId')) {
+            // Custom method added to sudo entities. These entities are not
+            // managed by Doctrine and therefor don't have annotations.
+            $entityId = (array) $entity->getEntityId();
+        } else {
+            $entityId = $this->entityManager->getEntityId($entity);
+        }
 
-        return [$entityId, $entityClass];
+        return [$entityClass, $entityId];
     }
 
     /**
@@ -369,6 +371,5 @@ class ActionLogger
         return $this->kernel->getCacheDir()
             . '/' . self::ACTION_CODES_CACHE_FILE;
     }
-
 
 }
