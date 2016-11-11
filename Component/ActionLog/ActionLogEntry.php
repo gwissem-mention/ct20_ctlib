@@ -87,7 +87,7 @@ class ActionLogEntry implements \JsonSerializable
      * IP Address of user that executed action.
      * @var string
      */
-    protected $ipAddress;
+    protected $userIpAddress;
 
     /**
      * Comment by user when executing action.
@@ -131,7 +131,7 @@ class ActionLogEntry implements \JsonSerializable
         $this->addedOn              = time();
         $this->addedOnWeek          = Util::getDateWeek($this->addedOn);
         $this->userId               = self::SYSTEM_USER_ID;
-        $this->ipAddress            = null;
+        $this->userIpAddress        = null;
         $this->comment              = null;
         $this->extra                = [];
     }
@@ -148,13 +148,13 @@ class ActionLogEntry implements \JsonSerializable
     }
 
     /**
-     * Sets ipAddress.
-     * @param string $ipAddress
+     * Sets userIpAddress.
+     * @param string $userIpAddress
      * @return ActionLogEntry
      */
-    public function setIpAddress($ipAddress)
+    public function setUserIpAddress($userIpAddress)
     {
-        $this->ipAddress = $ipAddress;
+        $this->userIpAddress = $userIpAddress;
         return $this;
     }
 
@@ -208,6 +208,11 @@ class ActionLogEntry implements \JsonSerializable
      */
     public function jsonSerialize()
     {
+        $user = [
+            'id'        => $this->userId,
+            'ipAddress' => $this->userIpAddress
+        ];
+
         $affectedEntity = [
             'class'     => $this->affectedEntityClass,
             'id'        => $this->affectedEntityId,
@@ -223,8 +228,7 @@ class ActionLogEntry implements \JsonSerializable
         return [
             'actionCode'        => $this->actionCode,
             'source'            => $this->source,
-            'userId'            => $this->userId,
-            'ipAddress'         => $this->ipAddress,
+            'user'              => $user,
             'comment'           => $this->comment,
             'addedOn'           => $this->addedOn,
             'addedOnWeek'       => $this->addedOnWeek,
