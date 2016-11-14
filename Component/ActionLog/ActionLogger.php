@@ -4,7 +4,6 @@ namespace CTLib\Component\ActionLog;
 use Symfony\Component\HttpKernel\Kernel;
 use Symfony\Component\Yaml\Yaml;
 use CTLib\Util\Util;
-use CTLib\Component\Cache\CompiledVariableCache;
 use CTLib\Component\Doctrine\ORM\EntityDelta;
 use CTLib\Component\EntityFilterCompiler\EntityFilterCompiler;
 use CTLib\Component\Doctrine\ORM\EntityManager;
@@ -21,24 +20,9 @@ class ActionLogger
 {
 
     /**
-     * Log sources.
-     * @TODO See if we can remove these.
-     */
-    const SOURCE_OTP       = 'OTP';
-    const SOURCE_CTP       = 'CTP';
-    const SOURCE_API       = 'API';
-    const SOURCE_INTERFACE = 'IFC';
-    const SOURCE_HQ        = 'HQ';
-
-    /**
      * API endpoint for posting action logs.
      */
     const ACTION_LOG_API_PATH = '/actionLogs';
-
-    /**
-     * Name of file to cache compiled action set.
-     */
-    const ACTIONS_CACHE_FILE   = 'actions_cache.php';
 
 
     /**
@@ -68,30 +52,6 @@ class ActionLogger
     protected $source;
 
     /**
-     * Set of registered source YAML file paths containing the actions.
-     * @var array
-     */
-    protected $actionFiles;
-
-    /**
-     * Indicates whether actions have been loaded into memory.
-     * @var boolean
-     */
-    protected $actionsLoaded = false;
-
-    /**
-     * Set of actions.
-     * @var array
-     */
-    protected $actions = [];
-
-    /**
-     * Set of actions nested within parent groupings.
-     * @var array
-     */
-    protected $groupedActions = [];
-
-    /**
      * Set of registered EntityFilterCompilers used to apply entity's filters
      * to log entry.
      * @var array
@@ -112,15 +72,13 @@ class ActionLogger
         CtApiCaller $ctApiCaller,
         Kernel $kernel,
         Logger $logger,
-        $source,
-        array $actionFiles
+        $source
     ) {
         $this->entityManager    = $entityManager;
         $this->ctApiCaller      = $ctApiCaller;
         $this->kernel           = $kernel;
         $this->logger           = $logger;
         $this->source           = $source;
-        $this->actionFiles      = $actionFiles;
     }
 
     /**
@@ -150,10 +108,6 @@ class ActionLogger
         ActionLogUserInterface $user = null,
         $parentEntity = null
     ) {
-        if (!$this->isValidAction($action)) {
-            throw new \InvalidArgumentException("'{$action}' is not a valid action");
-        }
-
         list(
             $affectedEntityClass,
             $affectedEntityId
@@ -280,75 +234,6 @@ class ActionLogger
     }
 
     /**
-     * Returns all registered actions.
-     *
-     * @return array
-     */
-    public function getActions()
-    {
-        if (!$this->actionsLoaded) {
-            $this->loadActions();
-        }
-        return $this->actions;
-    }
-
-    /**
-     * Indicates whether specified action is valid.
-     *
-     * @param string $action
-     * @return boolean
-     */
-    public function isValidAction($action)
-    {
-        if (!$this->actionsLoaded) {
-            $this->loadActions();
-        }
-        return in_array($action, $this->actions);
-    }
-
-    /**
-     * Returns all registered actions nested within parent groupings.
-     *
-     * @return array
-     */
-    public function getGroupedActions()
-    {
-        if (isset($this->groupedActions)) {
-            return $this->groupedActions;
-        }
-
-        if (!$this->actionsLoaded) {
-            $this->loadActions();
-        }
-
-        $this->groupedActions = [];
-
-        foreach ($this->actions as $action) {
-            $group = explode('.', $action)[0];
-            $this->groupedActions[$group][] = $action;
-        }
-
-        return $this->groupedActions;
-    }
-
-    /**
-     * Returns registered actions for specified parent group.
-     *
-     * @param string $group
-     * @return array
-     */
-    public function getActionsForGroup($group)
-    {
-        $groupedActions = $this->getGroupedActions();
-
-        if (isset($groupedActions[$group])) {
-            return $groupedActions[$group];
-        } else {
-            return [];
-        }
-    }
-
-    /**
      * Returns entity class and ID field/value array.
      *
      * @param mixed $entity
@@ -388,55 +273,6 @@ class ActionLogger
         }
 
         return $filters;
-    }
-
-    /**
-     * Loads registered action codes.
-     *
-     * @return void
-     */
-    protected function loadActions()
-    {
-        $compiler       = new ActionsVariableCompiler();
-        $sourcePaths    = $this->getActionsSourcePaths();
-        $cachePath      = $this->getActionsCachePath();
-        $checkCacheTime = $this->kernel->isDebug();
-
-        $variableCache = new CompiledVariableCache(
-            $compiler,
-            $sourcePaths,
-            $cachePath,
-            $checkCacheTime
-        );
-
-        $this->actions = $variableCache->getVariable();
-        $this->groupedActions = [];
-        $this->actionsLoaded = true;
-    }
-
-    /**
-     * Returns paths of actions source YAML files.
-     *
-     * @return array
-     */
-    protected function getActionsSourcePaths()
-    {
-        $paths = [];
-
-        foreach ($this->actionFiles as $actionFile) {
-            $paths[] = $this->kernel->locateResource($actionFile);
-        }
-        return $paths;
-    }
-
-    /**
-     * Returns path to action code cache file.
-     *
-     * @return string
-     */
-    protected function getActionsCachePath()
-    {
-        return $this->kernel->getCacheDir() . '/' . self::ACTIONS_CACHE_FILE;
     }
 
 }
