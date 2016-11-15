@@ -79,7 +79,7 @@ class ActionLogQueryBuilder
      */
     public function setActionCodeFilter(array $actionCodes)
     {
-        $this->queryFilters['actionCode'] = $actionCodes;
+        $this->queryFilters['action'] = $actionCodes;
         return $this;
     }
 
@@ -101,7 +101,7 @@ class ActionLogQueryBuilder
      */
     public function setMemberIdFilter($memberId)
     {
-        $this->queryFilters['memberId'] = $memberId;
+        $this->queryFilters['user.id'] = $memberId;
         return $this;
     }
 
@@ -237,12 +237,13 @@ class ActionLogQueryBuilder
     protected function addDefaultFields()
     {
         $this->queryFields = [
-            'actionCode',
-            'memberId',
+            'action',
+            'user',
             'affectedEntity',
             'parentEntity',
             'source',
             'comment',
+            'extra',
             'addedOn',
             'addedOnWeek',
             'addedOn'
