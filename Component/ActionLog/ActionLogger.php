@@ -150,6 +150,14 @@ class ActionLogger
             $entry->setUser($user);
         }
 
+        // Here we call our helper method that will check if the entity
+        // implements the ActionLogEntityAttribute interface, and if it
+        // does, we call it to get any 'extra' data for the entity.
+        $entry = $this->addEntityAttributes($entry, $affectedEntity);
+        if ($parentEntity) {
+            $entry = $this->addEntityAttributes($entry, $parentEntity);
+        }
+
         return $entry;
     }
 
@@ -196,6 +204,15 @@ class ActionLogger
                 $user,
                 $parentEntity
             );
+
+        // Here we call our helper method that will check if the entity
+        // implements the ActionLogEntityAttribute interface, and if it
+        // does, we call it to get any 'extra' data for the entity.
+        $logEntry = $this->addEntityAttributes($logEntry, $affectedEntity);
+        if ($parentEntity) {
+            $logEntry = $this->addEntityAttributes($logEntry, $parentEntity);
+        }
+
         $this->persistLogEntry($logEntry);
     }
 
@@ -230,6 +247,15 @@ class ActionLogger
                 $parentEntity
             )
             ->setAffectedEntityDelta($delta);
+
+        // Here we call our helper method that will check if the entity
+        // implements the ActionLogEntityAttribute interface, and if it
+        // does, we call it to get any 'extra' data for the entity.
+        $logEntry = $this->addEntityAttributes($logEntry, $affectedEntity);
+        if ($parentEntity) {
+            $logEntry = $this->addEntityAttributes($logEntry, $parentEntity);
+        }
+
         $this->persistLogEntry($logEntry);
     }
 
@@ -275,4 +301,26 @@ class ActionLogger
         return $filters;
     }
 
+    /**
+     * Helper method to add any available 'extra' data
+     * for the given entity.
+     *
+     * @param ActionLogEntry $logEntry
+     * @param $entity
+     *
+     * @return ActionLogEntry
+     */
+    protected function addEntityAttributes($logEntry, $entity)
+    {
+        if (method_exists($entity, 'getAttributesForActionLog')) {
+            $extra = $entity->getAttributesForActionLog();
+            if ($extra) {
+                foreach ($extra as $key => $value) {
+                    $logEntry->addExtraValue($key, $value);
+                }
+            }
+        }
+
+        return $logEntry;
+    }
 }

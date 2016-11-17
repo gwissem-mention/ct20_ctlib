@@ -95,13 +95,38 @@ class ActionLogQueryBuilder
     }
 
     /**
-     * @param int $memberId
+     * @param array $memberIds
      *
      * @return ActionLogQueryBuilder
      */
-    public function setMemberIdFilter($memberId)
+    public function setMemberIdFilter($memberIds)
     {
-        $this->queryFilters['user.id'] = $memberId;
+        $this->queryFilters['user.id'] = $memberIds;
+        return $this;
+    }
+
+    /**
+     * @param array $memberTypeIds
+     *
+     * @return ActionLogQueryBuilder
+     */
+    public function setMemberTypeFilter($memberTypeIds)
+    {
+        if (!isset($this->queryFilters['extra'])) {
+            $this->queryFilters['extra'] = [];
+        }
+        $this->queryFilters['extra']['memberTypeId'] = $memberTypeIds;
+        return $this;
+    }
+
+    /**
+     * @param array $roles
+     *
+     * @return ActionLogQueryBuilder
+     */
+    public function setRoleFilter($roles)
+    {
+        $this->queryFilters['user.role'] = $roles;
         return $this;
     }
 
