@@ -110,18 +110,21 @@ class ActionLogger
     ) {
         list(
             $affectedEntityClass,
-            $affectedEntityId
+            $affectedEntityId,
+            $affectedEntityAttributes,
         ) = $this->getEntityInfo($affectedEntity);
 
         if ($parentEntity) {
             list(
                 $parentEntityClass,
-                $parentEntityId
+                $parentEntityId,
+                $parentEntityAttributes
             ) = $this->getEntityInfo($parentEntity);
         } else {
             $parentEntity = $affectedEntity;
             $parentEntityClass = $affectedEntityClass;
             $parentEntityId = $affectedEntityId;
+            $parentEntityAttributes = [];
         }
 
         // As of now, we only have single-key primary key parent
@@ -150,13 +153,10 @@ class ActionLogger
             $entry->setUser($user);
         }
 
-        // Here we call our helper method that will check if the entity
-        // implements the ActionLogEntityAttribute interface, and if it
-        // does, we call it to get any 'extra' data for the entity.
-        $entry = $this->addEntityAttributes($entry, $affectedEntity);
-        if ($parentEntity) {
-            $entry = $this->addEntityAttributes($entry, $parentEntity);
-        }
+        // Add extra values if affected and/or parent entities exposed misc.
+        // attributes to track.
+        $extra = array_merge($affectedEntityAttributes, $parentEntityAttributes);
+        $entry->setExtraValues($extra);
 
         return $entry;
     }
@@ -260,10 +260,10 @@ class ActionLogger
     }
 
     /**
-     * Returns entity class and ID field/value array.
+     * Returns entity class, ID field/value array and misc. attributes.
      *
      * @param mixed $entity
-     * @return array [$entityClass, $entityId]
+     * @return array [$entityClass, $entityId, $attributes]
      */
     protected function getEntityInfo($entity)
     {
@@ -277,7 +277,15 @@ class ActionLogger
             $entityId = $this->entityManager->getEntityId($entity);
         }
 
-        return [$entityClass, $entityId];
+        $attributes = [];
+
+        // Check if entity implements ActionLogEntityAttribute interface, which
+        // allows it to expose misc. attributes to store in log.
+        if ($entity instanceof ActionLogEntityAttribute) {
+            $attributes = $entity->getAttributesForActionLog();
+        }
+
+        return [$entityClass, $entityId, $attributes];
     }
 
     /**
@@ -301,26 +309,4 @@ class ActionLogger
         return $filters;
     }
 
-    /**
-     * Helper method to add any available 'extra' data
-     * for the given entity.
-     *
-     * @param ActionLogEntry $logEntry
-     * @param $entity
-     *
-     * @return ActionLogEntry
-     */
-    protected function addEntityAttributes($logEntry, $entity)
-    {
-        if (method_exists($entity, 'getAttributesForActionLog')) {
-            $extra = $entity->getAttributesForActionLog();
-            if ($extra) {
-                foreach ($extra as $key => $value) {
-                    $logEntry->addExtraValue($key, $value);
-                }
-            }
-        }
-
-        return $logEntry;
-    }
 }
