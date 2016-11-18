@@ -1,12 +1,15 @@
 <?php
-
 namespace CTLib\Component\ActionLog;
 
+use Symfony\Component\HttpKernel\Kernel;
+use Symfony\Component\Yaml\Yaml;
 use CTLib\Util\Util;
 use CTLib\Component\Doctrine\ORM\EntityDelta;
 use CTLib\Component\EntityFilterCompiler\EntityFilterCompiler;
 use CTLib\Component\Doctrine\ORM\EntityManager;
 use CTLib\Component\CtApi\CtApiCaller;
+use CTLib\Component\Monolog\Logger;
+
 
 /**
  * Class ActionLogger
@@ -15,20 +18,12 @@ use CTLib\Component\CtApi\CtApiCaller;
  */
 class ActionLogger
 {
-    const SOURCE_OTP       = 'OTP';
-    const SOURCE_CTP       = 'CTP';
-    const SOURCE_API       = 'API';
-    const SOURCE_INTERFACE = 'IFC';
-    const SOURCE_HQ        = 'HQ';
-
-    const SYSTEM_MEMBER_ID   = 0;
-
-    const AUDIT_LOG_API_PATH = '/actionLogs';
 
     /**
-     * @var CtApiCaller
+     * API endpoint for posting action logs.
      */
-    protected $ctApiCaller;
+    const ACTION_LOG_API_PATH = '/actionLogs';
+
 
     /**
      * @var EntityManager
@@ -36,11 +31,29 @@ class ActionLogger
     protected $entityManager;
 
     /**
+     * @var CtApiCaller
+     */
+    protected $ctApiCaller;
+
+    /**
+     * @var Kernel
+     */
+    protected $kernel;
+
+    /**
+     * @var Logger
+     */
+    protected $logger;
+
+    /**
+     * Tags log entries with this source.
      * @var string
      */
     protected $source;
 
     /**
+     * Set of registered EntityFilterCompilers used to apply entity's filters
+     * to log entry.
      * @var array
      */
     protected $filterCompilers = [];
@@ -49,23 +62,31 @@ class ActionLogger
     /**
      * @param EntityManager $entityManager
      * @param CtApiCaller $ctApiCaller
+     * @param Kernel $kernel
+     * @param Logger $logger
      * @param string $source
+     * @param array $actionFiles
      */
     public function __construct(
         EntityManager $entityManager,
         CtApiCaller $ctApiCaller,
+        Kernel $kernel,
+        Logger $logger,
         $source
     ) {
-        $this->ctApiCaller      = $ctApiCaller;
         $this->entityManager    = $entityManager;
+        $this->ctApiCaller      = $ctApiCaller;
+        $this->kernel           = $kernel;
+        $this->logger           = $logger;
         $this->source           = $source;
     }
 
     /**
-    * Register a filter compiler with this service.
-    *
-    * @param EntityFilterCompiler $filterCompiler
-    */
+     * Registers a filter compiler with this service.
+     *
+     * @param EntityFilterCompiler $filterCompiler
+     * @return void
+     */
     public function registerEntityFilterCompiler(
         EntityFilterCompiler $filterCompiler
     ) {
@@ -73,47 +94,97 @@ class ActionLogger
     }
 
     /**
-     * Method used for basic logging without entity
-     * change tracking.
+     * Creates a log entry (but does not persist it).
      *
-     * @param int $action
-     * @param int $memberId
-     * @param string $comment
-     *
-     * @return void
-     *
-     * @throws \Exception
+     * @param string $action
+     * @param mixed $affectedEntity
+     * @param mixed $parentEntity   If null, $affectedEntity will be used as
+     *                              parent.
+     * @return ActionLogEntry
      */
-    public function add(
+    public function createLogEntry(
         $action,
-        $memberId = self::SYSTEM_MEMBER_ID,
-        $comment = null
+        $affectedEntity,
+        ActionLogUserInterface $user = null,
+        $parentEntity = null
     ) {
-        if (!$action) {
-            throw new \InvalidArgumentException('ActionLogger::add - action is required');
+        list(
+            $affectedEntityClass,
+            $affectedEntityId,
+            $affectedEntityAttributes,
+        ) = $this->getEntityInfo($affectedEntity);
+
+        if ($parentEntity) {
+            list(
+                $parentEntityClass,
+                $parentEntityId,
+                $parentEntityAttributes
+            ) = $this->getEntityInfo($parentEntity);
+        } else {
+            $parentEntity = $affectedEntity;
+            $parentEntityClass = $affectedEntityClass;
+            $parentEntityId = $affectedEntityId;
+            $parentEntityAttributes = [];
         }
 
-        $logData = $this->compileActionLogDocument(
+        // As of now, we only have single-key primary key parent
+        // entities. We will throw an exception here if we find
+        // multiple keys. This means we added an entity that
+        // supports this, and we forgot to update this code.
+        if (count($parentEntityId) > 1) {
+            throw new \RuntimeException('Multi-key primary key found for parent entity: ' . json_encode($parentEntityId));
+        }
+
+        $parentEntityId = current($parentEntityId);
+
+        $parentEntityFilters = $this->getEntityFilters($parentEntity);
+
+        $entry = new ActionLogEntry(
             $action,
-            $memberId,
-            null,
-            null,
-            null,
-            $comment
+            $this->source,
+            $affectedEntityClass,
+            $affectedEntityId,
+            $parentEntityClass,
+            $parentEntityId,
+            $parentEntityFilters
         );
 
-        $this->addLogEntry($logData);
+        if ($user) {
+            $entry->setUser($user);
+        }
+
+        // Add extra values if affected and/or parent entities exposed misc.
+        // attributes to track.
+        $extra = array_merge($affectedEntityAttributes, $parentEntityAttributes);
+        $entry->setExtraValues($extra);
+
+        return $entry;
+    }
+
+    /**
+     * Send the audit log entry to API to be saved
+     * in Mongo.
+     *
+     * @param ActionLogEntry $entry
+     * @return void
+     */
+    public function persistLogEntry(ActionLogEntry $entry)
+    {
+        $encodedEntry = json_encode($entry);
+
+        $this->logger->debug("ActionLogger: persist {$encodedEntry}");
+
+        $this->ctApiCaller->post(self::ACTION_LOG_API_PATH, $encodedEntry);
     }
 
     /**
      * Method used for basic logging without entity
      * change tracking.
      *
-     * @param int $action
-     * @param $entity
-     * @param $parentEntity
-     * @param int $memberId
-     * @param string $comment
+     * @param string $action
+     * @param mixed $affectedEntity
+     * @param mixed $userId
+     * @param mixed $parentEntity
      *
      * @return void
      *
@@ -121,49 +192,32 @@ class ActionLogger
      */
     public function addForEntity(
         $action,
-        $entity,
-        $parentEntity,
-        $memberId = self::SYSTEM_MEMBER_ID,
-        $comment = null
+        $affectedEntity,
+        ActionLogUserInterface $user = null,
+        $parentEntity = null
     ) {
-        // Temporarily disabling because App code doesn't support new API, yet.
-        return;
+        $logEntry =
+            $this
+            ->createLogEntry(
+                $action,
+                $affectedEntity,
+                $user,
+                $parentEntity
+            );
 
-        if (!$action) {
-            throw new \InvalidArgumentException('ActionLogger::addForEntity - action is required');
-        }
-        if (!$entity) {
-            throw new \InvalidArgumentException('ActionLogger::addForEntity - entity is required');
-        }
-        if (!$parentEntity) {
-            // throw new \InvalidArgumentException('ActionLogger::addForEntity - parentEntity is required');
-            $parentEntity = $entity;
-        }
-
-        $logData = $this->compileActionLogDocument(
-            $action,
-            $memberId,
-            $entity,
-            null,
-            $parentEntity,
-            $comment
-        );
-
-        $this->addLogEntry($logData);
+        $this->persistLogEntry($logEntry);
     }
-
 
     /**
      * Method used to add to action_log when an entity has
      * been 'tracked' via our EntityManager tracking mechanism.
      * Caller should be passing a valid delta value.
      *
-     * @param int $action
-     * @param $entity
+     * @param string $action
+     * @param mixed $affectedEntity
      * @param EntityDelta $delta
-     * @param $parentEntity
-     * @param int $memberId
-     * @param string $comment
+     * @param mixed $userId
+     * @param mixed $parentEntity
      *
      * @return void
      *
@@ -171,116 +225,51 @@ class ActionLogger
      */
     public function addForEntityDelta(
         $action,
-        $entity,
+        $affectedEntity,
         EntityDelta $delta,
-        $parentEntity,
-        $memberId = self::SYSTEM_MEMBER_ID,
-        $comment = null
+        ActionLogUserInterface $user = null,
+        $parentEntity = null
     ) {
-        // Temporarily disabling because App code doesn't support new API, yet.
-        return;
+        $logEntry =
+            $this
+            ->createLogEntry(
+                $action,
+                $affectedEntity,
+                $user,
+                $parentEntity
+            )
+            ->setAffectedEntityDelta($delta);
 
-        if (!$action) {
-            throw new \InvalidArgumentException('ActionLogger::addForEntityDelta - action is required');
-        }
-        if (!$entity) {
-            throw new \InvalidArgumentException('ActionLogger::addForEntityDelta requires an entity passed as an argument');
-        }
-        if (!$parentEntity) {
-            throw new \InvalidArgumentException('ActionLogger::addForEntity - parentEntity is required');
-        }
-
-        $logData = $this->compileActionLogDocument(
-            $action,
-            $memberId,
-            $entity,
-            $delta,
-            $parentEntity,
-            $comment
-        );
-
-        $this->addLogEntry($logData);
+        $this->persistLogEntry($logEntry);
     }
 
     /**
-     * Helper method to construct a partial actionLog JSON
-     * document.
+     * Returns entity class, ID field/value array and misc. attributes.
      *
-     * @param int $action
-     * @param int $memberId
-     * @param $entity
-     * @param EntityDelta $delta
-     * @param array $childEntities
-     * @param string $comment
-     *
-     * @return string
+     * @param mixed $entity
+     * @return array [$entityClass, $entityId, $attributes]
      */
-    protected function compileActionLogDocument(
-        $action,
-        $memberId,
-        $entity = null,
-        $delta = null,
-        $parentEntity = null,
-        $comment = null
-    ) {
-        $addedOnWeek = Util::getDateWeek(time());
+    protected function getEntityInfo($entity)
+    {
+        $entityClass = Util::shortClassName($entity);
 
-        $doc = [];
-        $doc['actionCode']  = $action;
-        $doc['memberId']    = $memberId;
-        $doc['source']      = $this->source;
-        $doc['comment']     = $comment;
-        $doc['addedOn']     = time();
-        $doc['addedOnWeek'] = $addedOnWeek;
-
-        if ($entity) {
-            // If no parentEntity was supplied, we will use the main
-            // entity as the parent as well.
-            if (!$parentEntity) {
-                $parentEntity = $entity;
-            }
-
-            if (method_exists($entity, 'getEntityId')) {
-                $entityIds = (array)$entity->getEntityId();
-            } else {
-                $entityIds = $this
-                    ->entityManager
-                    ->getEntityId($entity);
-            }
-
-            $doc['affectedEntity']['class'] = Util::shortClassName($entity);
-
-            $doc['affectedEntity']['id'] = $entityIds;
-            if ($delta) {
-                $doc['affectedEntity']['delta'] = $delta;
-            }
-
-            // Log parent entity detail.
-            $doc['parentEntity']['class'] = Util::shortClassName($parentEntity);
-
-            if (method_exists($parentEntity, 'getEntityId')) {
-                $entityIds = (array)$parentEntity->getEntityId();
-            } else {
-                $entityIds = $this
-                    ->entityManager
-                    ->getEntityId($parentEntity);
-            }
-
-            // As of now, we only have single-key primary key parent
-            // entities. We will throw an exception here if we find
-            // multiple keys. This means we added an entity that
-            // supports this, and we forgot to update this code.
-            if (count($entityIds) > 1) {
-                throw new \RuntimeException('Multi-key primary key found for entity: '.json_encode($entityIds));
-            }
-
-            $doc['parentEntity']['id'] = current($entityIds);
-
-            $filters = $this->getEntityFilters($parentEntity);
-            $doc['parentEntity']['filters'] = $filters;
+        if (method_exists($entity, 'getEntityId')) {
+            // Custom method added to sudo entities. These entities are not
+            // managed by Doctrine and therefor don't have annotations.
+            $entityId = (array) $entity->getEntityId();
+        } else {
+            $entityId = $this->entityManager->getEntityId($entity);
         }
 
-        return json_encode($doc);
+        $attributes = [];
+
+        // Check if entity implements ActionLogEntityAttribute interface, which
+        // allows it to expose misc. attributes to store in log.
+        if ($entity instanceof ActionLogEntityAttribute) {
+            $attributes = $entity->getAttributesForActionLog();
+        }
+
+        return [$entityClass, $entityId, $attributes];
     }
 
     /**
@@ -304,19 +293,4 @@ class ActionLogger
         return $filters;
     }
 
-    /**
-     * Send the audit log entry to API to be saved
-     * in Mongo.
-     *
-     * @param string $log
-     *
-     * @return void
-     */
-    protected function addLogEntry($log)
-    {
-        $this->ctApiCaller->post(
-            self::AUDIT_LOG_API_PATH,
-            $log
-        );
-    }
 }

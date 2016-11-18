@@ -79,7 +79,7 @@ class ActionLogQueryBuilder
      */
     public function setActionCodeFilter(array $actionCodes)
     {
-        $this->queryFilters['actionCode'] = $actionCodes;
+        $this->queryFilters['action'] = $actionCodes;
         return $this;
     }
 
@@ -95,13 +95,38 @@ class ActionLogQueryBuilder
     }
 
     /**
-     * @param int $memberId
+     * @param array $memberIds
      *
      * @return ActionLogQueryBuilder
      */
-    public function setMemberIdFilter($memberId)
+    public function setMemberIdFilter($memberIds)
     {
-        $this->queryFilters['memberId'] = $memberId;
+        $this->queryFilters['user.id'] = $memberIds;
+        return $this;
+    }
+
+    /**
+     * @param array $memberTypeIds
+     *
+     * @return ActionLogQueryBuilder
+     */
+    public function setMemberTypeFilter($memberTypeIds)
+    {
+        if (!isset($this->queryFilters['extra'])) {
+            $this->queryFilters['extra'] = [];
+        }
+        $this->queryFilters['extra']['memberTypeId'] = $memberTypeIds;
+        return $this;
+    }
+
+    /**
+     * @param array $roles
+     *
+     * @return ActionLogQueryBuilder
+     */
+    public function setRoleFilter($roles)
+    {
+        $this->queryFilters['user.role'] = $roles;
         return $this;
     }
 
@@ -237,12 +262,13 @@ class ActionLogQueryBuilder
     protected function addDefaultFields()
     {
         $this->queryFields = [
-            'actionCode',
-            'memberId',
+            'action',
+            'user',
             'affectedEntity',
             'parentEntity',
             'source',
             'comment',
+            'extra',
             'addedOn',
             'addedOnWeek',
             'addedOn'
