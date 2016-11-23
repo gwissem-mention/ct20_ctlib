@@ -1,5 +1,4 @@
 <?php
-
 namespace CTLib\Component\Doctrine\ORM;
 
 /**
@@ -7,7 +6,7 @@ namespace CTLib\Component\Doctrine\ORM;
  *
  * @author David McLean <dmclean@celltrak.com>
  */
-class EntityDelta implements \JsonSerializable
+class EntityDelta implements \JsonSerializable, \Countable
 {
     /**
      * @var array
@@ -53,7 +52,25 @@ class EntityDelta implements \JsonSerializable
     }
 
     /**
-     *
+     * Returns number of fields with diff.
+     * @return integer
+     */
+    public function count()
+    {
+        return count($this->fields);
+    }
+
+    /**
+     * Indicates if delta has any fields with diff.
+     * @return boolean
+     */
+    public function hasAnyDiff()
+    {
+        return count($this->fields) > 0;
+    }
+
+    /**
+     * {@inheritDoc}
      */
     public function jsonSerialize()
     {
