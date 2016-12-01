@@ -103,7 +103,7 @@ class FilteredObjectIndexGroup
         // of the index first so stale filter assignments don't persist.
         $indexKeys = $this->getIndexKeys($index);
 
-        $this->redis->multi(\Redis::PIPELINE);
+        $this->redis->multi();
         $this->removeObjectFromSets($indexKeys, $objectId);
         $this->addObjectToIndexSets($index, $objectId, $filters);
         $this->redis->exec();
@@ -123,7 +123,7 @@ class FilteredObjectIndexGroup
 
         $indexKeys = $this->getIndexKeys($index);
 
-        $this->redis->multi(\Redis::PIPELINE);
+        $this->redis->multi();
         $this->removeObjectFromSets($indexKeys, $objectId);
         $results = $this->redis->exec();
 
@@ -139,7 +139,7 @@ class FilteredObjectIndexGroup
     {
         $groupKeys = $this->getGroupKeys();
 
-        $this->redis->multi(\Redis::PIPELINE);
+        $this->redis->multi();
         $this->removeObjectFromSets($groupKeys, $objectId);
         $results = $this->redis->exec();
 
@@ -166,7 +166,7 @@ class FilteredObjectIndexGroup
         // Retrieve all set keys for this index group.
         $groupKeys = $this->getGroupKeys();
 
-        $this->redis->multi(\Redis::PIPELINE);
+        $this->redis->multi();
         $this->removeObjectFromSets($groupKeys, $objectId);
         $this->addObjectToIndexSets($index, $objectId, $filters);
         $results = $this->redis->exec();
