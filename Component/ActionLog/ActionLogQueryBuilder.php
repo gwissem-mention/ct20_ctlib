@@ -112,10 +112,7 @@ class ActionLogQueryBuilder
      */
     public function setMemberTypeFilter($memberTypeIds)
     {
-        if (!isset($this->queryFilters['extra'])) {
-            $this->queryFilters['extra'] = [];
-        }
-        $this->queryFilters['extra']['memberTypeId'] = $memberTypeIds;
+        $this->queryFilters['extra.memberTypeId'] = $memberTypeIds;
         return $this;
     }
 
