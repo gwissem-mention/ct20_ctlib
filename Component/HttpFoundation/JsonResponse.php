@@ -27,21 +27,21 @@ class JsonResponse extends \Symfony\Component\HttpFoundation\Response
         $httpResponseCode = 200,
         $headers = []
     ) {
-        if (!is_string($content)) {
-            if (is_object($content) && method_exists($content, 'toJson')) {
-                // Using custom toJson method. This dates back from when we
-                // didn't have access to JsonSerializable interface. The use of
-                // #toJson is deprecated; implement JsonSerializable instead.
-                $json = $content->toJson();
-            } else {
-                $json = json_encode($content);
+        if (is_string($content)) {
+            $json = $content;
+        } elseif (is_object($content) && method_exists($content, 'toJson')) {
+            // Using custom toJson method. This dates back from when we
+            // didn't have access to JsonSerializable interface. The use of
+            // #toJson is deprecated; implement JsonSerializable instead.
+            $json = $content->toJson();
+        } else {
+            $json = json_encode($content);
 
-                if ($json === false) {
-                    $errorCode  = json_last_error();
-                    $errorMsg   = json_last_error_msg();
-                    $content    = print_r($content, true);
-                    throw new \RuntimeException("Failed to JSON-encode response content with error [{$errorCode}] '{$errorMsg}'.\n\n{$content}");
-                }
+            if ($json === false) {
+                $errorCode  = json_last_error();
+                $errorMsg   = json_last_error_msg();
+                $content    = print_r($content, true);
+                throw new \RuntimeException("Failed to JSON-encode response content with error [{$errorCode}] '{$errorMsg}'.\n\n{$content}");
             }
         }
 
