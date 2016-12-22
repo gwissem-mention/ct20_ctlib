@@ -240,6 +240,20 @@ class CtApiDocumentDataAccess implements DataAccessInterface
     }
 
     /**
+     * Reinitialize internal data
+     *
+     * @return void
+     */
+    public function reset()
+    {
+        $this->fields       = [];
+        $this->filters      = [];
+        $this->sorts        = null;
+        $this->offset       = 0;
+        $this->maxResults   = 0;
+    }
+
+    /**
      * Applies filter handler.
      *
      * @param DataAccessFilterInterface|callable $handler
