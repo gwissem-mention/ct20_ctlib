@@ -221,6 +221,8 @@ class ActionLogQueryBuilder
      */
     public function getResult()
     {
+        $this->dataAccess->reset();
+        
         foreach ($this->queryFields as $field) {
             $this->dataAccess->addField($field);
         }
