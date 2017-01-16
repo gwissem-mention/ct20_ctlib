@@ -22,6 +22,7 @@ class CTLibConfiguration implements ConfigurationInterface
             ->children()
                 ->append($this->addCacheManagerNode())
                 ->append($this->addSimpleCacheNode())
+                ->append($this->addEntityFilterCacheNode())
                 ->append($this->addProcessLockNode())
                 ->append($this->addLoggingNode())
                 ->append($this->addSystemAlertsNode())
@@ -39,6 +40,8 @@ class CTLibConfiguration implements ConfigurationInterface
                 ->append($this->addViewNode())
                 ->append($this->addCTAPINode())
                 ->append($this->addHtmlToPdfNode())
+                ->append($this->addActionLoggerNode())
+                ->append($this->addFilteredObjectIndexNode())
             ->end();
 
         return $tb;
@@ -79,6 +82,41 @@ class CTLibConfiguration implements ConfigurationInterface
                 ->end()
             ->end()
         ->end();
+
+        return $node;
+    }
+
+    protected function addEntityFilterCacheNode()
+    {
+        $tb = new TreeBuilder;
+        $node = $tb->root('entity_filter_cache');
+
+        $node
+            ->canBeEnabled()
+            ->children()
+                ->arrayNode('entities')
+                    ->info('Define each entity filter cache group')
+                    ->useAttributeAsKey('entityName')
+                    ->isRequired()
+                    ->requiresAtLeastOneElement()
+                    ->prototype('array')
+                        ->children()
+                            ->scalarNode('namespace')
+                                ->info('The key namespace used to prevent collisions with other redis keys')
+                                ->isRequired()
+                            ->end()
+                            ->scalarNode('redis_client')
+                                ->info('The service ID for the redis client')
+                                ->isRequired()
+                            ->end()
+                            ->scalarNode('ttl')
+                                ->info('The number of seconds to limit the lifetime of data in cache')
+                                ->isRequired()
+                            ->end()
+                        ->end()
+                    ->end()
+                ->end()
+            ->end();
 
         return $node;
     }
@@ -855,4 +893,61 @@ class CTLibConfiguration implements ConfigurationInterface
         return $node;
     }
 
+    protected function addActionLoggerNode()
+    {
+        $tb = new TreeBuilder;
+        $node = $tb->root('action_log');
+
+        $node
+            ->canBeEnabled()
+            ->children()
+                ->scalarNode('entity_manager')
+                    ->isRequired()
+                ->end()
+                ->scalarNode('source')
+                    ->isRequired()
+                ->end()
+            ->end()
+        ->end();
+
+        return $node;
+    }
+
+    protected function addFilteredObjectIndexNode()
+    {
+        $tb = new TreeBuilder;
+        $node = $tb->root('filtered_object_index');
+
+        $node
+            ->canBeEnabled()
+            ->children()
+                ->arrayNode('groups')
+                    ->info('Define each filtered object index group')
+                    ->useAttributeAsKey('groupName')
+                    ->isRequired()
+                    ->requiresAtLeastOneElement()
+                    ->prototype('array')
+                        ->children()
+                            ->scalarNode('key_namespace')
+                                ->info('The key namespace used to prevent collisions with other redis keys')
+                                ->isRequired()
+                            ->end()
+                            ->scalarNode('redis_client')
+                                ->info('The service ID for the redis client')
+                                ->isRequired()
+                            ->end()
+                            ->arrayNode('indexes')
+                                ->info('The list of indexes in this group')
+                                ->isRequired()
+                                ->requiresAtLeastOneElement()
+                                ->prototype('scalar')
+                            ->end()
+                        ->end()
+                    ->end()
+                ->end()
+            ->end()
+        ->end();
+
+        return $node;
+    }
 }

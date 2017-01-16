@@ -4,9 +4,16 @@
     "description": "Shared library incorporated by many CellTrak projects",
     "require": {
         "php": ">=5.4.0",
-        "cangelis/pdf": "2.1.*"
+        "cangelis/pdf": "2.1.*",
+        "celltrak/redis-bundle": "dev-master"
     },
     "autoload": {
         "psr-4": { "CTLib\\": "" }
-    }
+    },
+    "repositories": [
+        {
+            "type": "vcs",
+            "url":  "git@bitbucket.org:celltrakdev/celltrakredisbundle.git"
+        }
+    ]
 }

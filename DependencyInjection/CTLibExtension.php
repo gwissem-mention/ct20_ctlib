@@ -19,6 +19,7 @@ class CTLibExtension extends Extension
 
         $this->loadCacheManagerServices($config['cache'], $container);
         $this->loadSimpleCacheServices($config['simple_cache'], $container);
+        $this->loadEntityFilterCacheServices($config['entity_filter_cache'], $container);
         $this->loadProcessLockServices($config['process_lock'], $container);
         $this->loadLoggingServices($config['logging'], $container);
         $this->loadSystemAlertServices($config['system_alerts'], $container);
@@ -36,6 +37,8 @@ class CTLibExtension extends Extension
         $this->loadViewServices($config['view'], $container);
         $this->loadCTAPIServices($config['ct_api'], $container);
         $this->loadHtmlToPdfServices($config['html_to_pdf'], $container);
+        $this->loadActionLogServices($config['action_log'], $container);
+        $this->loadFilteredObjectIndexServices($config['filtered_object_index'], $container);
     }
 
     protected function loadCacheManagerServices($config, $container)
@@ -66,6 +69,27 @@ class CTLibExtension extends Extension
             $args
         );
         $container->setDefinition("simple_cache", $def);
+    }
+
+    protected function loadEntityFilterCacheServices($config, $container)
+    {
+        if (!$config['enabled']) {
+            return;
+        }
+
+        $serviceClass = 'CTLib\Component\Cache\EntityFilterCache';
+
+        foreach ($config['entities'] as $entityName => $entityConfig) {
+            $args = [
+                $entityConfig['namespace'],
+                new Reference($entityConfig['redis_client']),
+                $entityConfig['ttl']
+            ];
+            $def = new Definition($serviceClass, $args);
+
+            $serviceId = "entity_filter_cache.{$entityName}";
+            $container->setDefinition($serviceId, $def);
+        }
     }
 
     protected function loadProcessLockServices($config, $container)
@@ -592,5 +616,57 @@ class CTLibExtension extends Extension
         $args = [$wkhtmltopdfBinPath];
         $def = new Definition('CTLib\Component\Pdf\HtmlToPdf', $args);
         $container->setDefinition('htmltopdf', $def);
+    }
+
+    protected function loadActionLogServices($config, $container)
+    {
+        if (!$config['enabled']) {
+            return;
+        }
+
+        $args = [
+            new Reference($config['entity_manager']),
+            new Reference('ct_api.caller'),
+            new Reference('kernel'),
+            new Reference('logger'),
+            $config['source']
+        ];
+        $def = new Definition('CTLib\Component\ActionLog\ActionLogger', $args);
+        $container->setDefinition('action_log.action_logger', $def);
+        $container->setAlias('action_logger', 'action_log.action_logger');
+
+        $args = [
+            new Reference($config['entity_manager']),
+            new Reference('ct_api.caller')
+        ];
+        $def = new Definition('CTLib\Component\ActionLog\ActionLogReader', $args);
+        $container->setDefinition('action_log.action_log_reader', $def);
+        $container->setAlias('action_log_reader', 'action_log.action_log_reader');
+    }
+
+    protected function loadFilteredObjectIndexServices($config, $container)
+    {
+        if (!$config['enabled']) {
+            return;
+        }
+
+        $groupClass = 'CTLib\Component\FilteredObjectIndex\FilteredObjectIndexGroup';
+        $loggerReference = new Reference('logger');
+
+        foreach ($config['groups'] as $groupName => $groupConfig) {
+            $args = [
+                $groupConfig['key_namespace'],
+                new Reference($groupConfig['redis_client']),
+                $loggerReference
+            ];
+            $def = new Definition($groupClass, $args);
+
+            foreach ($groupConfig['indexes'] as $index) {
+                $def->addMethodCall('addIndex', [$index]);
+            }
+
+            $serviceId = "filtered_object_index_group.{$groupName}";
+            $container->setDefinition($serviceId, $def);
+        }
     }
 }
