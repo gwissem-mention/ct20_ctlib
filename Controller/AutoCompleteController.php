@@ -32,8 +32,7 @@ class AutoCompleteController extends DynaPartController
     {
         $assetLoader
             ->addAppJs('autocomplete.plugin.js')
-            ->addInlineJs('$("#'.$domId.'").autocomplete('.$json.');')
-            ->addAppCss('autocomplete.css');
+            ->addInlineJs('$("#'.$domId.'").autocomplete('.$json.');');
     }
 
     /**

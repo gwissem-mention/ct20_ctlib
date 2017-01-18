@@ -38,13 +38,7 @@ class RecordSetController extends DynaPartController
                 'tooltip.plugin.js'
             )
             ->addInlineJs('$("#'.$domId.'").recordSet('.$json.');')
-            ->addAppCss(
-                'recordSet.css',
-                'actionGroup.css',
-                'loadingBox.css',
-                'abridge.css',
-                'tooltip.css'
-            );
+            ->addAppCss('recordSet.css');
     }
 
     /**
@@ -81,7 +75,7 @@ class RecordSetController extends DynaPartController
             'currentSort'       => array(),
             'currentFilters'    => array()
         );
-        
+
         $sessionStorage = $this->session()->get($cacheId);
 
         if ($sessionStorage) {
