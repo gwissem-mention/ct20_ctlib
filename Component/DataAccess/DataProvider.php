@@ -100,8 +100,9 @@ class DataProvider
         $output->start($fields);
 
         $data = $dataAccess->getData();
+        $count = $data['count'];
 
-        foreach ($data as $rawRecord) {
+        foreach ($data['data'] as $rawRecord) {
             $record  = [];
             $context = [];
 
@@ -122,6 +123,6 @@ class DataProvider
             }
         }
 
-        return $output->end();
+        return $output->end($count);
     }
 }

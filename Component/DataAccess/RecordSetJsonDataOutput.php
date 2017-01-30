@@ -52,13 +52,17 @@ class RecordSetJsonDataOutput implements DataOutputInterface
     /**
      * {@inheritdoc}
      *
+     * @param int $count
      *
      * @return array json_encoded
      */
-    public function end()
+    public function end($count = 0)
     {
-        // return in format of Data / Model 
-        return json_encode(['data' => $this->records,
-                            'model' => $this->fields]);
+        // return in format of Data / Model / Count
+        return json_encode([
+            'data'  => $this->records,
+            'model' => $this->fields,
+            'count' => $count
+        ]);
     }
 }
