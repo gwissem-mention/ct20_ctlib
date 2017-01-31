@@ -62,7 +62,7 @@ class RecordSetJsonDataOutput implements DataOutputInterface
         return json_encode([
             'data'  => $this->records,
             'model' => $this->fields,
-            'count' => $count
+            'total' => $count
         ]);
     }
 }
