@@ -517,6 +517,9 @@ class CTLibExtension extends Extension
         $container->setDefinition('js', $def);
 
         if (array_key_exists('js', $config)) {
+            if ($config['js']['routes']) {
+                $def->addMethodCall('addRoute', $config['js']['routes']);
+            }
             if ($config['js']['translations']) {
                 $def->addMethodCall('addTranslation', $config['js']['translations']);
             }
