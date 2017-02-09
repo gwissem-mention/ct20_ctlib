@@ -108,6 +108,12 @@ class ActionLogEntry implements \JsonSerializable
     protected $userAgent;
 
     /**
+     * Users full name that executed action.
+     * @var string
+     */
+    protected $userFullName;
+
+    /**
      * Comment by user when executing action.
      * @var string
      */
@@ -153,6 +159,7 @@ class ActionLogEntry implements \JsonSerializable
         $this->userIpAddress        = null;
         $this->userSessionId        = null;
         $this->userAgent            = null;
+        $this->userFullName         = null;
         $this->comment              = null;
         $this->extra                = [];
     }
@@ -228,6 +235,17 @@ class ActionLogEntry implements \JsonSerializable
     }
 
     /**
+     * Sets userFullName.
+     * @param string $userFullName
+     * @return ActionLogEntry
+     */
+    public function setUserFullName($userFullName)
+    {
+        $this->userFullName = $userFullName;
+        return $this;
+    }
+
+    /**
      * Sets comment.
      * @param string $comment
      * @return ActionLogEntry
@@ -282,7 +300,8 @@ class ActionLogEntry implements \JsonSerializable
             'role'      => $this->userRole,
             'ipAddress' => $this->userIpAddress,
             'sessionId' => $this->userSessionId,
-            'agent'     => $this->userAgent
+            'agent'     => $this->userAgent,
+            'name'      => $this->userFullName
         ];
 
         $affectedEntity = [
