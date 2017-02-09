@@ -176,6 +176,7 @@ class ActionLogEntry implements \JsonSerializable
         $this->userIpAddress    = $user->getIpAddressForActionLog();
         $this->userSessionId    = $user->getSessionIdForActionLog();
         $this->userAgent        = $user->getAgentForActionLog();
+        $this->userFullName     = $user->getNameForActionLog();
         return $this;
     }
 
