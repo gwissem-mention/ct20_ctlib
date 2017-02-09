@@ -39,4 +39,9 @@ interface ActionLogUserInterface
      */
     public function getAgentForActionLog();
 
+    /**
+     * Returns user name for action logger.
+     * @return string
+     */
+    public function getNameForActionLog();
 }
