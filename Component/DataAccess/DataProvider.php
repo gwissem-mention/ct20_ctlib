@@ -100,7 +100,7 @@ class DataProvider
         $output->start($fields);
 
         $data = $dataAccess->getData();
-        $count = $data['count'];
+        $count = $data['total'];
 
         foreach ($data['data'] as $rawRecord) {
             $record  = [];
