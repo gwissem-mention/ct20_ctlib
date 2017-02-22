@@ -52,10 +52,6 @@ class JsonDataOutput implements DataOutputInterface
      */
     public function end($count = 0)
     {
-        return json_encode([
-            'data'  => $this->records,
-            'model' => null,
-            'total' => $count
-        ]);
+        return json_encode($this->records);
     }
 }
