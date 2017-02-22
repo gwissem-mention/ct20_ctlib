@@ -24,5 +24,5 @@ interface DataOutputInterface
     /**
      * @param int $count
      */
-    public function end($count = 0);
+    public function end();
 }
