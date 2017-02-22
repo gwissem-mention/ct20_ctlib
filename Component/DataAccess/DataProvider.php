@@ -100,9 +100,16 @@ class DataProvider
         $output->start($fields);
 
         $data = $dataAccess->getData();
-        $count = $data['total'];
+        $count = 0;
 
-        foreach ($data['data'] as $rawRecord) {
+        if (isset($data['count'])) {
+            $count = $data['count'];
+        }
+        if (isset($data['data'])) {
+            $data = $data['data'];
+        }
+
+        foreach ($data as $rawRecord) {
             $record  = [];
             $context = [];
 
