@@ -147,8 +147,8 @@ class CtApiDocumentDataAccess implements DataAccessInterface
         }
 
         if (is_array($value)) {
-            if (!in_array($operator, ['eq', 'in', "notIn"])) {
-                throw new \InvalidArgumentException("Array value only supports 'eq' or 'in' or 'notIn' operator.");
+            if (!in_array($operator, ['eq', 'in', 'notIn', 'and'])) {
+                throw new \InvalidArgumentException("Array value only supports 'eq' or 'in' or 'notIn' or 'and' operators.");
             }
             if ($operator == 'eq') {
                 $operator = 'in';
