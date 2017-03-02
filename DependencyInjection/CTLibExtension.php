@@ -40,6 +40,7 @@ class CTLibExtension extends Extension
         $this->loadActionLogServices($config['action_log'], $container);
         $this->loadFilteredObjectIndexServices($config['filtered_object_index'], $container);
         $this->loadConsoleServices([], $container);
+        $this->loadWebServiceRequestAuthenticationServices($config['web_service_authentication'], $container);
     }
 
     protected function loadCacheManagerServices($config, $container)
@@ -684,5 +685,25 @@ class CTLibExtension extends Extension
 
         $def = new Definition($class, $args);
         $container->setDefinition('symfony_command_executor_factory', $def);
+    }
+
+    protected function loadWebServiceRequestAuthenticationServices($config, $container)
+    {
+        if (!$config['enabled']) {
+            return;
+        }
+
+        $serviceId = 'web_service_request_authentication_verifier';
+        $class = 'CTLib\Component\Security\WebService\WebServiceRequestAuthenticationVerifier';
+        $args = [
+            new Reference('logger')
+        ];
+
+        $def = new Definition($class, $args);
+
+        $tagAttributes = ['event' => 'kernel.request'];
+        $def->addTag('kernel.event_listener', $tagAttributes);
+
+        $container->setDefinition($serviceId, $def);
     }
 }

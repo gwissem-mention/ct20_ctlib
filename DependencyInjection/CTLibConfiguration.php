@@ -42,6 +42,7 @@ class CTLibConfiguration implements ConfigurationInterface
                 ->append($this->addHtmlToPdfNode())
                 ->append($this->addActionLoggerNode())
                 ->append($this->addFilteredObjectIndexNode())
+                ->append($this->addWebServiceRequestAuthenticationNode())
             ->end();
 
         return $tb;
@@ -951,6 +952,18 @@ class CTLibConfiguration implements ConfigurationInterface
                     ->end()
                 ->end()
             ->end()
+        ->end();
+
+        return $node;
+    }
+
+    protected function addWebServiceRequestAuthenticationNode()
+    {
+        $tb = new TreeBuilder;
+        $node = $tb->root('web_service_authentication');
+
+        $node
+            ->canBeEnabled()
         ->end();
 
         return $node;

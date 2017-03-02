@@ -7,6 +7,7 @@ use CTLib\DependencyInjection\LoggerCompilerPass;
 use CTLib\DependencyInjection\EntityManagerCompilerPass;
 use CTLib\DependencyInjection\CachedComponentCompilerPass;
 use CTLib\DependencyInjection\ActionLoggerCompilerPass;
+use CTLib\DependencyInjection\WebServiceRequestAuthenticatorCompilerPass;
 
 class CTLib extends Bundle
 {
@@ -18,6 +19,7 @@ class CTLib extends Bundle
         $container->addCompilerPass(new EntityManagerCompilerPass);
         $container->addCompilerPass(new CachedComponentCompilerPass);
         $container->addCompilerPass(new ActionLoggerCompilerPass);
+        $container->addCompilerPass(new WebServiceRequestAuthenticatorCompilerPass);
     }
 
 	public static function getCTLibVersion()
