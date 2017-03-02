@@ -39,6 +39,7 @@ class CTLibExtension extends Extension
         $this->loadHtmlToPdfServices($config['html_to_pdf'], $container);
         $this->loadActionLogServices($config['action_log'], $container);
         $this->loadFilteredObjectIndexServices($config['filtered_object_index'], $container);
+        $this->loadConsoleServices([], $container);
     }
 
     protected function loadCacheManagerServices($config, $container)
@@ -671,5 +672,17 @@ class CTLibExtension extends Extension
             $serviceId = "filtered_object_index_group.{$groupName}";
             $container->setDefinition($serviceId, $def);
         }
+    }
+
+    protected function loadConsoleServices($config, $container)
+    {
+        $class = 'CTLib\Component\Console\SymfonyCommandExecutorFactory';
+        $args = [
+            $container->getParameter('kernel.root_dir'),
+            new Reference('logger')
+        ];
+
+        $def = new Definition($class, $args);
+        $container->setDefinition('symfony_command_executor_factory', $def);
     }
 }
