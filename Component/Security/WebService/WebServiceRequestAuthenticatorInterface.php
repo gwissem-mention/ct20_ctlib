@@ -4,9 +4,7 @@ namespace CTLib\Component\Security\WebService;
 use Symfony\Component\HttpFoundation\Request;
 
 /**
- * Defines classes that can be used to authenticate a web service
- * (exec mode = 'svc') request.
- *
+ * Defines classes that can be used to authenticate a web service request.
  * @author Mike Turoff
  */
 interface WebServiceRequestAuthenticatorInterface
@@ -25,5 +23,11 @@ interface WebServiceRequestAuthenticatorInterface
      * @return boolean
      */
     public function isAuthenticatedRequest(Request $request);
+
+    /**
+     * Returns Response when authentication fails.
+     * @return Response
+     */
+    public function getAuthenticationFailureResponse();
 
 }

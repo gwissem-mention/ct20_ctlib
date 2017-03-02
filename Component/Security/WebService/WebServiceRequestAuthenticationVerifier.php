@@ -69,15 +69,8 @@ class WebServiceRequestAuthenticationVerifier
             return;
         }
 
-        if (!$authenticator->isAuthenticatedRequest($request)) {
-            // Trigger HTTP 401.
-            $response = new Response('', 401);
-            if (strpos($request->getPathInfo(), '/api') === 0) {
-                $nonce = md5(uniqid(rand(), true));
-                $challenge =
-                    'Digest realm="'.$request->getPathInfo().'", nonce="'.$nonce.'"';
-                $response->headers->add(['WWW-Authenticate' => $challenge]);
-            }
+        if ($authenticator->isAuthenticatedRequest($request) == false) {
+            $response = $authenticator->getAuthenticationFailureResponse();
             $event->setResponse($response);
         }
     }
