@@ -12,6 +12,7 @@ class GarbageCollectionDateCalculator
      * Calculates garbage collection date.
      * @param integer $ttlDays
      * @return string YYYY-MM-DD
+     * @throws InvalidArgumentException If $ttlDays is not integer >= 0
      */
     public function getGarbageCollectionDate($ttlDays)
     {
@@ -26,6 +27,18 @@ class GarbageCollectionDateCalculator
         $gcDate = new \DateTime;
         $gcDate->sub(new \DateInterval("P{$ttlDays}D"));
         return $gcDate->format('Y-m-d');
+    }
+
+    /**
+     * Returns garbage collection timestamp.
+     * @param integer $ttlDays
+     * @return integer
+     * @throws InvalidArgumentException If $ttlDays is not integer >= 0
+     */
+    public function getGarbageCollectionTime($ttlDays)
+    {
+        $gcDate = $this->getGarbageCollectionDate($ttlDays);
+        return strtotime($gcDate);
     }
 
 }
