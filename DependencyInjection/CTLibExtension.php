@@ -41,6 +41,7 @@ class CTLibExtension extends Extension
         $this->loadFilteredObjectIndexServices($config['filtered_object_index'], $container);
         $this->loadConsoleServices([], $container);
         $this->loadWebServiceRequestAuthenticationServices($config['web_service_authentication'], $container);
+        $this->loadGarbageCollectionServices([], $container);
     }
 
     protected function loadCacheManagerServices($config, $container)
@@ -704,6 +705,15 @@ class CTLibExtension extends Extension
         $tagAttributes = ['event' => 'kernel.request'];
         $def->addTag('kernel.event_listener', $tagAttributes);
 
+        $container->setDefinition($serviceId, $def);
+    }
+
+    protected function loadGarbageCollectionServices($config, $container)
+    {
+        $serviceId = "garbage_collection_manager";
+        $class = "CTLib\Component\GarbageCollection\GarbageCollectionManager";
+
+        $def = new Defintion($class);
         $container->setDefinition($serviceId, $def);
     }
 }
