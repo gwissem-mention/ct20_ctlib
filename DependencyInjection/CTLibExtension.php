@@ -713,7 +713,7 @@ class CTLibExtension extends Extension
         $serviceId = "garbage_collection_manager";
         $class = "CTLib\Component\GarbageCollection\GarbageCollectionManager";
 
-        $def = new Defintion($class);
+        $def = new Definition($class);
         $container->setDefinition($serviceId, $def);
     }
 }
