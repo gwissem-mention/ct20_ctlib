@@ -34,7 +34,7 @@ class GarbageCollectionCompilerPass implements CompilerPassInterface
                 $serviceId,
                 new Reference($serviceId)
             ];
-            $definition->addMethodCall('addGarbageCollector', $args);
+            $definition->addMethodCall('addCollector', $args);
         }
     }
 
