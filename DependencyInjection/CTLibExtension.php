@@ -1,12 +1,12 @@
 <?php
 namespace CTLib\DependencyInjection;
 
-use Symfony\Component\HttpKernel\DependencyInjection\Extension,
-    Symfony\Component\DependencyInjection\ContainerBuilder,
-    Symfony\Component\Config\Definition\Processor,
-    Symfony\Component\DependencyInjection\Definition,
-    Symfony\Component\DependencyInjection\Reference,
-    CTLib\Util\Arr;
+use Symfony\Component\HttpKernel\DependencyInjection\Extension;
+use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\Config\Definition\Processor;
+use Symfony\Component\DependencyInjection\Definition;
+use Symfony\Component\DependencyInjection\Reference;
+use CTLib\Util\Arr;
 
 
 class CTLibExtension extends Extension
@@ -712,8 +712,11 @@ class CTLibExtension extends Extension
     {
         $serviceId = "garbage_collection_manager";
         $class = "CTLib\Component\GarbageCollection\GarbageCollectionManager";
+        $args = [
+            new Reference('logger')
+        ];
 
-        $def = new Definition($class);
+        $def = new Definition($class, $args);
         $container->setDefinition($serviceId, $def);
     }
 }
