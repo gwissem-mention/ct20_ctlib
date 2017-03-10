@@ -732,7 +732,6 @@ class CTLibExtension extends Extension
         $args = [
             new Reference('logger'),
             $config['user_file_path'],
-            $config['password_file_path'],
             $config['mysql_binary_path'],
             $config['temp_dir_path']
         ];
