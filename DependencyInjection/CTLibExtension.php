@@ -42,6 +42,7 @@ class CTLibExtension extends Extension
         $this->loadConsoleServices([], $container);
         $this->loadWebServiceRequestAuthenticationServices($config['web_service_authentication'], $container);
         $this->loadGarbageCollectionServices([], $container);
+        $this->loadMySqlSecureShellServices($config['mysql_secure_shell'], $container);
     }
 
     protected function loadCacheManagerServices($config, $container)
@@ -714,6 +715,26 @@ class CTLibExtension extends Extension
         $class = "CTLib\Component\GarbageCollection\GarbageCollectionManager";
         $args = [
             new Reference('logger')
+        ];
+
+        $def = new Definition($class, $args);
+        $container->setDefinition($serviceId, $def);
+    }
+
+    protected function loadMySqlSecureShellServices($config, $container)
+    {
+        if (!$config['enabled']) {
+            return;
+        }
+
+        $serviceId = 'mysql_secure_shell';
+        $class = 'CTLib\Component\MySqlSecureShell\MySqlSecureShell';
+        $args = [
+            new Reference('logger'),
+            $config['user_file_path'],
+            $config['password_file_path'],
+            $config['mysql_binary_path'],
+            $config['temp_dir_path']
         ];
 
         $def = new Definition($class, $args);

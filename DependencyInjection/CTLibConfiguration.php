@@ -43,6 +43,7 @@ class CTLibConfiguration implements ConfigurationInterface
                 ->append($this->addActionLoggerNode())
                 ->append($this->addFilteredObjectIndexNode())
                 ->append($this->addWebServiceRequestAuthenticationNode())
+                ->append($this->addMySqlSecureShellNode())
             ->end();
 
         return $tb;
@@ -967,5 +968,34 @@ class CTLibConfiguration implements ConfigurationInterface
         ->end();
 
         return $node;
+    }
+
+    protected function addMySqlSecureShellNode()
+    {
+        $tb = new TreeBuilder;
+        $node = $tb->root('mysql_secure_shell');
+
+        $node
+            ->canBeEnabled()
+            ->children()
+                ->scalarNode('mysql_binary_path')
+                    ->info('Absolute path to mysql binary')
+                    ->isRequired()
+                ->end()
+                ->scalarNode('user_file_path')
+                    ->info('The path to the databse user file')
+                    ->isRequired()
+                ->end()
+                ->scalarNode('password_file_path')
+                    ->info('The path to the database password file')
+                    ->isRequired()
+                ->end()
+                ->scalarNode('temp_dir_path')
+                    ->info('The path where temporary query files will be saved')
+                    ->defaultValue('/tmp')
+                ->end()
+            ->end();
+
+            return $node;
     }
 }
