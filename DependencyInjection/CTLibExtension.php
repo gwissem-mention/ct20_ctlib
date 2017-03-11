@@ -43,6 +43,7 @@ class CTLibExtension extends Extension
         $this->loadWebServiceRequestAuthenticationServices($config['web_service_authentication'], $container);
         $this->loadGarbageCollectionServices([], $container);
         $this->loadMySqlSecureShellServices($config['mysql_secure_shell'], $container);
+        $this->loadHipChatServices($config['hipchat'], $container);
     }
 
     protected function loadCacheManagerServices($config, $container)
@@ -738,5 +739,32 @@ class CTLibExtension extends Extension
 
         $def = new Definition($class, $args);
         $container->setDefinition($serviceId, $def);
+    }
+
+    protected function loadHipChatServices($config, $container)
+    {
+        if (!$config['enabled']) {
+            return;
+        }
+
+        $serviceId = 'hipchat.room_notifier';
+        $class = 'CTLib\Component\HipChat\HipChatRoomNotificationManager';
+        $args = [
+            $config['group_name'],
+            new Reference('logger')
+        ];
+
+        $def = new Definition($class, $args);
+
+        // Add rooms.
+        foreach ($config['rooms'] as $roomName => $roomConfig) {
+            $authToken = $roomConfig['token'];
+            $args = [$roomName, $authToken];
+            $def->addMethodCall('registerRoom', $args);
+        }
+
+        $container->setDefinition($serviceId, $def);
+
+
     }
 }

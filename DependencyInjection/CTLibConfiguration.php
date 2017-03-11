@@ -44,6 +44,7 @@ class CTLibConfiguration implements ConfigurationInterface
                 ->append($this->addFilteredObjectIndexNode())
                 ->append($this->addWebServiceRequestAuthenticationNode())
                 ->append($this->addMySqlSecureShellNode())
+                ->append($this->addHipChatNode())
             ->end();
 
         return $tb;
@@ -993,5 +994,37 @@ class CTLibConfiguration implements ConfigurationInterface
             ->end();
 
             return $node;
+    }
+
+    protected function addHipChatNode()
+    {
+        $tb = new TreeBuilder;
+        $node = $tb->root('hipchat');
+
+        $node
+            ->canBeEnabled()
+            ->children()
+                ->scalarNode('group_name')
+                    ->info('The name of your HipChat group')
+                    ->isRequired()
+                ->end()
+                ->arrayNode('rooms')
+                    ->info('The set of rooms that can be notified')
+                    ->isRequired()
+                    ->requiresAtLeastOneElement()
+                    ->useAttributeAsKey('roomName')
+                    ->prototype('array')
+                        ->children()
+                            // @TODO support multiple tokens for multiple senders
+                            ->scalarNode('token')
+                                ->info('Authentication token required to post notifications into room')
+                                ->isRequired()
+                            ->end()
+                        ->end()
+                    ->end()
+                ->end()
+            ->end();
+
+        return $node;
     }
 }
