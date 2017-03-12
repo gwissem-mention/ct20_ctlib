@@ -758,13 +758,15 @@ class CTLibExtension extends Extension
 
         // Add rooms.
         foreach ($config['rooms'] as $roomName => $roomConfig) {
-            $authToken = $roomConfig['token'];
-            $args = [$roomName, $authToken];
+            $args = [$roomName];
             $def->addMethodCall('registerRoom', $args);
+
+            foreach ($roomConfig['notifiers'] as $notifierName => $notifierConfig) {
+                $args = [$roomName, $notifierName, $notifierConfig['token']];
+                $def->addMethodCall('registerRoomNotifier', $args);
+            }
         }
 
         $container->setDefinition($serviceId, $def);
-
-
     }
 }
