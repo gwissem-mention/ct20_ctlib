@@ -17,12 +17,6 @@ use GuzzleHttp\Promise\PromiseInterface;
  */
 class CtAwsS3
 {
-    // Valid folders
-    const INTERFACE_IMPORT_FOLDER = 'interface_import';
-    const INTERFACE_EXPORT_FOLDER = 'interface_export';
-    const PURGE_ARCHIVE_FOLDER    = 'purge_archive';
-    const PDF_FOLDER              = 'PDF';
-
     /**
      * @var string $region
      */
@@ -44,9 +38,14 @@ class CtAwsS3
     protected $secret;
 
     /**
-     * @var string $siteId
+     * @var string $namespace
      */
-    protected $siteId;
+    protected $namespace;
+
+    /**
+     * @var array $validFolders
+     */
+    protected $validFolders;
 
     /**
      * @var Logger $logger
@@ -60,7 +59,8 @@ class CtAwsS3
      * @param string $bucket
      * @param string $key
      * @param string secret
-     * @param string $siteId
+     * @param string $namespace
+     * @param array  $folders
      * @param Logger $logger
      */
     public function __construct(
@@ -68,15 +68,17 @@ class CtAwsS3
         $bucket,
         $key,
         $secret,
-        $siteId,
+        $namespace,
+        $folders,
         $logger
     ) {
-        $this->region = $region;
-        $this->bucket = $bucket;
-        $this->key    = $key;
-        $this->secret = $secret;
-        $this->siteId = $siteId;
-        $this->logger = $logger;
+        $this->region       = $region;
+        $this->bucket       = $bucket;
+        $this->key          = $key;
+        $this->secret       = $secret;
+        $this->namespace    = $namespace;
+        $this->validFolders = $folders;
+        $this->logger       = $logger;
     }
 
     /**
@@ -90,12 +92,12 @@ class CtAwsS3
      */
     public function putContent($folderPath, $key, $content)
     {
-        if (!in_array($folderPath, $this->getValidFolders())) {
+        if (!in_array($folderPath, $this->validFolders)) {
             $this->logger->error("AwsS3: invalid folder requested");
             throw new \Exception("Aws S3 - Invalid folder requested");
         }
 
-        $awsS3Key = "{$folderPath}/{$this->siteId}/{$key}";
+        $awsS3Key = "{$folderPath}/{$this->namespace}/{$key}";
 
         // Get the common AWS configuration.
         $config = $this->getAwsConfig();
@@ -132,12 +134,12 @@ class CtAwsS3
     {
         $content = null;
 
-        if (!in_array($folderPath, $this->getValidFolders())) {
+        if (!in_array($folderPath, $this->validFolders)) {
             $this->logger->error("AwsS3: invalid folder requested");
             throw new \Exception("Aws S3 - Invalid folder requested");
         }
 
-        $awsS3Key = "{$folderPath}/{$this->siteId}/{$key}";
+        $awsS3Key = "{$folderPath}/{$this->namespace}/{$key}";
 
         // Get the common AWS configuration.
         $config = $this->getAwsConfig();
@@ -174,7 +176,7 @@ class CtAwsS3
     {
         $result = true;
 
-        if (!in_array($destFolderPath, $this->getValidFolders())) {
+        if (!in_array($destFolderPath, $this->validFolders)) {
             $this->logger->error("AwsS3: invalid folder requested");
             throw new \Exception("Aws S3 - Invalid folder requested");
         }
@@ -202,7 +204,7 @@ class CtAwsS3
                 }
                 $filename = $file->getPath() . '/' . $file->getFilename();
                 $key = $destFolderPath
-                    . "/{$this->siteId}/{$file->getFilename()}";
+                    . "/{$this->namespace}/{$file->getFilename()}";
                 // Yield a command that will be executed by the pool.
                 yield $s3Client->getCommand('PutObject', [
                     'Bucket'               => $toBucket,
@@ -233,22 +235,6 @@ class CtAwsS3
         $promise->wait();
 
         return $result;
-    }
-
-    /**
-     * Returns a list of allowed folders to
-     * read and write S3 content to.
-     *
-     * @return array
-     */
-    public function getValidFolders()
-    {
-        return [
-            self::INTERFACE_IMPORT_FOLDER,
-            self::INTERFACE_EXPORT_FOLDER,
-            self::PURGE_ARCHIVE_FOLDER,
-            self::PDF_FOLDER
-        ];
     }
 
     /**

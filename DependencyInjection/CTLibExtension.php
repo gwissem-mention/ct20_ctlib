@@ -54,6 +54,7 @@ class CTLibExtension extends Extension
             $config['key'],
             $config['secret'],
             $config['namespace'],
+            $config['folders'],
             new Reference('logger')
         ];
 

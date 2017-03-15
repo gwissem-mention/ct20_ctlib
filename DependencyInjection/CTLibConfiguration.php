@@ -71,6 +71,11 @@ class CTLibConfiguration implements ConfigurationInterface
                 ->scalarNode('secret')
                     ->isRequired()
                 ->end()
+                ->arrayNode('folders')
+                    ->isRequired()
+                    ->cannotBeEmpty()
+                    ->prototype('scalar')->end()
+                ->end()
             ->end()
         ->end();
 
