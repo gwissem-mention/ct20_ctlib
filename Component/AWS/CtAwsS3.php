@@ -17,24 +17,11 @@ use GuzzleHttp\Promise\PromiseInterface;
  */
 class CtAwsS3
 {
+    // Valid folders
     const INTERFACE_IMPORT_FOLDER = 'interface_import';
     const INTERFACE_EXPORT_FOLDER = 'interface_export';
     const PURGE_ARCHIVE_FOLDER    = 'purge_archive';
     const PDF_FOLDER              = 'PDF';
-
-    /**
-     * List of allowed folders to
-     * read and write.
-     *
-     * @var array $validFolders
-     */
-    protected $validFolders = [
-        self::INTERFACE_IMPORT_FOLDER,
-        self::INTERFACE_EXPORT_FOLDER,
-        self::PURGE_ARCHIVE_FOLDER,
-        self::PDF_FOLDER
-    ];
-
 
     /**
      * @var string $region
@@ -103,7 +90,7 @@ class CtAwsS3
      */
     public function putContent($folderPath, $key, $content)
     {
-        if (!in_array($folderPath, $this->validFolders)) {
+        if (!in_array($folderPath, $this->getValidFolders())) {
             $this->logger->error("AwsS3: invalid folder requested");
             throw new \Exception("Aws S3 - Invalid folder requested");
         }
@@ -181,6 +168,11 @@ class CtAwsS3
     {
         $result = true;
 
+        if (!in_array($destFolderPath, $this->getValidFolders())) {
+            $this->logger->error("AwsS3: invalid folder requested");
+            throw new \Exception("Aws S3 - Invalid folder requested");
+        }
+
         // Get the common AWS configuration.
         $config = $this->getAwsConfig();
 
@@ -235,6 +227,22 @@ class CtAwsS3
         $promise->wait();
 
         return $result;
+    }
+
+    /**
+     * Returns a list of allowed folders to
+     * read and write S3 content to.
+     *
+     * @return array
+     */
+    public function getValidFolders()
+    {
+        return [
+            self::INTERFACE_IMPORT_FOLDER,
+            self::INTERFACE_EXPORT_FOLDER,
+            self::PURGE_ARCHIVE_FOLDER,
+            self::PDF_FOLDER
+        ];
     }
 
     /**
