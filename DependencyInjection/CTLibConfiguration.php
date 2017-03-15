@@ -42,6 +42,7 @@ class CTLibConfiguration implements ConfigurationInterface
                 ->append($this->addHtmlToPdfNode())
                 ->append($this->addActionLoggerNode())
                 ->append($this->addFilteredObjectIndexNode())
+                ->append($this->addInputSanitizationListenerNode())
             ->end();
 
         return $tb;
@@ -952,6 +953,18 @@ class CTLibConfiguration implements ConfigurationInterface
                 ->end()
             ->end()
         ->end();
+
+        return $node;
+    }
+
+    protected function addInputSanitizationListenerNode()
+    {
+        $tb = new TreeBuilder;
+        $node = $tb->root('input_sanitization_listener');
+
+        $node
+            ->canBeEnabled()
+            ->end();
 
         return $node;
     }

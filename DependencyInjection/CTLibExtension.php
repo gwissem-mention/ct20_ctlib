@@ -39,6 +39,7 @@ class CTLibExtension extends Extension
         $this->loadHtmlToPdfServices($config['html_to_pdf'], $container);
         $this->loadActionLogServices($config['action_log'], $container);
         $this->loadFilteredObjectIndexServices($config['filtered_object_index'], $container);
+        $this->loadInputSanitizationListenerServices($config['input_sanitization_listener'], $container);
     }
 
     protected function loadCacheManagerServices($config, $container)
@@ -671,5 +672,21 @@ class CTLibExtension extends Extension
             $serviceId = "filtered_object_index_group.{$groupName}";
             $container->setDefinition($serviceId, $def);
         }
+    }
+
+    protected function loadInputSanitizationListenerServices($config, $container)
+    {
+        if (!$config['enabled']) {
+            return;
+        }
+
+        $args = [
+            new Reference('logger')
+        ];
+
+        $def = new Definition('CTLib\Component\Security\InputSanitizationListener', $args);
+        $def->addTag('kernel.event_listener', ['event' => 'kernel.request']);
+
+        $container->setDefinition('input_sanitization_listener', $def);
     }
 }
