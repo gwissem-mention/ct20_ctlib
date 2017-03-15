@@ -3,7 +3,6 @@ namespace CTLib\Component\Security;
 
 use Symfony\Component\HttpKernel\Event\GetResponseEvent;
 use Symfony\Component\HttpFoundation\Response;
-use CTLib\Component\HttpFoundation\JsonResponse;
 /**
  * Facilitates processing --details here
  *
