@@ -30,6 +30,7 @@ class CTLibExtension extends Extension
         $this->loadSharedCacheServices($config['shared_cache'], $container);
         $this->loadEncryptServices($config['encrypt'], $container);
         $this->loadPushServices($config['push'], $container);
+        $this->loadCsrfServices($config['csrf'], $container);
         $this->loadMapServices($config['map_service'], $container);
         $this->loadLocalizationServices($config['localization'], $container);
         $this->loadMutexServices($config['mutex'], $container);
@@ -384,6 +385,37 @@ class CTLibExtension extends Extension
         }
 
 
+    }
+
+    protected function loadCsrfServices($config, $container)
+    {
+        if (!$config['enabled']) {
+            return;
+        }
+
+        $def = new Definition(
+            'CTLib\Component\Csrf\CsrfExtension',
+            [new Reference('session'), new Reference('logger')]);
+
+        $def->addTag('twig.extension');
+
+        $container->setDefinition('csrf_twig_extension', $def);
+
+        $def = new Definition(
+            'CTLib\Component\Csrf\CsrfInitListener',
+            [new Reference('logger')]);
+
+        $def->addTag('kernel.event_listener', ['event' => 'kernel.request']);
+
+        $container->setDefinition('csrf_init_listener', $def);
+
+        $def = new Definition(
+            'CTLib\Component\Csrf\CsrfCheckListener',
+            [new Reference('logger')]);
+
+        $def->addTag('kernel.event_listener', ['event' => 'kernel.request']);
+
+        $container->setDefinition('csrf_check_listener', $def);
     }
 
     protected function loadMapServices($config, $container)

@@ -35,6 +35,7 @@ class CTLibConfiguration implements ConfigurationInterface
                 ->append($this->addMapServiceNode())
                 ->append($this->addLocalizationNode())
                 ->append($this->addPushNode())
+                ->append($this->addCsrfNode())
                 ->append($this->addMutexNode())
                 ->append($this->addUrlsNode())
                 ->append($this->addViewNode())
@@ -429,6 +430,23 @@ class CTLibConfiguration implements ConfigurationInterface
                 ->end()
             ->end()
         ->end();
+
+        return $node;
+    }
+
+    protected function addCsrfNode()
+    {
+        $tb = new TreeBuilder;
+        $node = $tb->root('csrf');
+
+        $node
+            ->canBeEnabled()
+                ->children()
+                    ->booleanNode('enabled')
+                    ->defaultFalse()
+                    ->end()
+                ->end()
+            ->end();
 
         return $node;
     }
