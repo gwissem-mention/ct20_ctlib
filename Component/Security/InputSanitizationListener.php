@@ -57,7 +57,12 @@ class InputSanitizationListener
         if ($event->getRequestType() !== HttpKernelInterface::MASTER_REQUEST) {
             return;
         }
+
         $request = $event->getRequest();
+        if (!$request->isMethod('POST')) {
+            // only checking for POST requests
+            return;
+        }
         $params = $request->request->all();
         // check fields - from request - query
         $result = $this->checkValues($params);
