@@ -26,23 +26,43 @@ class InputSanitizationListener
         ];
 
     /**
-     * @var Logger
-     */
-    protected $logger;
-
-    /**
      * @var string $redirect
      */
     protected $redirect;
 
     /**
+     * Indicates whether to invalidate session after exception.
+     * @var boolean
+     */
+    protected $invalidateSession;
+
+    /**
+     * @var Logger
+     */
+    protected $logger;
+
+
+    /**
      * @param Logger $logger
      * @param string $redirect
      */
-    public function __construct($logger, $redirect)
+    public function __construct($redirect, $logger)
     {
-        $this->logger = $logger;
         $this->redirect = $redirect;
+        $this->logger = $logger;
+
+        $this->invalidateSession = false;
+    }
+
+    /**
+     * Sets whether the Session will be invalidated to redirect to error page
+     * mode.
+     * @param boolean $invalidateSession
+     * @return void
+     */
+    public function setInvalidateSession($invalidateSession)
+    {
+        $this->invalidateSession = $invalidateSession;
     }
 
     /**
@@ -67,7 +87,17 @@ class InputSanitizationListener
         // check fields - from request - query
         $result = $this->checkValues($params);
 
+
+        // session needs to be invalidated
         if (!$result) {
+            if ($this->invalidateSession) {
+                $session = $request->getSession();
+
+                if ($session) {
+                    $session->invalidate();
+                }
+            }
+
             // validation has failed, redirect to error page
             if ($request->isXmlHttpRequest()) {
                 $body = ['redirect' => $this->redirect];
@@ -75,8 +105,8 @@ class InputSanitizationListener
             } else {
                 $response = new RedirectResponse($this->redirect);
             }
-            $event->setResponse($response);
 
+            $event->setResponse($response);
             $event->stopPropagation();
         }
     }

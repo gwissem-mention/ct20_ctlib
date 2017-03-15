@@ -681,12 +681,20 @@ class CTLibExtension extends Extension
         }
 
         $args = [
-            new Reference('logger'),
-            $config['redirect']
+            $config['redirect'],
+            new Reference('logger')
         ];
 
         $def = new Definition('CTLib\Component\Security\InputSanitizationListener', $args);
         $def->addTag('kernel.event_listener', ['event' => 'kernel.request']);
+
+        if (isset($config['invalidate_session'])) {
+            $def
+                ->addMethodCall(
+                    'setInvalidateSession',
+                    [$config['invalidate_session']]
+                );
+        }
 
         $container->setDefinition('input_sanitization_listener', $def);
     }

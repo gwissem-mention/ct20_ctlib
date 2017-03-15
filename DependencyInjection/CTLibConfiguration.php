@@ -969,6 +969,10 @@ class CTLibConfiguration implements ConfigurationInterface
                     ->info('The redirect URL to be used when validation fails')
                     ->isRequired()
                 ->end()
+                ->booleanNode('invalidate_session')
+                    ->defaultFalse()
+                    ->info('Indicates whether to invalidate session')
+                ->end()
             ->end();
 
         return $node;
