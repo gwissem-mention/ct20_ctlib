@@ -42,6 +42,7 @@ class CTLibConfiguration implements ConfigurationInterface
                 ->append($this->addHtmlToPdfNode())
                 ->append($this->addActionLoggerNode())
                 ->append($this->addFilteredObjectIndexNode())
+                ->append($this->addInputSanitizationListenerNode())
                 ->append($this->addAwsS3Node())
             ->end();
 
@@ -987,6 +988,27 @@ class CTLibConfiguration implements ConfigurationInterface
                 ->end()
             ->end()
         ->end();
+
+        return $node;
+    }
+
+    protected function addInputSanitizationListenerNode()
+    {
+        $tb = new TreeBuilder;
+        $node = $tb->root('input_sanitization_listener');
+
+        $node
+            ->canBeEnabled()
+            ->children()
+                ->scalarNode('redirect')
+                    ->info('The redirect URL to be used when validation fails')
+                    ->isRequired()
+                ->end()
+                ->booleanNode('invalidate_session')
+                    ->defaultFalse()
+                    ->info('Indicates whether to invalidate session')
+                ->end()
+            ->end();
 
         return $node;
     }

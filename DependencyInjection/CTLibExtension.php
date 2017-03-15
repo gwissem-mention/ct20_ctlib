@@ -39,6 +39,7 @@ class CTLibExtension extends Extension
         $this->loadHtmlToPdfServices($config['html_to_pdf'], $container);
         $this->loadActionLogServices($config['action_log'], $container);
         $this->loadFilteredObjectIndexServices($config['filtered_object_index'], $container);
+        $this->loadInputSanitizationListenerServices($config['input_sanitization_listener'], $container);
         $this->loadAwsS3Services($config['ct_aws_s3'], $container);
     }
 
@@ -695,5 +696,30 @@ class CTLibExtension extends Extension
             $serviceId = "filtered_object_index_group.{$groupName}";
             $container->setDefinition($serviceId, $def);
         }
+    }
+
+    protected function loadInputSanitizationListenerServices($config, $container)
+    {
+        if (!$config['enabled']) {
+            return;
+        }
+
+        $args = [
+            $config['redirect'],
+            new Reference('logger')
+        ];
+
+        $def = new Definition('CTLib\Component\Security\InputSanitizationListener', $args);
+        $def->addTag('kernel.event_listener', ['event' => 'kernel.request']);
+
+        if (isset($config['invalidate_session'])) {
+            $def
+                ->addMethodCall(
+                    'setInvalidateSession',
+                    [$config['invalidate_session']]
+                );
+        }
+
+        $container->setDefinition('input_sanitization_listener', $def);
     }
 }
