@@ -441,12 +441,7 @@ class CTLibConfiguration implements ConfigurationInterface
 
         $node
             ->canBeEnabled()
-                ->children()
-                    ->booleanNode('enabled')
-                    ->defaultFalse()
-                    ->end()
-                ->end()
-            ->end();
+        ->end();
 
         return $node;
     }
