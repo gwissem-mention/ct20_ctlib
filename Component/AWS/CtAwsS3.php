@@ -17,6 +17,11 @@ use GuzzleHttp\Promise\PromiseInterface;
  */
 class CtAwsS3
 {
+    const INTERFACE_IMPORT_FOLDER = 'interface_import';
+    const INTERFACE_EXPORT_FOLDER = 'interface_export';
+    const PURGE_ARCHIVE_FOLDER    = 'purge_archive';
+    const PDF_FOLDER              = 'PDF';
+
     /**
      * List of allowed folders to
      * read and write.
@@ -24,10 +29,10 @@ class CtAwsS3
      * @var array $validFolders
      */
     protected $validFolders = [
-        'interface_import',
-        'interface_export',
-        'purge_archive',
-        'PDF'
+        self::INTERFACE_IMPORT_FOLDER,
+        self::INTERFACE_EXPORT_FOLDER,
+        self::PURGE_ARCHIVE_FOLDER,
+        self::PDF_FOLDER
     ];
 
 
