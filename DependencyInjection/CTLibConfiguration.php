@@ -42,9 +42,39 @@ class CTLibConfiguration implements ConfigurationInterface
                 ->append($this->addHtmlToPdfNode())
                 ->append($this->addActionLoggerNode())
                 ->append($this->addFilteredObjectIndexNode())
+                ->append($this->addAwsS3Node())
             ->end();
 
         return $tb;
+    }
+
+    protected function addAwsS3Node()
+    {
+        $tb = new TreeBuilder;
+        $node = $tb->root('ct_aws_s3');
+
+        $node
+            ->canBeEnabled()
+            ->children()
+                ->scalarNode('namespace')
+                    ->isRequired()
+                ->end()
+                ->scalarNode('region')
+                    ->isRequired()
+                ->end()
+                ->scalarNode('bucket')
+                    ->isRequired()
+                ->end()
+                ->scalarNode('key')
+                    ->isRequired()
+                ->end()
+                ->scalarNode('secret')
+                    ->isRequired()
+                ->end()
+            ->end()
+        ->end();
+
+        return $node;
     }
 
     protected function addCacheManagerNode()

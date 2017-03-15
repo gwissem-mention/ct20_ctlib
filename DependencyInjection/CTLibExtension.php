@@ -39,6 +39,29 @@ class CTLibExtension extends Extension
         $this->loadHtmlToPdfServices($config['html_to_pdf'], $container);
         $this->loadActionLogServices($config['action_log'], $container);
         $this->loadFilteredObjectIndexServices($config['filtered_object_index'], $container);
+        $this->loadAwsS3Services($config['ct_aws_s3'], $container);
+    }
+
+    protected function loadAwsS3Services($config, $container)
+    {
+        if (!$config['enabled']) {
+            return;
+        }
+
+        $args = [
+            $config['region'],
+            $config['bucket'],
+            $config['key'],
+            $config['secret'],
+            $config['namespace'],
+            new Reference('logger')
+        ];
+
+        $def = new Definition(
+            'CTLib\Component\AWS\CtAwsS3',
+            $args
+        );
+        $container->setDefinition("ct_aws_s3", $def);
     }
 
     protected function loadCacheManagerServices($config, $container)
