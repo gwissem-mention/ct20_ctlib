@@ -1,21 +1,28 @@
 <?php
 namespace CTLib\Component\Security;
 
+use CTLib\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpKernel\Event\GetResponseEvent;
-use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\HttpKernelInterface;
 /**
  * Facilitates processing --details here
  *
  * @author seanhunter <shunter@celltrak.com>
  * Date: 2017-03-14
  */
+// TODO - check if we can use route options (on OTP/CTP) to be more specific
+// for the use of this service
+
 class InputSanitizationListener
 {
     // check for common script tags
     const BLACKLIST_SCRIPT_TAGS = '/<\/*(?:applet|b(?:ase|ody|gsound|link)|href|embed|frame(?:set)?|i(?:frame|layer)|l(?:ayer|ink)|meta|object|s(?:cript|tyle)|title|xml)+>/';
     const BLACKLIST_HTML_TAGS   = '/<*(?:ht(?:tp|tps|ml))\:/';
 
-    protected $blacklistChecks;
+    const BLACKLIST_CHECK_LIST = [
+            self::BLACKLIST_HTML_TAGS,
+            self::BLACKLIST_SCRIPT_TAGS
+        ];
 
     /**
      * @var Logger
@@ -23,17 +30,18 @@ class InputSanitizationListener
     protected $logger;
 
     /**
-     * @param Logger $logger
+     * @var string $redirect
      */
-    public function __construct($logger)
+    protected $redirect;
+
+    /**
+     * @param Logger $logger
+     * @param string $redirect
+     */
+    public function __construct($logger, $redirect)
     {
         $this->logger = $logger;
-
-        // expandable list of blacklist checks
-        $this->blacklistChecks = [
-            self::BLACKLIST_HTML_TAGS,
-            self::BLACKLIST_SCRIPT_TAGS
-        ];
+        $this->redirect = $redirect;
     }
 
     /**
@@ -45,37 +53,45 @@ class InputSanitizationListener
      */
     public function onKernelRequest(GetResponseEvent $event)
     {
-        $request = $event->getRequest();
-
-        if (!$request->isXmlHttpRequest()) {
-            // This listener only handles XHRs.
+        if ($event->getRequestType() !== HttpKernelInterface::MASTER_REQUEST) {
             return;
         }
-
-        // check POST fields
-        $result = $this->cycleValueArray($_POST);
+        $request = $event->getRequest();
+        $params = $request->request->all();
+        // check fields - from request - query
+        $result = $this->checkValues($params);
 
         if (!$result) {
-            $response = new Response('', 400);
+            // validation has failed, redirect to error page
+            $body = array('redirect' => $this->redirect);
+            $response = new JsonResponse($body, 400);
             $event->setResponse($response);
+            $event->stopPropagation();
         }
     }
 
-    protected function cycleValueArray($valueArray) {
-        foreach ($valueArray as $field=>$value) {
+    /**
+     * Function to process the array of field/values from the request
+     *
+     * @param array $values
+     *
+     * @return bool True/False (pass/fail)
+     */
+    protected function checkValues(array $values) {
+        foreach ($values as $field=>$value) {
             if (!$value) {
                 // empty value - default to pass
                 continue;
             }
 
             if (is_array($value)) {
-                $result = $this->cycleValueArray($value);
+                $result = $this->checkValues($value);
                 if (!$result) {
                     return false;
                 }
             } else {
                 // always check for these
-                foreach ($this->blacklistChecks as $checkItem) {
+                foreach (self::BLACKLIST_CHECK_LIST as $checkItem) {
                     // Fail if match found
                     if (preg_match($checkItem, $value)) {
                         $this->logger->warn("Post failed on validation check - {$field}: {$value}");

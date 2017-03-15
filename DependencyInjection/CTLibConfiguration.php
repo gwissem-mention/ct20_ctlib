@@ -964,6 +964,11 @@ class CTLibConfiguration implements ConfigurationInterface
 
         $node
             ->canBeEnabled()
+            ->children()
+                ->scalarNode('redirect')
+                    ->info('The redirect URL to be used when validation fails')
+                    ->isRequired()
+                ->end()
             ->end();
 
         return $node;

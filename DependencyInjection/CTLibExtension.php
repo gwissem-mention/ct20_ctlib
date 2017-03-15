@@ -681,7 +681,8 @@ class CTLibExtension extends Extension
         }
 
         $args = [
-            new Reference('logger')
+            new Reference('logger'),
+            $config['redirect']
         ];
 
         $def = new Definition('CTLib\Component\Security\InputSanitizationListener', $args);
