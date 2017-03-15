@@ -2,6 +2,7 @@
 namespace CTLib\Component\Security;
 
 use CTLib\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpKernel\Event\GetResponseEvent;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
 /**
@@ -63,9 +64,14 @@ class InputSanitizationListener
 
         if (!$result) {
             // validation has failed, redirect to error page
-            $body = array('redirect' => $this->redirect);
-            $response = new JsonResponse($body, 400);
+            if ($request->isXmlHttpRequest()) {
+                $body = ['redirect' => $this->redirect];
+                $response = new JsonResponse($body, 400);
+            } else {
+                $response = new RedirectResponse($this->redirect);
+            }
             $event->setResponse($response);
+
             $event->stopPropagation();
         }
     }
