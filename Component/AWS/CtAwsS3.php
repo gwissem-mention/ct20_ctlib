@@ -131,6 +131,12 @@ class CtAwsS3
     public function readContent($folderPath, $key)
     {
         $content = null;
+
+        if (!in_array($folderPath, $this->getValidFolders())) {
+            $this->logger->error("AwsS3: invalid folder requested");
+            throw new \Exception("Aws S3 - Invalid folder requested");
+        }
+
         $awsS3Key = "{$folderPath}/{$this->siteId}/{$key}";
 
         // Get the common AWS configuration.
