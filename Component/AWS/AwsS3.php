@@ -38,16 +38,6 @@ class AwsS3
     protected $secret;
 
     /**
-     * @var string $namespace
-     */
-    protected $namespace;
-
-    /**
-     * @var array $validFolders
-     */
-    protected $validFolders;
-
-    /**
      * @var Logger $logger
      */
     protected $logger;
@@ -59,8 +49,6 @@ class AwsS3
      * @param string $bucket
      * @param string $key
      * @param string secret
-     * @param string $namespace
-     * @param array  $folders
      * @param Logger $logger
      */
     public function __construct(
@@ -68,97 +56,61 @@ class AwsS3
         $bucket,
         $key,
         $secret,
-        $namespace,
-        $folders,
         $logger
     ) {
         $this->region       = $region;
         $this->bucket       = $bucket;
         $this->key          = $key;
         $this->secret       = $secret;
-        $this->namespace    = $namespace;
-        $this->validFolders = $folders;
         $this->logger       = $logger;
     }
 
     /**
      * Writes content to AWS S3.
      *
-     * @param string $folderPath
      * @param string $key
      * @param string $content
      *
-     * @return string
+     * @return bool
      */
-    public function putContent($folderPath, $key, $content)
+    public function putContent($key, $content)
     {
-        if (!in_array($folderPath, $this->validFolders)) {
-            $this->logger->error("AwsS3: invalid folder requested");
-            throw new \Exception("Aws S3 - Invalid folder requested");
-        }
+        // Get an instance of an AWS s3Client.
+        $s3Client = $this->getS3Client();
 
-        $awsS3Key = "{$folderPath}/{$this->namespace}/{$key}";
+        // Upload data to S3.
+        $result = $s3Client->putObject([
+            'Bucket' => $this->bucket,
+            'Key'    => $key,
+            'Body'   => $content,
+            'ServerSideEncryption' => 'AES256'
+        ]);
 
-        // Get the common AWS configuration.
-        $config = $this->getAwsConfig();
-
-        // Create an instance of the AWS SDK and S3Client.
-        $awsSdk = new Sdk($config);
-        $s3Client = $awsSdk->createS3();
-
-        try {
-            // Upload data to S3.
-            $s3Client->putObject([
-                'Bucket' => $this->bucket,
-                'Key'    => $awsS3Key,
-                'Body'   => $content,
-                'ServerSideEncryption' => 'AES256'
-            ]);
-        } catch (S3Exception $e) {
-            $this->logger->error("AwsS3: write {$awsS3Key} failed: {$e->getMessage()}");
-            return null;
-        }
-
-        return $awsS3Key;
+        return $result != null;
     }
 
     /**
      * Reads content from AWS S3.
      *
-     * @param string $folderPath
      * @param string $key
      *
      * @return string
      */
-    public function getContent($folderPath, $key)
+    public function getContent($key)
     {
         $content = null;
 
-        if (!in_array($folderPath, $this->validFolders)) {
-            $this->logger->error("AwsS3: invalid folder requested");
-            throw new \Exception("Aws S3 - Invalid folder requested");
-        }
+        // Get an instance of an AWS s3Client.
+        $s3Client = $this->getS3Client();
 
-        $awsS3Key = "{$folderPath}/{$this->namespace}/{$key}";
+        // Get the object from S3
+        $result = $s3Client->getObject([
+            'Bucket' => $this->bucket,
+            'Key'    => $key
+        ]);
 
-        // Get the common AWS configuration.
-        $config = $this->getAwsConfig();
-
-        // Create an instance of the AWS SDK and S3Client.
-        $awsSdk = new Sdk($config);
-        $s3Client = $awsSdk->createS3();
-
-        try {
-            // Get the object from S3
-            $result = $s3Client->getObject([
-                'Bucket' => $this->bucket,
-                'Key'    => $awsS3Key
-            ]);
-
+        if ($result && isset($result['Body'])) {
             $content = $result['Body'];
-        } catch (S3Exception $e) {
-            $this->logger->error("AwsS3: read {$awsS3Key} failed: {$e->getMessage()}");
-            return null;
         }
 
         return $content;
@@ -176,17 +128,8 @@ class AwsS3
     {
         $result = true;
 
-        if (!in_array($destFolderPath, $this->validFolders)) {
-            $this->logger->error("AwsS3: invalid folder requested");
-            throw new \Exception("Aws S3 - Invalid folder requested");
-        }
-
-        // Get the common AWS configuration.
-        $config = $this->getAwsConfig();
-
-        // Create an instance of the AWS SDK and S3Client.
-        $awsSdk = new Sdk($config);
-        $s3Client = $awsSdk->createS3();
+        // Get an instance of an AWS s3Client.
+        $s3Client = $this->getS3Client();
 
         // Create an iterator for the directory containing
         // the source data files.
@@ -240,36 +183,31 @@ class AwsS3
     /**
      * Deletes content from AWS S3.
      *
-     * @param string $folderPath
      * @param string $key
      *
-     * @return void
+     * @return bool
      */
-    public function deleteContent($folderPath, $key)
+    public function deleteContent($key)
     {
-        if (!in_array($folderPath, $this->validFolders)) {
-            $this->logger->error("AwsS3: invalid folder requested");
-            throw new \Exception("Aws S3 - Invalid folder requested");
-        }
+        // Get an instance of an AWS s3Client.
+        $s3Client = $this->getS3Client();
 
-        $awsS3Key = "{$folderPath}/{$this->namespace}/{$key}";
+        // Delete the object from S3
+        $result = $s3Client->deleteObject([
+            'Bucket' => $this->bucket,
+            'Key'    => $key
+        ]);
 
+        return $result != null;
+    }
+
+    protected function getS3Client()
+    {
         // Get the common AWS configuration.
         $config = $this->getAwsConfig();
-
         // Create an instance of the AWS SDK and S3Client.
         $awsSdk = new Sdk($config);
-        $s3Client = $awsSdk->createS3();
-
-        try {
-            // Delete the object from S3
-            $result = $s3Client->deleteObject([
-                'Bucket' => $this->bucket,
-                'Key'    => $awsS3Key
-            ]);
-        } catch (S3Exception $e) {
-            $this->logger->error("AwsS3: delete {$awsS3Key} failed: {$e->getMessage()}");
-        }
+        return $awsSdk->createS3();
     }
 
     /**

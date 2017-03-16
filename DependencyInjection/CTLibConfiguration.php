@@ -57,9 +57,6 @@ class CTLibConfiguration implements ConfigurationInterface
         $node
             ->canBeEnabled()
             ->children()
-                ->scalarNode('namespace')
-                    ->isRequired()
-                ->end()
                 ->scalarNode('region')
                     ->isRequired()
                 ->end()
@@ -71,11 +68,6 @@ class CTLibConfiguration implements ConfigurationInterface
                 ->end()
                 ->scalarNode('secret')
                     ->isRequired()
-                ->end()
-                ->arrayNode('folders')
-                    ->isRequired()
-                    ->cannotBeEmpty()
-                    ->prototype('scalar')->end()
                 ->end()
             ->end()
         ->end();
