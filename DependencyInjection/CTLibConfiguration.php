@@ -52,7 +52,7 @@ class CTLibConfiguration implements ConfigurationInterface
     protected function addAwsS3Node()
     {
         $tb = new TreeBuilder;
-        $node = $tb->root('ct_aws_s3');
+        $node = $tb->root('aws_s3');
 
         $node
             ->canBeEnabled()
