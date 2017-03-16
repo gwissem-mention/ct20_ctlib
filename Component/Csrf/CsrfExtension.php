@@ -68,10 +68,13 @@ class CsrfExtension extends \Twig_Extension
         $csrfToken = $this->session->get('csrfToken');
 
         return "<script type='text/javascript'>
-                $('<input>').attr({
-                    type: 'hidden',
-                    name: 'csrf_session_token',
-                    value: '$csrfToken'
-                }).appendTo('form');</script>";
+                //no csrf check on record set forms
+                if (!$('body').hasClass('standard_recordset')) {
+                    $('<input>').attr({
+                        type: 'hidden',
+                        name: 'csrf_session_token',
+                        value: '$csrfToken'
+                    }).appendTo('form')
+                };</script>";
     }
 }

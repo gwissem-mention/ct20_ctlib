@@ -57,6 +57,11 @@ class CsrfCheckListener
             return;
         }
 
+        if (!$request->request->get('csrf_session_token')) {
+            $this->logger->debug("CsrfCheckListener: form does not require csrf check. ");
+            return;
+        }
+
         if ($session->get('csrfToken') != $request->request->get('csrf_session_token')) {
             $this->logger->debug("CsrfCheckListener: request is not secure. ");
             //return http forbidden response 403
