@@ -411,9 +411,9 @@ class CTLibExtension extends Extension
 
         $def = new Definition(
             'CTLib\Component\Csrf\CsrfCheckListener',
-            [new Reference('logger')]);
+            [new Reference('route_inspector'), new Reference('logger')]);
 
-        $def->addTag('kernel.event_listener', ['event' => 'kernel.request']);
+        $def->addTag('kernel.event_listener', ['event' => 'kernel.controller']);
 
         $container->setDefinition('csrf_check_listener', $def);
     }

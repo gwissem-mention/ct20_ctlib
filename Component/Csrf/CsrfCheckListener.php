@@ -2,10 +2,9 @@
 
 namespace CTLib\Component\Csrf;
 
-use Symfony\Component\HttpKernel\Event\GetResponseEvent;
+use Symfony\Component\HttpKernel\Event\FilterControllerEvent;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
 use Symfony\Component\HttpFoundation\Response;
-
 /**
  * Check Cross-Site Request Forgery (CSRF) token, prevent CSRF attacks
  *
@@ -14,24 +13,31 @@ use Symfony\Component\HttpFoundation\Response;
 class CsrfCheckListener
 {
     /**
+     * @var RouteInspector
+     */
+    protected $routeInspector;
+
+    /**
      * @var Logger
      */
     protected $logger;
 
     /**
+     * @param RouteInspector $routeInspector
      * @param Logger $logger
      */
-    public function __construct($logger)
+    public function __construct($routeInspector, $logger)
     {
+        $this->routeInspector   = $routeInspector;
         $this->logger = $logger;
     }
 
     /**
-     * Callback registered to kernel.request event.
-     * @param  GetResponseEvent  $event
+     * Callback registered to kernel.controller event.
+     * @param  FilterControllerEvent  $event
      * @return void
      */
-    public function onKernelRequest(GetResponseEvent $event)
+    public function onKernelController(FilterControllerEvent $event)
     {
         if ($event->getRequestType() != HttpKernelInterface::MASTER_REQUEST) {
             $this->logger->debug("CsrfCheckListener: only checks master request.");
@@ -57,7 +63,11 @@ class CsrfCheckListener
             return;
         }
 
-        if (!$request->request->get('csrf_session_token')) {
+        //get skip csrf check or not from route option
+        $routeName = $event->getRequest()->attributes->get('_route');
+        $skipCsrf = $this->routeInspector->getOption($routeName, 'skipCsrf');
+
+        if ($skipCsrf) {
             $this->logger->debug("CsrfCheckListener: form does not require csrf check. ");
             return;
         }
@@ -65,8 +75,11 @@ class CsrfCheckListener
         if ($session->get('csrfToken') != $request->request->get('csrf_session_token')) {
             $this->logger->debug("CsrfCheckListener: request is not secure. ");
             //return http forbidden response 403
-            $response = new Response("Access Denied!", 403);
-            $event->setResponse($response);
+            $controller = function() {
+                return new Response('Access Denied!', 403); };
+
+            $event->setController($controller);
+            $event->stopPropagation();
         }
     }
 }
