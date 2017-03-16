@@ -238,6 +238,41 @@ class AwsS3
     }
 
     /**
+     * Deletes content from AWS S3.
+     *
+     * @param string $folderPath
+     * @param string $key
+     *
+     * @return void
+     */
+    public function deleteContent($folderPath, $key)
+    {
+        if (!in_array($folderPath, $this->validFolders)) {
+            $this->logger->error("AwsS3: invalid folder requested");
+            throw new \Exception("Aws S3 - Invalid folder requested");
+        }
+
+        $awsS3Key = "{$folderPath}/{$this->namespace}/{$key}";
+
+        // Get the common AWS configuration.
+        $config = $this->getAwsConfig();
+
+        // Create an instance of the AWS SDK and S3Client.
+        $awsSdk = new Sdk($config);
+        $s3Client = $awsSdk->createS3();
+
+        try {
+            // Delete the object from S3
+            $result = $s3Client->deleteObject([
+                'Bucket' => $this->bucket,
+                'Key'    => $awsS3Key
+            ]);
+        } catch (S3Exception $e) {
+            $this->logger->error("AwsS3: delete {$awsS3Key} failed: {$e->getMessage()}");
+        }
+    }
+
+    /**
      * Get the AWS SDK configuration that is shared
      * between all client services.
      *
