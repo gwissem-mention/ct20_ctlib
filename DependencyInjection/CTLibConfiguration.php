@@ -36,6 +36,7 @@ class CTLibConfiguration implements ConfigurationInterface
                 ->append($this->addSessionSignatureCheckListenerNode())
                 ->append($this->addLocalizationNode())
                 ->append($this->addPushNode())
+                ->append($this->addCsrfNode())
                 ->append($this->addMutexNode())
                 ->append($this->addUrlsNode())
                 ->append($this->addViewNode())
@@ -44,9 +45,36 @@ class CTLibConfiguration implements ConfigurationInterface
                 ->append($this->addActionLoggerNode())
                 ->append($this->addFilteredObjectIndexNode())
                 ->append($this->addInputSanitizationListenerNode())
+                ->append($this->addAwsS3Node())
             ->end();
 
         return $tb;
+    }
+
+    protected function addAwsS3Node()
+    {
+        $tb = new TreeBuilder;
+        $node = $tb->root('aws_s3');
+
+        $node
+            ->canBeEnabled()
+            ->children()
+                ->scalarNode('region')
+                    ->isRequired()
+                ->end()
+                ->scalarNode('bucket')
+                    ->isRequired()
+                ->end()
+                ->scalarNode('key')
+                    ->isRequired()
+                ->end()
+                ->scalarNode('secret')
+                    ->isRequired()
+                ->end()
+            ->end()
+        ->end();
+
+        return $node;
     }
 
     protected function addCacheManagerNode()
@@ -430,6 +458,18 @@ class CTLibConfiguration implements ConfigurationInterface
                     ->end()
                 ->end()
             ->end()
+        ->end();
+
+        return $node;
+    }
+
+    protected function addCsrfNode()
+    {
+        $tb = new TreeBuilder;
+        $node = $tb->root('csrf');
+
+        $node
+            ->canBeEnabled()
         ->end();
 
         return $node;

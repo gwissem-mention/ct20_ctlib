@@ -30,8 +30,8 @@ class CTLibExtension extends Extension
         $this->loadSharedCacheServices($config['shared_cache'], $container);
         $this->loadEncryptServices($config['encrypt'], $container);
         $this->loadPushServices($config['push'], $container);
+        $this->loadCsrfServices($config['csrf'], $container);
         $this->loadMapServices($config['map_service'], $container);
-        $this->loadSessionSignatureCheckServices($config['session_signature_check_listener'], $container);
         $this->loadLocalizationServices($config['localization'], $container);
         $this->loadMutexServices($config['mutex'], $container);
         $this->loadUrlsServices($config['urls'], $container);
@@ -41,6 +41,28 @@ class CTLibExtension extends Extension
         $this->loadActionLogServices($config['action_log'], $container);
         $this->loadFilteredObjectIndexServices($config['filtered_object_index'], $container);
         $this->loadInputSanitizationListenerServices($config['input_sanitization_listener'], $container);
+        $this->loadAwsS3Services($config['aws_s3'], $container);
+    }
+
+    protected function loadAwsS3Services($config, $container)
+    {
+        if (!$config['enabled']) {
+            return;
+        }
+
+        $args = [
+            $config['region'],
+            $config['bucket'],
+            $config['key'],
+            $config['secret'],
+            new Reference('logger')
+        ];
+
+        $def = new Definition(
+            'CTLib\Component\AWS\AwsS3',
+            $args
+        );
+        $container->setDefinition("aws_s3", $def);
     }
 
     protected function loadCacheManagerServices($config, $container)
@@ -388,19 +410,35 @@ class CTLibExtension extends Extension
 
     }
 
-    protected function loadSessionSignatureCheckServices($config, $container)
+    protected function loadCsrfServices($config, $container)
     {
-        if (! $config['enabled']) {
+        if (!$config['enabled']) {
             return;
         }
 
         $def = new Definition(
-            'CTLib\Listener\SessionSignatureCheckListener',
+            'CTLib\Component\Csrf\CsrfExtension',
+            [new Reference('session'), new Reference('logger')]);
+
+        $def->addTag('twig.extension');
+
+        $container->setDefinition('csrf_twig_extension', $def);
+
+        $def = new Definition(
+            'CTLib\Component\Csrf\CsrfInitListener',
             [new Reference('logger')]);
 
         $def->addTag('kernel.event_listener', ['event' => 'kernel.request']);
 
-        $container->setDefinition('session_signature_check_listener', $def);
+        $container->setDefinition('csrf_init_listener', $def);
+
+        $def = new Definition(
+            'CTLib\Component\Csrf\CsrfCheckListener',
+            [new Reference('route_inspector'), new Reference('logger')]);
+
+        $def->addTag('kernel.event_listener', ['event' => 'kernel.controller']);
+
+        $container->setDefinition('csrf_check_listener', $def);
     }
 
     protected function loadMapServices($config, $container)
