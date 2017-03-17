@@ -41,6 +41,28 @@ class CTLibExtension extends Extension
         $this->loadActionLogServices($config['action_log'], $container);
         $this->loadFilteredObjectIndexServices($config['filtered_object_index'], $container);
         $this->loadInputSanitizationListenerServices($config['input_sanitization_listener'], $container);
+        $this->loadAwsS3Services($config['aws_s3'], $container);
+    }
+
+    protected function loadAwsS3Services($config, $container)
+    {
+        if (!$config['enabled']) {
+            return;
+        }
+
+        $args = [
+            $config['region'],
+            $config['bucket'],
+            $config['key'],
+            $config['secret'],
+            new Reference('logger')
+        ];
+
+        $def = new Definition(
+            'CTLib\Component\AWS\AwsS3',
+            $args
+        );
+        $container->setDefinition("aws_s3", $def);
     }
 
     protected function loadCacheManagerServices($config, $container)
