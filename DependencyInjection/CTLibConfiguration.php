@@ -33,6 +33,7 @@ class CTLibConfiguration implements ConfigurationInterface
                 ->append($this->addSharedCacheNode())
                 ->append($this->addEncryptNode())
                 ->append($this->addMapServiceNode())
+                ->append($this->addSessionSignatureCheckListenerNode())
                 ->append($this->addLocalizationNode())
                 ->append($this->addPushNode())
                 ->append($this->addMutexNode())
@@ -752,6 +753,18 @@ class CTLibConfiguration implements ConfigurationInterface
                     ->end()
                 ->end()
             ->end();
+
+        return $node;
+    }
+
+    protected function addSessionSignatureCheckListenerNode()
+    {
+        $tb = new TreeBuilder;
+        $node = $tb->root('session_signature_check_listener');
+
+        $node
+            ->canBeDisabled()
+        ->end();
 
         return $node;
     }
