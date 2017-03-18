@@ -11,20 +11,16 @@ class HipChatRoomNotification implements \JsonSerializable
     /**
      * Valid message formats.
      */
-    const MESSAGE_FORMATS = [
-        'html',
-        'plain'
-    ];
+    const MESSAGE_FORMAT_HTML   = 'html';
+    const MESSAGE_FORMAT_PLAIN  = 'plain';
 
     /**
      * Valid colors.
      */
-    const COLORS = [
-        'yellow',
-        'blue',
-        'red',
-        'green'
-    ];
+    const COLOR_YELLOW  = 'yellow';
+    const COLOR_BLUE    = 'blue';
+    const COLOR_RED     = 'red';
+    const COLOR_GREEN   = 'green';
 
 
     /**
@@ -58,9 +54,9 @@ class HipChatRoomNotification implements \JsonSerializable
     public function __construct($message)
     {
         $this->message          = $message;
-        $this->messageFormat    = 'html';
+        $this->messageFormat    = self::MESSAGE_FORMAT_HTML;
         $this->notify           = false;
-        $this->color            = 'yellow';
+        $this->color            = self::COLOR_YELLOW;
     }
 
     /**
@@ -71,12 +67,35 @@ class HipChatRoomNotification implements \JsonSerializable
      */
     public function setMessageFormat($messageFormat)
     {
-        if (in_array($messageFormat, self::MESSAGE_FORMATS)) {
-            throw new \InvalidArgumentException('$messageFormat must be in ' . join(', ', self::MESSAGE_FORMATS));
+        $validFormats = [
+            self::MESSAGE_FORMAT_HTML,
+            self::MESSAGE_FORMAT_PLAIN
+        ];
+
+        if (in_array($messageFormat, $validFormats)) {
+            throw new \InvalidArgumentException('$messageFormat must be valid MESSAGE_FORMAT_*');
         }
 
         $this->messageFormat = $messageFormat;
         return $this;
+    }
+
+    /**
+     * Sets message format to HTML.
+     * @return HipChatRoomNotification
+     */
+    public function html()
+    {
+        return $this->setMessageFormat(self::MESSAGE_FORMAT_HTML);
+    }
+
+    /**
+     * Sets message format to plain text.
+     * @return HipChatRoomNotification
+     */
+    public function plain()
+    {
+        return $this->setMessageFormat(self::MESSAGE_FORMAT_PLAIN);
     }
 
     /**
@@ -96,6 +115,24 @@ class HipChatRoomNotification implements \JsonSerializable
     }
 
     /**
+     * Sets $notify to true.
+     * @return HipChatRoomNotification
+     */
+    public function loud()
+    {
+        return $this->setNotify(true);
+    }
+
+    /**
+     * Sets $notify to false.
+     * @return HipChatRoomNotification
+     */
+    public function quiet()
+    {
+        return $this->setNotify(false);
+    }
+
+    /**
      * Sets $color.
      * @param string $color
      * @return HipChatRoomNotification
@@ -103,12 +140,55 @@ class HipChatRoomNotification implements \JsonSerializable
      */
     public function setColor($color)
     {
-        if (in_array($color, self::COLORS)) {
-            throw new \InvalidArgumentException('$color must be in ' . join(', ', self::COLORS));
+        $validColors = [
+            self::COLOR_YELLOW,
+            self::COLOR_BLUE,
+            self::COLOR_RED,
+            self::COLOR_GREEN
+        ];
+
+        if (in_array($color, $validColors)) {
+            throw new \InvalidArgumentException('$color must be valid COLOR_*');
         }
 
         $this->color = $color;
         return $this;
+    }
+
+    /**
+     * Sets $color to yellow.
+     * @return HipChatRoomNotification
+     */
+    public function yellow()
+    {
+        return $this->setColor(self::COLOR_YELLOW);
+    }
+
+    /**
+     * Sets $color to blue.
+     * @return HipChatRoomNotification
+     */
+    public function blue()
+    {
+        return $this->setColor(self::COLOR_BLUE);
+    }
+
+    /**
+     * Sets $color to red.
+     * @return HipChatRoomNotification
+     */
+    public function red()
+    {
+        return $this->setColor(self::COLOR_RED);
+    }
+
+    /**
+     * Sets $color to green.
+     * @return HipChatRoomNotification
+     */
+    public function green()
+    {
+        return $this->setColor(self::COLOR_GREEN);
     }
 
     /**
