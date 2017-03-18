@@ -407,6 +407,18 @@ class EntityManager extends \Doctrine\ORM\EntityManager
     }
 
     /**
+     * Reopens database connection.
+     * @return void
+     */
+    public function reopenConnection()
+    {
+        $conn = $this->getConnection();
+        if ($conn->ping() == false) {
+            $conn->connect();
+        }
+    }
+
+    /**
      * Creates a new EntityManager using this one as the source for connection
      * and configuration.
      *
