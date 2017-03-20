@@ -9,7 +9,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\GetResponseEvent;
 
 /**
- * Check session signature by user browser aganet and ip address,
+ * Check session signature by user browser agent and ip address,
  * prevent session hijack attacks
  *
  * @author Ziwei Ren <zren@celltrak.com>
@@ -56,9 +56,15 @@ class SessionSignatureCheckListener
         }
 
         $signature = $this->generateSessionSignature($request);
+
         $session->set('sessionSignature', $signature);
     }
 
+    /**
+     * Callback registered to kernel.controller event.
+     * @param  FilterControllerEvent  $event
+     * @return void
+     */
     public function onKernelController(FilterControllerEvent $event)
     {
         if ($event->getRequestType() != HttpKernelInterface::MASTER_REQUEST) {
@@ -96,13 +102,20 @@ class SessionSignatureCheckListener
         }
     }
 
+    /**
+     * Generate session signature by using user brower info
+     * and ip address, encrypt with md5 algorithm.
+     *
+     * @param $request
+     * @return string
+     */
     protected function generateSessionSignature($request)
     {
-        $userAgent = $request->header('User-Agent');
+        $userAgent = $request->headers->get('User-Agent');
 
         $ipAddress = $request->getClientIp();
 
-        $signature = $userAgent . $ipAddress;
+        $signature = md5($userAgent . $ipAddress);
 
         return $signature;
     }
