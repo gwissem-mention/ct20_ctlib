@@ -72,7 +72,7 @@ class HipChatRoomNotification implements \JsonSerializable
             self::MESSAGE_FORMAT_PLAIN
         ];
 
-        if (in_array($messageFormat, $validFormats)) {
+        if (in_array($messageFormat, $validFormats) == false) {
             throw new \InvalidArgumentException('$messageFormat must be valid MESSAGE_FORMAT_*');
         }
 
@@ -147,7 +147,7 @@ class HipChatRoomNotification implements \JsonSerializable
             self::COLOR_GREEN
         ];
 
-        if (in_array($color, $validColors)) {
+        if (in_array($color, $validColors) == false) {
             throw new \InvalidArgumentException('$color must be valid COLOR_*');
         }
 
