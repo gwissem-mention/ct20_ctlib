@@ -67,7 +67,7 @@ class CsrfInitListener
         $randStr = new RandomString(
             RandomString::TYPE_NUMBER |
             RandomString::TYPE_ALPHA_ALL |
-            RandomString::TYPE_SYMBOL_ALL
+            RandomString::TYPE_SYMBOL_COMPLEX
         );
 
         $csrfToken = $randStr->create(50);

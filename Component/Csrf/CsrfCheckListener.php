@@ -23,13 +23,20 @@ class CsrfCheckListener
     protected $logger;
 
     /**
+     * @var EnforceCheck
+     */
+    protected $enforceCheck;
+
+    /**
      * @param RouteInspector $routeInspector
      * @param Logger $logger
+     * @param boolean $enforceCheck
      */
-    public function __construct($routeInspector, $logger)
+    public function __construct($routeInspector, $logger, $enforceCheck)
     {
         $this->routeInspector   = $routeInspector;
         $this->logger = $logger;
+        $this->enforceCheck = $enforceCheck;
     }
 
     /**
@@ -39,6 +46,11 @@ class CsrfCheckListener
      */
     public function onKernelController(FilterControllerEvent $event)
     {
+        if (!$this->enforceCheck) {
+            $this->logger->debug("CsrfCheckListener: csrf check is not enabled.");
+            return;
+        }
+
         if ($event->getRequestType() != HttpKernelInterface::MASTER_REQUEST) {
             $this->logger->debug("CsrfCheckListener: only checks master request.");
             return;
