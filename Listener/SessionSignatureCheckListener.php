@@ -41,12 +41,6 @@ class SessionSignatureCheckListener
         }
 
         $request = $event->getRequest();
-
-        if (!$request->isMethod('POST')) {
-            $this->logger->debug("SessionSignatureCheckListener: only checks post request.");
-            return;
-        }
-
         $session = $request->getSession();
 
         if (!$session) {
@@ -55,10 +49,37 @@ class SessionSignatureCheckListener
         }
 
         if (!$session->has('sessionSignature')) {
+            $this->setSessionSignature($request, $session);
             $this->logger->debug("SessionSignatureCheckListener: session signature is not set in session. ");
             return;
+        } else {
+            $this->checkSessionSignature($event, $request, $session);
+            return;
         }
+    }
 
+    /**
+     * Set session signature
+     *
+     * @param $request
+     * @param $session
+     */
+    protected function setSessionSignature($request, $session)
+    {
+        $signature = $this->generateSessionSignature($request);
+
+        $session->set('sessionSignature', $signature);
+    }
+
+    /**
+     * Validate session signature
+     *
+     * @param $event
+     * @param $request
+     * @param $session
+     */
+    protected function checkSessionSignature($event, $request, $session)
+    {
         if ($session->get('sessionSignature') != $this->generateSessionSignature($request)) {
             $this->logger->debug("SessionSignatureCheckListener: request is not secure. ");
 

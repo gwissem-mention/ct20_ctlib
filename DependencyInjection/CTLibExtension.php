@@ -52,12 +52,6 @@ class CTLibExtension extends Extension
         }
 
         $def = new Definition(
-            'CTLib\Listener\SessionSignatureInitListener',
-            [new Reference('logger')]);
-
-        $def->addTag('kernel.event_listener', ['event' => 'kernel.request']);
-
-        $def = new Definition(
             'CTLib\Listener\SessionSignatureCheckListener',
             [new Reference('logger')]);
 
