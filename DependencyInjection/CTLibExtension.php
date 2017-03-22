@@ -32,6 +32,7 @@ class CTLibExtension extends Extension
         $this->loadPushServices($config['push'], $container);
         $this->loadCsrfServices($config['csrf'], $container);
         $this->loadMapServices($config['map_service'], $container);
+        $this->loadSessionSignatureCheckServices($config['session_signature_check'], $container);
         $this->loadLocalizationServices($config['localization'], $container);
         $this->loadMutexServices($config['mutex'], $container);
         $this->loadUrlsServices($config['urls'], $container);
@@ -42,6 +43,21 @@ class CTLibExtension extends Extension
         $this->loadFilteredObjectIndexServices($config['filtered_object_index'], $container);
         $this->loadInputSanitizationListenerServices($config['input_sanitization_listener'], $container);
         $this->loadAwsS3Services($config['aws_s3'], $container);
+    }
+
+    protected function loadSessionSignatureCheckServices($config, $container)
+    {
+        if (! $config['enabled']) {
+            return;
+        }
+
+        $def = new Definition(
+            'CTLib\Listener\SessionSignatureCheckListener',
+            [new Reference('logger')]);
+
+        $def->addTag('kernel.event_listener', ['event' => 'kernel.request']);
+
+        $container->setDefinition('session_signature_check_listener', $def);
     }
 
     protected function loadAwsS3Services($config, $container)
