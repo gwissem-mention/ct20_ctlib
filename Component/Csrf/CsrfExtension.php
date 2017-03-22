@@ -44,7 +44,7 @@ class CsrfExtension extends \Twig_Extension
     public function getFunctions()
     {
         return [
-            'csrfToken' => new \Twig_Function_Method($this, 'getCsrfToken'),
+            'csrfToken' => new \Twig_Function_Method($this, 'getCsrfTokenValue'),
             'csrfTokenField' => new \Twig_Function_Method($this, 'addCsrfTokenField'),
             'addCsrfTokenFields' => new \Twig_Function_Method($this, 'addCsrfTokenFields'),
         ];
@@ -55,7 +55,49 @@ class CsrfExtension extends \Twig_Extension
      * @return string
      * @throws \Exception
      */
-    public function getCsrfToken()
+    public function getCsrfTokenValue()
+    {
+        return $this->getCsrfToken();
+    }
+
+    /**
+     * Add CSRF token hidden field
+     * @return string
+     * @throws \Exception
+     */
+    public function addCsrfTokenField()
+    {
+        $csrfToken = $this->getCsrfToken();
+
+        return '<input type="hidden" name="csrf_session_token" value="'. $csrfToken . '" />';
+    }
+
+    /**
+     * Add CSRF token hidden field to all multiple forms
+     * @return string
+     * @throws \Exception
+     */
+    public function addCsrfTokenFields()
+    {
+        $csrfToken = $this->getCsrfToken();
+
+        return "<script type='text/javascript'>
+                if (!$('form').hasClass('skip_csrf')) {
+                    $('<input>').attr({
+                        type: 'hidden',
+                        name: 'csrf_session_token',
+                        value: '$csrfToken'
+                    }).appendTo('form');
+
+                };</script>";
+    }
+
+    /**
+     * Get CSRF token
+     * @return string
+     * @throws \Exception
+     */
+    protected function getCsrfToken()
     {
         if (!$this->session) {
             $this->logger->debug("CsrfExtension: session is not set.");
@@ -68,57 +110,5 @@ class CsrfExtension extends \Twig_Extension
         }
 
         return $this->session->get('csrfToken');
-    }
-
-    /**
-     * Add CSRF token hidden field
-     * @return string
-     * @throws \Exception
-     */
-    public function addCsrfTokenField()
-    {
-        if (!$this->session) {
-            $this->logger->debug("CsrfExtension: session is not set.");
-            return;
-        }
-
-        if (!$this->session->has('csrfToken')) {
-            $this->logger->debug("CsrfExtension: 'csrfToken' is not set in session.");
-            return;
-        }
-
-        $csrfToken = $this->session->get('csrfToken');
-
-        return '<input type="hidden" name="csrf_session_token" value="'. $csrfToken . '" />';
-    }
-
-    /**
-     * Add CSRF token hidden field to all multiple forms
-     * @return string
-     * @throws \Exception
-     */
-    public function addCsrfTokenFields()
-    {
-        if (!$this->session) {
-            $this->logger->debug("CsrfExtension: session is not set.");
-            return;
-        }
-
-        if (!$this->session->has('csrfToken')) {
-            $this->logger->debug("CsrfExtension: 'csrfToken' is not set in session.");
-            return;
-        }
-
-        $csrfToken = $this->session->get('csrfToken');
-
-        return "<script type='text/javascript'>
-                if (!$('form').hasClass('skip_csrf')) {
-                    $('<input>').attr({
-                        type: 'hidden',
-                        name: 'csrf_session_token',
-                        value: '$csrfToken'
-                    }).appendTo('form');
-
-                };</script>";
     }
 }
