@@ -146,7 +146,7 @@ class AwsS3
                     continue;
                 }
                 $filename = $file->getPath() . '/' . $file->getFilename();
-                $key = $destFolderPath;
+                $key = $destFolderPath . '/' . $file->getFilename();
                 // Yield a command that will be executed by the pool.
                 yield $s3Client->getCommand('PutObject', [
                     'Bucket'               => $toBucket,
