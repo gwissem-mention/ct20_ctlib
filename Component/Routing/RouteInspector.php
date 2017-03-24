@@ -18,6 +18,13 @@ class RouteInspector
      */
     const CACHE_FILENAME = 'routeinspectorcache.php';
 
+    /**
+     * Set of route options ignored by the RouteInspector.
+     */
+    const IGNORE_ROUTE_OPTIONS = [
+        'compiler_class'
+    ];
+
 
     /**
      * @var Router
@@ -153,7 +160,7 @@ class RouteInspector
     }
 
     /**
-     * Loads routes fresh from the Router configuration.
+     * Loads routes fresh from the Router service.
      * @return void
      */
     protected function loadFreshRoutes()
@@ -220,7 +227,7 @@ class RouteInspector
 // This file is generated automatically by {$className}.
 // ** DO NOT MODIFY **
 
-// Return the parsed routes used by the RouteInspector.
+// Return the compiled route data used by the RouteInspector.
 return {$routesStr};";
 
         return $contents;
@@ -233,7 +240,10 @@ return {$routesStr};";
     protected function hasCache()
     {
         $cachePath = $this->getCacheFilePath();
-        return @file_exists($cachePath);
+        $hasCache = @file_exists($cachePath);
+
+        $this->logger->debug("RouteInspector: cache exists? " . ($hasCache ? 'Yes' : 'No'));
+        return $hasCache;
     }
 
     /**
@@ -314,12 +324,12 @@ return {$routesStr};";
      */
     protected function parseRouteOptions(Route $route)
     {
-        $skipOptions = ['compiler_class'];
         $options = [];
         foreach ($route->getOptions() as $option => $value) {
-            if (in_array($option, $skipOptions) == false) {
-                $options[$option] = $value;
+            if (in_array($option, self::IGNORE_ROUTE_OPTIONS)) {
+                continue;
             }
+            $options[$option] = $value;
         }
         return $options;
     }
