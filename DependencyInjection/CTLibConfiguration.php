@@ -310,12 +310,7 @@ class CTLibConfiguration implements ConfigurationInterface
         $node = $tb->root('route_inspector');
 
         $node
-            ->canBeEnabled()
-            ->children()
-                ->scalarNode('namespace')
-                    ->isRequired()
-                ->end()
-            ->end()
+            ->canBeDisabled()
         ->end();
 
         return $node;

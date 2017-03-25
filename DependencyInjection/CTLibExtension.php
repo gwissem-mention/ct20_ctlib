@@ -280,11 +280,12 @@ class CTLibExtension extends Extension
     {
         if (! $config['enabled']) { return; }
 
-        $args = array(
+        $args = [
             new Reference('router'),
-            new Reference('cache'),
-            $config['namespace']
-        );
+            new Reference('logger'),
+            $container->getParameter('kernel.cache_dir'),
+            $container->getParameter('kernel.debug')
+        ];
         $def = new Definition('CTLib\Component\Routing\RouteInspector', $args);
         $container->setDefinition('route_inspector', $def);
     }
