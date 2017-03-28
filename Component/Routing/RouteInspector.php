@@ -1,6 +1,10 @@
 <?php
 namespace CTLib\Component\Routing;
 
+use Symfony\Component\Routing\Router;
+use Symfony\Component\Routing\Route;
+use CTLib\Component\Monolog\Logger;
+
 /**
  * Used to retrieve configured route properties.
  *
@@ -8,34 +12,58 @@ namespace CTLib\Component\Routing;
  */
 class RouteInspector
 {
+
+    /**
+     * Filename where the cached routes are stored.
+     */
+    const CACHE_FILENAME = 'routeinspectorcache.php';
+
+    /**
+     * Set of route options ignored by the RouteInspector.
+     */
+    const IGNORE_ROUTE_OPTIONS = [
+        'compiler_class'
+    ];
+
+
     /**
      * @var Router
      */
     protected $router;
 
     /**
-     * @var SharedCacheHelper
+     * @var Logger
      */
-    protected $cache;
+    protected $logger;
 
     /**
      * @var string
      */
-    protected $cacheNamespace;
+    protected $cacheDir;
 
-    
+    /**
+     * @var boolean
+     */
+    protected $isDebug;
+
+
     /**
      * @param Router $router
-     * @param SharedCacheHelper $cache
-     * @param string $cacheNamespace    Will be used to segregate cached route
-     *                                  configuration from another.
+     * @param Logger $logger
+     * @param string $cacheDir
+     * @param boolean $isDebug
      */
-    public function __construct($router, $cache, $cacheNamespace)
-    {
-        $this->router           = $router;
-        $this->cache            = $cache;
-        $this->cacheNamespace   = $cacheNamespace;
-        $this->routes           = array();
+    public function __construct(
+        Router $router,
+        Logger $logger,
+        $cacheDir,
+        $isDebug
+    ) {
+        $this->router   = $router;
+        $this->logger   = $logger;
+        $this->cacheDir = $cacheDir;
+        $this->isDebug  = $isDebug;
+        $this->routes   = [];
     }
 
     /**
@@ -76,10 +104,25 @@ class RouteInspector
     public function getOption($routeName, $option)
     {
         $route = $this->getRoute($routeName);
-        if (! array_key_exists($option, $route['options'])) {
+        if (array_key_exists($option, $route['options']) == false) {
             return null;
         }
         return $route['options'][$option];
+    }
+
+    /**
+     * Reloads routes fresh from the Router configuration.
+     * @return void
+     */
+    public function reloadFreshRoutes()
+    {
+        $this->loadFreshRoutes();
+
+        try {
+            $this->flushToCache();
+        } catch (\Exception $e) {
+            $this->logger->error((string) $e);
+        }
     }
 
     /**
@@ -91,52 +134,157 @@ class RouteInspector
      */
     protected function getRoute($routeName)
     {
-        if ($this->cache->isEnabled()) {
-            // Use the preferred method of retrieving all routes from cache.
-            // This is the high performance method.
-            if (! $this->routes) {
-                $this->routes = $this->loadRoutes();
-            }
-        } elseif (! isset($this->routes[$routeName])) {
-            // Without acccess to the cache and if this route isn't already in
-            // memory, then it's best to just get this one route's information
-            // rather than the entire collection. Typically, each request will
-            // only need to inspect one or two routes, and this will offer
-            // better performance than parsing all of them. 
-            $route = $this->router->getRouteCollection()->get($routeName);
-            if ($route) {
-                $this->routes[$routeName] = $this->parseRoute($route);
-            }
-        } else;
-
-        if (! isset($this->routes[$routeName])) {
-            throw new \Exception("Route not found for name '{$routeName}'");
+        if (empty($this->routes)) {
+            $this->loadRoutes();
         }
+
+        if (isset($this->routes[$routeName]) == false) {
+            throw new \RuntimeException("Route not found for name '{$routeName}'");
+        }
+
         return $this->routes[$routeName];
     }
 
     /**
-     * Loads route information from Symfony Router, parses and stores in cache.
-     *
-     * @return array    Enumerated array of parsed routes.
+     * Loads routes.
+     * @return void
      */
     protected function loadRoutes()
     {
-        $cacheKey   = $this->getCacheKey();
-        $routes     = $this->cache->get($cacheKey);
+        if ($this->hasCache() == false
+            || ($this->isDebug && $this->isCacheStale())) {
+            $this->reloadFreshRoutes();
+        } else {
+            $this->loadCachedRoutes();
+        }
+    }
 
-        if ($routes) {
-            // Found them in the cache!
-            return $routes;
-        }
-        // Need to reload fresh from Symfony router. This requires YAML parsing
-        // so hopefully it won't happen very often.
-        $routes = array();
+    /**
+     * Loads routes fresh from the Router service.
+     * @return void
+     */
+    protected function loadFreshRoutes()
+    {
+        $this->logger->debug("RouteInspector: loading fresh routes from Router");
+
+        $this->routes = [];
+
         foreach ($this->router->getRouteCollection()->all() as $name => $route) {
-            $routes[$name] = $this->parseRoute($route);
+            $this->routes[$name] = $this->parseRoute($route);
         }
-        $this->cache->set($cacheKey, $routes);
-        return $routes;
+    }
+
+    /**
+     * Loads routes from cache.
+     * @return void
+     */
+    protected function loadCachedRoutes()
+    {
+        $this->logger->debug("RouteInspector: loading routes from cache");
+
+        $cachePath = $this->getCacheFilePath();
+        $this->routes = @include $cachePath;
+    }
+
+    /**
+     * Flushes routes to cache.
+     * @return void
+     * @throws RuntimeException
+     */
+    protected function flushToCache()
+    {
+        $cachePath = $this->getCacheFilePath();
+
+        $this->logger->debug("RouteInspector: flushing cache to '{$cachePath}'");
+
+        $cacheDir = pathinfo($cachePath, PATHINFO_DIRNAME);
+
+        if (@is_dir($cacheDir) == false) {
+            $dirCreated = @mkdir($cacheDir, 0775, true);
+            if ($dirCreated == false) {
+                throw new \RuntimeException("Cannot create cache directory at '{$cacheDir}'");
+            }
+        }
+
+        $contents = $this->formatCacheContents();
+        $bytes = @file_put_contents($cachePath, $contents);
+
+        if ($bytes === false) {
+            throw new \RuntimeException("Cannot write route inspector cache to '{$cachePath}'");
+        }
+    }
+
+    /**
+     * Formats cache contents.
+     * @return string
+     */
+    protected function formatCacheContents()
+    {
+        $className = get_class($this);
+        $routesStr = var_export($this->routes, true);
+        $contents  = "<?php
+// routeinspectorcache.php
+// This file is generated automatically by {$className}.
+// ** DO NOT MODIFY **
+
+// Return the compiled route data used by the RouteInspector.
+return {$routesStr};";
+
+        return $contents;
+    }
+
+    /**
+     * Indicates whether cache exists.
+     * @return boolean
+     */
+    protected function hasCache()
+    {
+        $cachePath = $this->getCacheFilePath();
+        $hasCache = @file_exists($cachePath);
+
+        $this->logger->debug("RouteInspector: cache exists? " . ($hasCache ? 'Yes' : 'No'));
+        return $hasCache;
+    }
+
+    /**
+     * Indicates whether cache is stale.
+     * @return boolean
+     */
+    protected function isCacheStale()
+    {
+        $this->logger->debug("RouteInspector: checking whether cache is stale");
+
+        $cachePath = $this->getCacheFilePath();
+        $cacheTime = @filemtime($cachePath);
+
+        if ($cacheTime == false) {
+            $this->logger->debug("RouteInspector: cache is stale b/c failed getting mtime for '{$cachePath}'");
+            return true;
+        }
+
+        $routeResources = $this->router->getRouteCollection()->getResources();
+
+        foreach ($routeResources as $routeResource) {
+            $resourcePath = $routeResource->getResource();
+            $resourceTime = @filemtime($resourcePath);
+
+            if ($resourceTime >= $cacheTime) {
+                $this->logger->debug("RouteInspector: cache is stale b/c '{$resourcePath}' has been modified");
+                return true;
+            }
+        }
+
+        $this->logger->debug("RouteInspector: cache is not stale");
+        return false;
+    }
+
+    /**
+     * Returns path to cache file.
+     * @return string
+     */
+    protected function getCacheFilePath()
+    {
+        return $this->cacheDir . DIRECTORY_SEPARATOR . self::CACHE_FILENAME;
     }
 
     /**
@@ -145,12 +293,13 @@ class RouteInspector
      * @param Route $route
      * @return array
      */
-    protected function parseRoute($route)
+    protected function parseRoute(Route $route)
     {
-        return array(
-                'pattern'   => $route->getPattern(),
-                'params'    => $this->parseRouteParams($route),
-                'options'   => $this->parseRouteOptions($route));
+        return [
+            'pattern'   => $route->getPattern(),
+            'params'    => $this->parseRouteParams($route),
+            'options'   => $this->parseRouteOptions($route)
+        ];
     }
 
     /**
@@ -159,38 +308,30 @@ class RouteInspector
      * @param Route $route
      * @return array
      */
-    protected function parseRouteParams($route)
+    protected function parseRouteParams(Route $route)
     {
         $search = '/{([a-z_0-9]+)}/i';
-        $count  = preg_match_all($search, $route->getPattern(), $matches);
-        return $count ? $matches[1] : array();
+        $routePattern = $route->getPattern();
+        $count  = preg_match_all($search, $routePattern, $matches);
+        return $count ? $matches[1] : [];
     }
 
     /**
      * Parses route's configuration options.
      *
      * @param Route $route
-     * @return arrays
+     * @return array
      */
-    protected function parseRouteOptions($route)
+    protected function parseRouteOptions(Route $route)
     {
-        $skipOptions    = array('compiler_class');
-        $options        = array();
+        $options = [];
         foreach ($route->getOptions() as $option => $value) {
-            if (! in_array($option, $skipOptions)) {
-                $options[$option] = $value;
+            if (in_array($option, self::IGNORE_ROUTE_OPTIONS)) {
+                continue;
             }
+            $options[$option] = $value;
         }
         return $options;
     }
 
-    /**
-     * Returns qualified cache key to store this configuration's routes.
-     *
-     * @return string
-     */
-    protected function getCacheKey()
-    {
-        return "RouteInspector.{$this->cacheNamespace}";
-    }
 }

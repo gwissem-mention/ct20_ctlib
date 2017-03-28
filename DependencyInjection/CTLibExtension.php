@@ -30,7 +30,9 @@ class CTLibExtension extends Extension
         $this->loadSharedCacheServices($config['shared_cache'], $container);
         $this->loadEncryptServices($config['encrypt'], $container);
         $this->loadPushServices($config['push'], $container);
+        $this->loadCsrfServices($config['csrf'], $container);
         $this->loadMapServices($config['map_service'], $container);
+        $this->loadSessionSignatureCheckServices($config['session_signature_check'], $container);
         $this->loadLocalizationServices($config['localization'], $container);
         $this->loadMutexServices($config['mutex'], $container);
         $this->loadUrlsServices($config['urls'], $container);
@@ -39,11 +41,49 @@ class CTLibExtension extends Extension
         $this->loadHtmlToPdfServices($config['html_to_pdf'], $container);
         $this->loadActionLogServices($config['action_log'], $container);
         $this->loadFilteredObjectIndexServices($config['filtered_object_index'], $container);
+        $this->loadInputSanitizationListenerServices($config['input_sanitization_listener'], $container);
+        $this->loadAwsS3Services($config['aws_s3'], $container);
         $this->loadConsoleServices([], $container);
         $this->loadWebServiceRequestAuthenticationServices($config['web_service_authentication'], $container);
         $this->loadGarbageCollectionServices([], $container);
         $this->loadMySqlSecureShellServices($config['mysql_secure_shell'], $container);
         $this->loadHipChatServices($config['hipchat'], $container);
+    }
+
+    protected function loadSessionSignatureCheckServices($config, $container)
+    {
+        if (! $config['enabled']) {
+            return;
+        }
+
+        $def = new Definition(
+            'CTLib\Listener\SessionSignatureCheckListener',
+            [new Reference('logger')]);
+
+        $def->addTag('kernel.event_listener', ['event' => 'kernel.request']);
+
+        $container->setDefinition('session_signature_check_listener', $def);
+    }
+
+    protected function loadAwsS3Services($config, $container)
+    {
+        if (!$config['enabled']) {
+            return;
+        }
+
+        $args = [
+            $config['region'],
+            $config['bucket'],
+            $config['key'],
+            $config['secret'],
+            new Reference('logger')
+        ];
+
+        $def = new Definition(
+            'CTLib\Component\AWS\AwsS3',
+            $args
+        );
+        $container->setDefinition("aws_s3", $def);
     }
 
     protected function loadCacheManagerServices($config, $container)
@@ -245,11 +285,12 @@ class CTLibExtension extends Extension
     {
         if (! $config['enabled']) { return; }
 
-        $args = array(
+        $args = [
             new Reference('router'),
-            new Reference('cache'),
-            $config['namespace']
-        );
+            new Reference('logger'),
+            $container->getParameter('kernel.cache_dir'),
+            $container->getParameter('kernel.debug')
+        ];
         $def = new Definition('CTLib\Component\Routing\RouteInspector', $args);
         $container->setDefinition('route_inspector', $def);
     }
@@ -389,6 +430,37 @@ class CTLibExtension extends Extension
         }
 
 
+    }
+
+    protected function loadCsrfServices($config, $container)
+    {
+        if (!$config['enabled']) {
+            return;
+        }
+
+        $def = new Definition(
+            'CTLib\Component\Csrf\CsrfExtension',
+            [new Reference('session'), new Reference('logger')]);
+
+        $def->addTag('twig.extension');
+
+        $container->setDefinition('csrf_twig_extension', $def);
+
+        $def = new Definition(
+            'CTLib\Component\Csrf\CsrfInitListener',
+            [new Reference('logger')]);
+
+        $def->addTag('kernel.event_listener', ['event' => 'kernel.request']);
+
+        $container->setDefinition('csrf_init_listener', $def);
+
+        $def = new Definition(
+            'CTLib\Component\Csrf\CsrfCheckListener',
+            [new Reference('route_inspector'), new Reference('logger'), $config['enforce_check']]);
+
+        $def->addTag('kernel.event_listener', ['event' => 'kernel.controller']);
+
+        $container->setDefinition('csrf_check_listener', $def);
     }
 
     protected function loadMapServices($config, $container)
@@ -678,6 +750,31 @@ class CTLibExtension extends Extension
         }
     }
 
+    protected function loadInputSanitizationListenerServices($config, $container)
+    {
+        if (!$config['enabled']) {
+            return;
+        }
+
+        $args = [
+            $config['redirect'],
+            new Reference('logger')
+        ];
+
+        $def = new Definition('CTLib\Component\Security\InputSanitizationListener', $args);
+        $def->addTag('kernel.event_listener', ['event' => 'kernel.request']);
+
+        if (isset($config['invalidate_session'])) {
+            $def
+                ->addMethodCall(
+                    'setInvalidateSession',
+                    [$config['invalidate_session']]
+                );
+        }
+
+        $container->setDefinition('input_sanitization_listener', $def);
+    }
+
     protected function loadConsoleServices($config, $container)
     {
         $class = 'CTLib\Component\Console\SymfonyCommandExecutorFactory';
@@ -724,10 +821,6 @@ class CTLibExtension extends Extension
 
     protected function loadMySqlSecureShellServices($config, $container)
     {
-        if (!$config['enabled']) {
-            return;
-        }
-
         $serviceId = 'mysql_secure_shell';
         $class = 'CTLib\Component\MySqlSecureShell\MySqlSecureShell';
         $args = [
@@ -769,4 +862,5 @@ class CTLibExtension extends Extension
 
         $container->setDefinition($serviceId, $def);
     }
+
 }

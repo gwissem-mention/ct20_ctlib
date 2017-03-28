@@ -33,8 +33,10 @@ class CTLibConfiguration implements ConfigurationInterface
                 ->append($this->addSharedCacheNode())
                 ->append($this->addEncryptNode())
                 ->append($this->addMapServiceNode())
+                ->append($this->addSessionSignatureCheckNode())
                 ->append($this->addLocalizationNode())
                 ->append($this->addPushNode())
+                ->append($this->addCsrfNode())
                 ->append($this->addMutexNode())
                 ->append($this->addUrlsNode())
                 ->append($this->addViewNode())
@@ -45,9 +47,37 @@ class CTLibConfiguration implements ConfigurationInterface
                 ->append($this->addWebServiceRequestAuthenticationNode())
                 ->append($this->addMySqlSecureShellNode())
                 ->append($this->addHipChatNode())
+                ->append($this->addInputSanitizationListenerNode())
+                ->append($this->addAwsS3Node())
             ->end();
 
         return $tb;
+    }
+
+    protected function addAwsS3Node()
+    {
+        $tb = new TreeBuilder;
+        $node = $tb->root('aws_s3');
+
+        $node
+            ->canBeEnabled()
+            ->children()
+                ->scalarNode('region')
+                    ->isRequired()
+                ->end()
+                ->scalarNode('bucket')
+                    ->isRequired()
+                ->end()
+                ->scalarNode('key')
+                    ->isRequired()
+                ->end()
+                ->scalarNode('secret')
+                    ->isRequired()
+                ->end()
+            ->end()
+        ->end();
+
+        return $node;
     }
 
     protected function addCacheManagerNode()
@@ -283,12 +313,7 @@ class CTLibConfiguration implements ConfigurationInterface
         $node = $tb->root('route_inspector');
 
         $node
-            ->canBeEnabled()
-            ->children()
-                ->scalarNode('namespace')
-                    ->isRequired()
-                ->end()
-            ->end()
+            ->canBeDisabled()
         ->end();
 
         return $node;
@@ -429,6 +454,23 @@ class CTLibConfiguration implements ConfigurationInterface
                         ->end()
 
                     ->end()
+                ->end()
+            ->end()
+        ->end();
+
+        return $node;
+    }
+
+    protected function addCsrfNode()
+    {
+        $tb = new TreeBuilder;
+        $node = $tb->root('csrf');
+
+        $node
+            ->canBeEnabled()
+            ->children()
+                ->booleanNode('enforce_check')
+                    ->defaultFalse()
                 ->end()
             ->end()
         ->end();
@@ -758,6 +800,18 @@ class CTLibConfiguration implements ConfigurationInterface
         return $node;
     }
 
+    protected function addSessionSignatureCheckNode()
+    {
+        $tb = new TreeBuilder;
+        $node = $tb->root('session_signature_check');
+
+        $node
+            ->canBeEnabled()
+        ->end();
+
+        return $node;
+    }
+
     protected function addLocalizationNode()
     {
         $tb = new TreeBuilder;
@@ -959,6 +1013,27 @@ class CTLibConfiguration implements ConfigurationInterface
         return $node;
     }
 
+    protected function addInputSanitizationListenerNode()
+    {
+        $tb = new TreeBuilder;
+        $node = $tb->root('input_sanitization_listener');
+
+        $node
+            ->canBeEnabled()
+            ->children()
+                ->scalarNode('redirect')
+                    ->info('The redirect URL to be used when validation fails')
+                    ->isRequired()
+                ->end()
+                ->booleanNode('invalidate_session')
+                    ->defaultFalse()
+                    ->info('Indicates whether to invalidate session')
+                ->end()
+            ->end();
+
+        return $node;
+    }
+
     protected function addWebServiceRequestAuthenticationNode()
     {
         $tb = new TreeBuilder;
@@ -966,7 +1041,7 @@ class CTLibConfiguration implements ConfigurationInterface
 
         $node
             ->canBeEnabled()
-        ->end();
+            ->end();
 
         return $node;
     }
@@ -1031,9 +1106,9 @@ class CTLibConfiguration implements ConfigurationInterface
                             ->end()
                         ->end()
                     ->end()
-                ->end()
-            ->end();
+                ->end();
 
-        return $node;
-    }
+            return $node;
+        }
+
 }
