@@ -1068,7 +1068,7 @@ class CTLibConfiguration implements ConfigurationInterface
                 ->end()
             ->end();
 
-            return $node;
+        return $node;
     }
 
     protected function addHipChatNode()

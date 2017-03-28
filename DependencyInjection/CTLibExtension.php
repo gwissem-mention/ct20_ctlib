@@ -821,6 +821,10 @@ class CTLibExtension extends Extension
 
     protected function loadMySqlSecureShellServices($config, $container)
     {
+        if (!$config['enabled']) {
+            return;
+        }
+
         $serviceId = 'mysql_secure_shell';
         $class = 'CTLib\Component\MySqlSecureShell\MySqlSecureShell';
         $args = [
