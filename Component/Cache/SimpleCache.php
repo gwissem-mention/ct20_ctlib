@@ -2,6 +2,7 @@
 
 namespace CTLib\Component\Cache;
 
+use CTLib\Component\Monolog\Logger;
 use CellTrak\RedisBundle\Component\Client\CellTrakRedis;
 
 /**
@@ -26,16 +27,25 @@ class SimpleCache
      */
     protected $cacheKey;
 
+    /**
+     * @var Logger $logger
+     */
+    protected $logger;
 
     /**
      * @param string        $namespace
      * @param CellTrakRedis $redis
+     * @param Logger $logger
      */
-    public function __construct($namespace, CellTrakRedis $redis)
-    {
+    public function __construct(
+        $namespace,
+        CellTrakRedis $redis,
+        Logger $logger
+    ) {
         $this->namespace   = $namespace;
         $this->redis       = $redis;
         $this->cacheKey    = "ssc:" . $namespace;
+        $this->logger      = $logger;
     }
 
     /**
@@ -46,7 +56,11 @@ class SimpleCache
     */
     public function set($key, $value)
     {
-        $this->redis->hSet($this->cacheKey, $key, $value);
+        try {
+            $this->redis->hSet($this->cacheKey, $key, $value);
+        } catch (\Exception $ex) {
+            $this->logger->warn('SimpleCache: failed to write to Redis');
+        }
     }
 
     /**
@@ -58,7 +72,12 @@ class SimpleCache
     */
     public function get($key)
     {
-        return $this->redis->hGet($this->cacheKey, $key);
+        try {
+            return $this->redis->hGet($this->cacheKey, $key);
+        } catch (\Exception $ex) {
+            $this->logger->warn('SimpleCache: failed to read from Redis');
+            return null;
+        }
     }
 
     /**
@@ -70,7 +89,12 @@ class SimpleCache
     */
     public function delete($key)
     {
-        return $this->redis->hDel($this->cacheKey, $key) > 0;
+        try {
+            return $this->redis->hDel($this->cacheKey, $key) > 0;
+        } catch (\Exception $ex) {
+            $this->logger->warn('SimpleCache: failed to delete from Redis');
+            return false;
+        }
     }
 
     /**
@@ -82,7 +106,12 @@ class SimpleCache
      */
     public function contains($key)
     {
-        return $this->redis->hExists($this->cacheKey, $key);
+        try {
+            return $this->redis->hExists($this->cacheKey, $key);
+        } catch (\Exception $ex) {
+            $this->logger->warn('SimpleCache: failed to read from Redis');
+            return false;
+        }
     }
 
     /**
@@ -90,8 +119,13 @@ class SimpleCache
      */
     public function getStats()
     {
-        $info = $this->redis->info();
-        return 'Uptime: '.$info['uptime_in_seconds']
-            .'Memory Usage: '.$info['used_memory'];
+        try {
+            $info = $this->redis->info();
+            return 'Uptime: '.$info['uptime_in_seconds']
+                .'Memory Usage: '.$info['used_memory'];
+        } catch (\Exception $ex) {
+            $this->logger->warn('SimpleCache: failed to read from Redis');
+            return 'NA';
+        }
     }
 }
