@@ -171,6 +171,19 @@ class CtApiDocumentDataAccess implements DataAccessInterface
     }
 
     /**
+     * Sets the filters for the next request.
+     *
+     * @param array $filters
+     *
+     * @return DataAccessInterface
+     */
+    public function setFilters(array $filters)
+    {
+        $this->filters = $filters;
+        return $this;
+    }
+
+    /**
      * {@inheritdoc}
      *
      * Add a sort that will be applied when the data is retrieved.
@@ -242,6 +255,16 @@ class CtApiDocumentDataAccess implements DataAccessInterface
     public function getFields()
     {
         return $this->fields;
+    }
+
+    /**
+     * Returns current filters
+     *
+     * @return array
+     */
+    public function getFilters()
+    {
+        return $this->filters;
     }
 
     /**
