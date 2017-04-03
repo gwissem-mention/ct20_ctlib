@@ -106,7 +106,8 @@ class CTLibExtension extends Extension
 
         $args = [
             $config['namespace'],
-            new Reference($config['redis_client'])
+            new Reference($config['redis_client']),
+            new Reference('logger')
         ];
 
         $def = new Definition(
@@ -128,7 +129,8 @@ class CTLibExtension extends Extension
             $args = [
                 $entityConfig['namespace'],
                 new Reference($entityConfig['redis_client']),
-                $entityConfig['ttl']
+                $entityConfig['ttl'],
+                new Reference('logger')
             ];
             $def = new Definition($serviceClass, $args);
 

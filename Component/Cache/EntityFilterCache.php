@@ -2,6 +2,7 @@
 
 namespace CTLib\Component\Cache;
 
+use CTLib\Component\Monolog\Logger;
 use CellTrak\RedisBundle\Component\Client\CellTrakRedis;
 
 /**
@@ -31,23 +32,30 @@ class EntityFilterCache implements CachedComponentInterface
      */
     private $cacheKeyPrefix;
 
+    /**
+     * @var Logger $logger
+     */
+    protected $logger;
 
     /**
      * @param string        $namespace
      * @param CellTrakRedis $redis
      * @param int           $ttl
+     * @param Logger        $logger
      *
      * @throws InvalidArgumentException
      */
     public function __construct(
         $namespace,
         CellTrakRedis $redis,
-        $ttl
+        $ttl,
+        Logger $logger
     ) {
         $this->redis          = $redis;
         $this->namespace      = $namespace;
         $this->ttl            = $ttl;
         $this->cacheKeyPrefix = "fc:";
+        $this->logger         = $logger;
     }
 
     /**
@@ -58,11 +66,15 @@ class EntityFilterCache implements CachedComponentInterface
     */
     public function setFilterIds($entityId, array $filterIds)
     {
-        $this->redis->setex(
-            $this->compileCacheKey($entityId),
-            $this->ttl,
-            json_encode($filterIds)
-        );
+        try {
+            $this->redis->setex(
+                $this->compileCacheKey($entityId),
+                $this->ttl,
+                json_encode($filterIds)
+            );
+        } catch (\Exception $ex) {
+            $this->logger->warn('EntityFilterCache: failed to write to Redis');
+        }
     }
 
     /**
@@ -74,7 +86,12 @@ class EntityFilterCache implements CachedComponentInterface
     */
     public function getFilterIds($entityId)
     {
-        $filterIds = $this->redis->get($this->compileCacheKey($entityId));
+        try {
+            $filterIds = $this->redis->get($this->compileCacheKey($entityId));
+        } catch (\Exception $ex) {
+            $this->logger->warn('EntityFilterCache: failed to read from Redis');
+            return null;
+        }
 
         if (!$filterIds) {
             return null;
@@ -92,7 +109,12 @@ class EntityFilterCache implements CachedComponentInterface
     */
     public function deleteFilterIds($entityId)
     {
-        return $this->redis->del($this->compileCacheKey($entityId)) > 0;
+        try {
+            return $this->redis->del($this->compileCacheKey($entityId)) > 0;
+        } catch (\Exception $ex) {
+            $this->logger->warn('EntityFilterCache: failed to delete from Redis');
+            return 0;
+        }
     }
 
     /**
@@ -104,7 +126,12 @@ class EntityFilterCache implements CachedComponentInterface
      */
     public function containsEntityId($entityId)
     {
-        return $this->redis->exists($this->compileCacheKey($entityId));
+        try {
+            return $this->redis->exists($this->compileCacheKey($entityId));
+        } catch (\Exception $ex) {
+            $this->logger->warn('EntityFilterCache: failed to read from Redis');
+            return false;
+        }
     }
 
     /**
@@ -120,10 +147,15 @@ class EntityFilterCache implements CachedComponentInterface
      */
     public function flushCache()
     {
-        $keys = $this->redis->scanForKeys(
-            $this->cacheKeyPrefix . $this->namespace . ':*'
-        );
-        return $this->redis->del($keys);
+        try {
+            $keys = $this->redis->scanForKeys(
+                $this->cacheKeyPrefix . $this->namespace . ':*'
+            );
+            return $this->redis->del($keys);
+        } catch (\Exception $ex) {
+            $this->logger->warn('EntityFilterCache: failed to delete from Redis');
+            return 0;
+        }
     }
 
     /**
@@ -131,25 +163,30 @@ class EntityFilterCache implements CachedComponentInterface
      */
     public function inspectCache()
     {
-        $keys = $this->redis->scanForKeys(
-            $this->cacheKeyPrefix . $this->namespace . ':*'
-        );
+        try {
+            $keys = $this->redis->scanForKeys(
+                $this->cacheKeyPrefix . $this->namespace . ':*'
+            );
 
-        $startPos = strpos($this->namespace, ':');
-        $class = substr($this->namespace, $startPos + 1);
-        $startPos = strlen($this->cacheKeyPrefix . $this->namespace . ':');
+            $startPos = strpos($this->namespace, ':');
+            $class = substr($this->namespace, $startPos + 1);
+            $startPos = strlen($this->cacheKeyPrefix . $this->namespace . ':');
 
-        $content = ucwords("$class:", "_") . PHP_EOL;
-        $content = str_replace("_", "", $content);
+            $content = ucwords("$class:", "_") . PHP_EOL;
+            $content = str_replace("_", "", $content);
 
-        foreach ($keys as $key) {
-            $entityId = substr($key, $startPos);
-            $content .= str_pad("   $entityId", 12) . " => Filters: "
-                . $this->redis->get($this->compileCacheKey($entityId))
-                . PHP_EOL.PHP_EOL;
+            foreach ($keys as $key) {
+                $entityId = substr($key, $startPos);
+                $content .= str_pad("   $entityId", 12) . " => Filters: "
+                    . $this->redis->get($this->compileCacheKey($entityId))
+                    . PHP_EOL.PHP_EOL;
+            }
+
+            return ['content' => $content];
+        } catch (\Exception $ex) {
+            $this->logger->warn('EntityFilterCache: failed to read from Redis');
+            return ['content' => 'NA'];
         }
-
-        return ['content' => $content];
     }
 
     /**

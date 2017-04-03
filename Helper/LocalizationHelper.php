@@ -240,12 +240,20 @@ class LocalizationHelper
      * @return string
      * @throws \Exception       If formatting process fails.
      */
-    public function formatDatetime($value, $format, $locale=null, $timezone=null)
-    {
+    public function formatDatetime(
+        $value,
+        $format,
+        $locale = null,
+        $timezone = null
+    ) {
         $locale = $locale ?: $this->getSessionLocale();
 
-        if (! $timezone instanceof \DateTimeZone) {
-            $timezone = new \DateTimeZone($timezone ?: $this->getSessionTimezone());
+        if (!$timezone instanceof \DateTimeZone) {
+            try {
+                $timezone = new \DateTimeZone($timezone ?: $this->getSessionTimezone());
+            } catch (\Exception $ex) {
+                $timezone = new \DateTimeZone($this->getSessionTimezone());
+            }
         }
 
         // Only needed for PHP <5.3.4
@@ -253,14 +261,26 @@ class LocalizationHelper
             $value = $value->getTimestamp();
         }
 
-        $formatter = new \IntlDateFormatter(
-            $locale,
-            null,
-            null,
-            $timezone->getName(),
-            null,
-            $format
-        );
+        try {
+            $formatter = new \IntlDateFormatter(
+                $locale,
+                null,
+                null,
+                $timezone->getName(),
+                null,
+                $format
+            );
+        } catch (\Exception $ex) {
+            $timezone = new \DateTimeZone($this->getSessionTimezone());
+            $formatter = new \IntlDateFormatter(
+                $locale,
+                null,
+                null,
+                $timezone->getName(),
+                null,
+                $format
+            );
+        }
 
         if ($formatter === false) {
             throw new \Exception("Could not compile format: $format. \nError: " . $formatter->getErrorMessage());
