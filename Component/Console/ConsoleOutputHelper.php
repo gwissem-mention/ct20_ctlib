@@ -49,17 +49,20 @@ class ConsoleOutputHelper
     /**
      * Outputs ConsoleProcessResult.
      * @param ConsoleProcessResult $result
+     * @param integer $padWidth
      * @return void
      */
-    public function outputProcessResult(ConsoleProcessResult $result)
-    {
+    public function outputProcessResult(
+        ConsoleProcessResult $result,
+        $padWidth = 40
+    ) {
         if ($result->isSuccess()) {
             $bgColor = 'green';
         } else {
             $bgColor = 'red';
         }
 
-        $display = str_pad($result->getProcessName(), 60, '.')
+        $display = str_pad($result->getProcessName(), $padWidth, '.')
                  . "<fg=white;bg={$bgColor};options=bold>"
                  . ' ' . $result->getMessage() . ' '
                  . '</>';
