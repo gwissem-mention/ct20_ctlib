@@ -95,6 +95,27 @@ class ConsoleOutputHelper
     }
 
     /**
+     * Outputs single attribute...value pair.
+     * @param string $attribute
+     * @param string $value
+     * @param integer $attributeWidth
+     * @param string $attributePadChar
+     * @return void
+     */
+    public function outputAttributeValuePair(
+        $attribute,
+        $value,
+        $attributeWidth = 40,
+        $attributePadChar = '.'
+    ) {
+        $attributeDisp = "<options=bold>"
+                       . str_pad($attribute, $attributeWidth, $attributePadChar)
+                       . "</>";
+
+        $this->output->writeln($attributeDisp . $value);
+    }
+
+    /**
      * Formats command action.
      * @param string $name
      * @param string $descrption
