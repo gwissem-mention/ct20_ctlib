@@ -70,7 +70,7 @@ class WebServiceRequestAuthenticationVerifier
         }
 
         if ($authenticator->isAuthenticatedRequest($request) == false) {
-            $response = $authenticator->getAuthenticationFailureResponse();
+            $response = $authenticator->getAuthenticationFailureResponse($request);
             $event->setResponse($response);
         }
     }

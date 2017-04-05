@@ -26,8 +26,9 @@ interface WebServiceRequestAuthenticatorInterface
 
     /**
      * Returns Response when authentication fails.
+     * @param Request $request
      * @return Response
      */
-    public function getAuthenticationFailureResponse();
+    public function getAuthenticationFailureResponse(Request $request);
 
 }
