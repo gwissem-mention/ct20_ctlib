@@ -44,6 +44,9 @@ class CTLibConfiguration implements ConfigurationInterface
                 ->append($this->addHtmlToPdfNode())
                 ->append($this->addActionLoggerNode())
                 ->append($this->addFilteredObjectIndexNode())
+                ->append($this->addWebServiceRequestAuthenticationNode())
+                ->append($this->addMySqlSecureShellNode())
+                ->append($this->addHipChatNode())
                 ->append($this->addInputSanitizationListenerNode())
                 ->append($this->addAwsS3Node())
             ->end();
@@ -1030,4 +1033,82 @@ class CTLibConfiguration implements ConfigurationInterface
 
         return $node;
     }
+
+    protected function addWebServiceRequestAuthenticationNode()
+    {
+        $tb = new TreeBuilder;
+        $node = $tb->root('web_service_authentication');
+
+        $node
+            ->canBeEnabled()
+            ->end();
+
+        return $node;
+    }
+
+    protected function addMySqlSecureShellNode()
+    {
+        $tb = new TreeBuilder;
+        $node = $tb->root('mysql_secure_shell');
+
+        $node
+            ->canBeEnabled()
+            ->children()
+                ->scalarNode('user_file_path')
+                    ->info('The path to the database user file')
+                    ->isRequired()
+                ->end()
+                ->scalarNode('mysql_binary_path')
+                    ->info('Absolute path to mysql binary')
+                    ->defaultValue('/usr/bin/mysql')
+                ->end()
+                ->scalarNode('temp_dir_path')
+                    ->info('The path where temporary query files will be saved')
+                    ->defaultValue('/tmp')
+                ->end()
+            ->end();
+
+        return $node;
+    }
+
+    protected function addHipChatNode()
+    {
+        $tb = new TreeBuilder;
+        $node = $tb->root('hipchat');
+
+        $node
+            ->canBeEnabled()
+            ->children()
+                ->scalarNode('group_name')
+                    ->info('The name of your HipChat group')
+                    ->isRequired()
+                ->end()
+                ->arrayNode('rooms')
+                    ->info('The set of rooms that can be notified')
+                    ->isRequired()
+                    ->requiresAtLeastOneElement()
+                    ->useAttributeAsKey('roomName')
+                    ->prototype('array')
+                        ->children()
+                            ->arrayNode('notifiers')
+                                ->info('The set of notifiers registered to this room')
+                                ->isRequired()
+                                ->requiresAtLeastOneElement()
+                                ->useAttributeAsKey('notifierName')
+                                ->prototype('array')
+                                    ->children()
+                                        ->scalarNode('token')
+                                            ->info('Authentication token required to post notifications into room')
+                                            ->isRequired()
+                                        ->end()
+                                    ->end()
+                                ->end()
+                            ->end()
+                        ->end()
+                    ->end()
+                ->end();
+
+            return $node;
+        }
+
 }

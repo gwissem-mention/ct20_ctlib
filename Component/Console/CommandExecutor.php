@@ -1,5 +1,5 @@
 <?php
-namespace CTLib\Util;
+namespace CTLib\Component\Console;
 
 /**
  * Executes shell commands.
@@ -28,17 +28,17 @@ class CommandExecutor
      * @var array
      */
     protected $options;
-    
+
     /**
      * @param string $commandPath   Absolute path to command script.
      * @param Logger $logger
      */
-    public function __construct($commandPath, $logger=null)
+    public function __construct($commandPath, $logger = null)
     {
         $this->commandPath  = $commandPath;
         $this->logger       = $logger;
-        $this->arguments    = array();
-        $this->options      = array();
+        $this->arguments    = [];
+        $this->options      = [];
     }
 
     /**
@@ -61,9 +61,9 @@ class CommandExecutor
      *
      * @return CommandExecutor($this)
      */
-    public function addOption($name, $value=null)
+    public function addOption($name, $value = null)
     {
-        $this->options[] = array($name, $value);
+        $this->options[] = [$name, $value];
         return $this;
     }
 
@@ -74,7 +74,7 @@ class CommandExecutor
      */
     public function resetArguments()
     {
-        $this->arguments = array();
+        $this->arguments = [];
         return $this;
     }
 
@@ -85,7 +85,7 @@ class CommandExecutor
      */
     public function resetOptions()
     {
-        $this->options = array();
+        $this->options = [];
         return $this;
     }
 
@@ -99,7 +99,7 @@ class CommandExecutor
      * @return array        Execution output buffer.
      * @throws Exception    If command returns non-zero status.
      */
-    public function exec($host=null, $user=null)
+    public function exec($host = null, $user = null)
     {
         $cmd = $this->formatCommand($host, $user);
 
@@ -116,7 +116,7 @@ class CommandExecutor
         if ($status !== 0) {
             throw new \Exception(
                 "COMMAND: {$cmd}" .
-                "\nSTATUS: {$status}" . 
+                "\nSTATUS: {$status}" .
                 "\nOUTPUT:\n" .
                 join("\n", $output)
             );
@@ -133,7 +133,7 @@ class CommandExecutor
      *
      * @return void
      */
-    public function execAsynchronous($host=null, $user=null)
+    public function execAsynchronous($host = null, $user = null)
     {
         $cmd = $this->formatCommand($host, $user) . ' >> /dev/null &';
 
@@ -157,12 +157,12 @@ class CommandExecutor
      *
      * @return string
      */
-    protected function formatCommand($host=null, $user=null)
+    protected function formatCommand($host = null, $user = null)
     {
         $cmd = $this->commandPath
              . ' ' . $this->formatArguments()
              . ' ' . $this->formatOptions();
-        
+
         if ($host) {
             $cmd = $this->formatSSH($host, $user) . ' ' . $cmd;
         }
@@ -203,7 +203,7 @@ class CommandExecutor
                     $r .= " --{$name}";
                     if ($value) {
                         $r .= "=" . escapeshellarg($value);
-                    }    
+                    }
                 }
                 return $r;
             },

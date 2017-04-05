@@ -407,6 +407,35 @@ class EntityManager extends \Doctrine\ORM\EntityManager
     }
 
     /**
+     * Reopens database connection.
+     * @return void
+     * @TODO This should really be in the Connection class.
+     */
+    public function reopenConnection()
+    {
+        $conn = $this->getConnection();
+        if ($this->pingConnection() == false) {
+            $conn->connect();
+        }
+    }
+
+    /**
+     * Pings database connection.
+     * @return boolean
+     * @TODO Later versions of Doctrine have Connection#ping built-in.
+     */
+    public function pingConnection()
+    {
+        $conn = $this->getConnection();
+        try {
+            $conn->executeQuery("SELECT 1");
+            return true;
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
+
+    /**
      * Creates a new EntityManager using this one as the source for connection
      * and configuration.
      *

@@ -396,4 +396,31 @@ class Util
         $dateWeek = $datetime->format('W');
         return (int)$dateWeek;
     }
+
+    /**
+     * Indicates whether $bit is valid bitwise integer (i.e. 1, 2, 4, 8, 16, ...)
+     * @param integer $bit
+     * @return boolean
+     */
+    public static function isValidBit($bit)
+    {
+        if (is_int($bit) == false) {
+            throw new \InvalidArgumentException('$bit must be integer');
+        }
+
+        if ($bit === 1) {
+            return true;
+        }
+
+        if ($bit <= 0) {
+            return false;
+        }
+
+        if ($bit % 2 != 0) {
+            return false;
+        }
+
+        $next = $bit / 2;
+        return self::isValidBit($next);
+    }
 }
