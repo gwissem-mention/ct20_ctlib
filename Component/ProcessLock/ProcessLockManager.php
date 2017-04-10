@@ -1,6 +1,8 @@
 <?php
 namespace CTLib\Component\ProcessLock;
 
+use CTLib\Component\Monolog\Logger;
+
 
 class ProcessLockManager
 {
@@ -8,9 +10,10 @@ class ProcessLockManager
     const LOCK_ID_PARAM_PATTERN = '/{[A-Za-z0-9_-]+}/';
 
 
-    public function __construct(ProcessLock $processLock)
+    public function __construct(ProcessLock $processLock, Logger $logger)
     {
         $this->processLock = $processLock;
+        $this->logger = $logger;
         $this->consumers = [];
     }
 
@@ -21,7 +24,7 @@ class ProcessLockManager
 
     public function getConsumers()
     {
-        return $this->consumer;
+        return $this->consumers;
     }
 
     public function getConsumer($consumerId)

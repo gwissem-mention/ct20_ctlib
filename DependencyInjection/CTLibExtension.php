@@ -149,6 +149,18 @@ class CTLibExtension extends Extension
         ];
         $def = new Definition('CTLib\Component\ProcessLock\ProcessLock', $args);
         $container->setDefinition('process_lock', $def);
+
+        $args = [
+            new Reference('process_lock'),
+            new Reference('logger')
+        ];
+        $def = new Definition(
+            'CTLib\Component\ProcessLock\ProcessLockManager',
+            $args
+        );
+        $container->setDefinition('process_lock.manager', $def);
+
+        
     }
 
     protected function loadLoggingServices($config, $container)
