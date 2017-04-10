@@ -1,5 +1,4 @@
 <?php
-
 namespace CTLib\Component\ProcessLock;
 
 /**
@@ -108,7 +107,7 @@ class ProcessLock
         if ($timeout < 1) {
             throw new \InvalidArgumentException("ProcessLock: (refreshLock) minimum timeout value of 1 expected for id {$id}: timeout of {$timeout} given instead");
         }
-        
+
         // generate key name
         $key = $this->generateLockKey($id);
 
@@ -174,6 +173,12 @@ class ProcessLock
         return $this->redisManager->runScript($luaScript, [$key], [$value]);
     }
 
+    public function forceReleaseLock($id)
+    {
+        $key = $this->generateLockKey($id);
+        return $this->redisManager->del($key);
+    }
+
     /**
      * Indicates whether site-level lock already exists.
      *
@@ -221,6 +226,34 @@ class ProcessLock
 
             return false;
         }
+    }
+
+    public function inspectLock($id)
+    {
+        $key = $this->generateLockKey($id);
+        $ttl = $this->redisManager->ttl($key);
+
+        return [
+            'key' => $key,
+            'ttl' => $ttl
+        ];
+    }
+
+    public function inspectLocksByPattern($idPattern)
+    {
+        $keyPattern = $this->generateLockKey($idPattern);
+        $keys = $this->redisManager->scanForKeys($keyPattern);
+        $results = [];
+
+        foreach ($keys as $key) {
+            $ttl = $this->redisManager->ttl($key);
+            $results[] = [
+                'key' => $key,
+                'ttl' => $ttl
+            ];
+        }
+
+        return $results;
     }
 
     /* Generates a lock key (at the site-level).
