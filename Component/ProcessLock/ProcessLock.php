@@ -233,6 +233,10 @@ class ProcessLock
         $key = $this->generateLockKey($id);
         $ttl = $this->redisManager->ttl($key);
 
+        if ($ttl == -2) {
+            return [];
+        }
+
         return [
             'key' => $key,
             'ttl' => $ttl

@@ -17,8 +17,10 @@ class ProcessLockManager
         $this->consumers = [];
     }
 
-    public function addConsumer($consumerId, ProcessLockConsumer $consumer)
-    {
+    public function addConsumer(
+        $consumerId,
+        ProcessLockConsumerInterface $consumer
+    ) {
         $this->consumers[$consumerId] = $consumer;
     }
 
@@ -43,11 +45,11 @@ class ProcessLockManager
 
         preg_match_all(self::LOCK_ID_PARAM_PATTERN, $lockIdPattern, $matches);
 
-        if (isset($matches[1]) == false) {
+        if (empty($matches[0])) {
             return [];
         }
 
-        $params = $matches[1];
+        $params = $matches[0];
         $params = array_map(function($p) { return trim($p, '{}'); }, $params);
         $params = array_unique($params);
 
@@ -96,6 +98,7 @@ class ProcessLockManager
             throw new \InvalidArgumentException('Missing lock id params: ' . join(', ', $missingParams));
         }
 
+        $consumer = $this->getConsumer($consumerId);
         $lockId = $consumer->getLockIdPattern();
 
         foreach ($lockIdParams as $param => $value) {
