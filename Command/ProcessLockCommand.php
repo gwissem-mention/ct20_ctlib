@@ -10,8 +10,15 @@ use CTLib\Component\Console\ConsoleTable;
 use CTLib\Component\Console\ConsoleOutputHelper;
 
 
+/**
+ * Inspects and removes process locks.
+ * @author Mike Turoff
+ */
 class ProcessLockCommand extends BaseCommand
 {
+    /**
+     * {@inheritDoc}
+     */
     public function configure()
     {
         parent::configure();
@@ -23,6 +30,9 @@ class ProcessLockCommand extends BaseCommand
             ->addOption('force', 'f', InputOption::VALUE_NONE, 'Skip confirmation prompts');
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public function execute(InputInterface $input, OutputInterface $output)
     {
         $this->init();
@@ -36,14 +46,14 @@ class ProcessLockCommand extends BaseCommand
             case 'list-consumers':
                 return $this->execListConsumers($input, $output);
 
-            case 'show-locks':
-                return $this->execShowLocksForConsumer($input, $output);
+            case 'find-all-locks':
+                return $this->execFindAllLocksForConsumer($input, $output);
 
             case 'find-lock':
                 return $this->execFindLockForConsumer($input, $output);
 
-            case 'release-lock':
-                return $this->execReleaseLockForConsumer($input, $output);
+            case 'remove-lock':
+                return $this->execRemoveLockForConsumer($input, $output);
 
             default:
                 throw new \RuntimeException("Invalid action '{$action}'. Use 'list' to see available actions.");
@@ -51,6 +61,12 @@ class ProcessLockCommand extends BaseCommand
 
     }
 
+    /**
+     * Initializes service variables.
+     * TODO replace by defining this command as a service when we upgrade to a
+     * current version of Symfony.
+     * @return void
+     */
     protected function init()
     {
         $container = $this->getContainer();
@@ -58,12 +74,18 @@ class ProcessLockCommand extends BaseCommand
         $this->processLockManager = $container->get('process_lock.manager');
     }
 
+    /**
+     * Lists available command actions.
+     * @param InputInterface $input
+     * @param OutputInterface $output
+     * @return void
+     */
     protected function execList(InputInterface $input, OutputInterface $output)
     {
         $controlActions = [
-            'show-locks {consumerId}' => 'Shows existing locks for consumer',
+            'find-all-locks {consumerId}' => 'Finds all locks for consumer',
             'find-lock {consumerId}' => 'Finds specific lock for consumer',
-            'release-lock {consumerId}' => 'Releases specific lock for consumer'
+            'remove-lock {consumerId}' => 'Removes specific lock for consumer'
         ];
 
         $helpActions = [
@@ -75,6 +97,12 @@ class ProcessLockCommand extends BaseCommand
         $outputHelper->outputActionList($controlActions, $helpActions);
     }
 
+    /**
+     * Lists registered process lock consumers.
+     * @param InputInterface $input
+     * @param OutputInterface $output
+     * @return void
+     */
     protected function execListConsumers(
         InputInterface $input,
         OutputInterface $output
@@ -91,9 +119,9 @@ class ProcessLockCommand extends BaseCommand
         $table = new ConsoleTable;
         $table
             ->addColumn('ID', 50)
-            ->addColumn('Name', 35)
-            ->addColumn('Lock ID Pattern', 50)
-            ->addColumn('Lock TTL', 9);
+            ->addColumn('NAME', 35)
+            ->addColumn('LOCK Pattern', 50)
+            ->addColumn('LOCK TTL', 9);
 
         foreach ($consumers as $consumerId => $consumer) {
             $table->addRecord(
@@ -109,28 +137,34 @@ class ProcessLockCommand extends BaseCommand
         $output->writeln("");
     }
 
-    protected function execShowLocksForConsumer(
+    /**
+     * Inspects all locks for specified consumer.
+     * @param InputInterface $input
+     * @param OutputInterface $output
+     * @return void
+     */
+    protected function execFindAllLocksForConsumer(
         InputInterface $input,
         OutputInterface $output
     ) {
         $consumerId = $input->getArgument('consumerId');
 
         if (empty($consumerId)) {
-            throw new \RuntimeException("consumerId is required for 'show-locks'");
+            throw new \RuntimeException("consumerId is required for 'find-all-locks'");
         }
 
         $locks = $this->processLockManager->findLocksForConsumer($consumerId);
 
         if (empty($locks)) {
             $output->writeln("");
-            $output->writeln("<fg=red>No locks found</>");
+            $output->writeln("<fg=red>No Locks Found</>");
             $output->writeln("");
             return;
         }
 
         $table = new ConsoleTable;
         $table
-            ->addColumn('Lock', 50)
+            ->addColumn('LOCK', 65)
             ->addColumn('TTL', 6);
 
         foreach ($locks as $lock) {
@@ -146,6 +180,12 @@ class ProcessLockCommand extends BaseCommand
         $output->writeln("");
     }
 
+    /**
+     * Inspects single lock for specified consumer based on passed lock ID params.
+     * @param InputInterface $input
+     * @param OutputInterface $output
+     * @return void
+     */
     protected function execFindLockForConsumer(
         InputInterface $input,
         OutputInterface $output
@@ -154,7 +194,7 @@ class ProcessLockCommand extends BaseCommand
         $lockIdParams = $input->getOption('lockIdParam') ?: [];
 
         if (empty($consumerId)) {
-            throw new \RuntimeException("consumerId is required for 'show-locks'");
+            throw new \RuntimeException("consumerId is required for 'find-lock'");
         }
 
         $requiredParams = $this->processLockManager
@@ -172,26 +212,34 @@ class ProcessLockCommand extends BaseCommand
 
         if (empty($lock)) {
             $output->writeln("");
-            $output->writeln("<fg=red>No lock found</>");
+            $output->writeln("<fg=red>No Lock Found</>");
             $output->writeln("");
             return;
         }
 
         $output->writeln("");
         $outputHelper = new ConsoleOutputHelper($output);
-        $outputHelper->outputAttributeValuePair('Lock', $lock['key']);
-        $outputHelper->outputAttributeValuePair('TTL', $lock['ttl']);
+        $outputHelper->outputAttributeValuePair('Lock', $lock['key'], 10);
+        $outputHelper->outputAttributeValuePair('TTL', $lock['ttl'], 10);
         $output->writeln("");
     }
 
-    protected function execReleaseLockForConsumer(InputInterface $input, OutputInterface $output)
-    {
+    /**
+     * Removes single lock for specified consumer based on passed lock id params.
+     * @param InputInterface $input
+     * @param OutputInterface $output
+     * @return void
+     */
+    protected function execRemoveLockForConsumer(
+        InputInterface $input,
+        OutputInterface $output
+    ) {
         $consumerId     = $input->getArgument('consumerId');
         $lockIdParams   = $input->getOption('lockIdParam') ?: [];
         $force          = $input->getOption('force');
 
         if (empty($consumerId)) {
-            throw new \RuntimeException("consumerId is required for 'show-locks'");
+            throw new \RuntimeException("consumerId is required for 'remove-lock'");
         }
 
         $requiredParams = $this->processLockManager
@@ -201,12 +249,38 @@ class ProcessLockCommand extends BaseCommand
             throw new \RuntimException("You must specify lock id params for " . join(', ', $requiredParams));
         }
 
+        if ($force == false) {
+            $confirmMsg = "<options=bold>Are you sure you want to remove this lock?</>"
+                        . "\n<fg=red>WARNING: Removing a lock held by an active"
+                        . " process can lead to overlapping processes.</>"
+                        . "\n\n<options=bold>Really Remove Lock? Y/n</> ";
+
+            $dialog     = $this->getHelperSet()->get('dialog');
+            $continue   = $dialog->askConfirmation($output, "\n{$confirmMsg}");
+
+            if ($continue == false) {
+                $output->writeln("");
+                $output->writeln("Lock *NOT* Removed");
+                $output->writeln("");
+                return;
+            }
+        }
+
         $lockIdParams = array_combine($requiredParams, $lockIdParams);
-        $released = $this->processLockManager->releaseLockForConsumer(
+        $released = $this->processLockManager->removeLockForConsumer(
             $consumerId,
             $lockIdParams
         );
 
+        if ($released == false) {
+            $output->writeln("");
+            $output->writeln("<fg=red>No Lock Found</>");
+            $output->writeln("");
+            return;
+        }
 
+        $output->writeln("");
+        $output->writeln("<fg=green>Lock Removed</>");
+        $output->writeln("");
     }
 }

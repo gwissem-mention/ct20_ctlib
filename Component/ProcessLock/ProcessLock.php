@@ -173,12 +173,6 @@ class ProcessLock
         return $this->redisManager->runScript($luaScript, [$key], [$value]);
     }
 
-    public function forceReleaseLock($id)
-    {
-        $key = $this->generateLockKey($id);
-        return $this->redisManager->del($key);
-    }
-
     /**
      * Indicates whether site-level lock already exists.
      *
@@ -228,6 +222,11 @@ class ProcessLock
         }
     }
 
+    /**
+     * Inspects single lock.
+     * @param string $id Lock identifier.
+     * @return array
+     */
     public function inspectLock($id)
     {
         $key = $this->generateLockKey($id);
@@ -243,6 +242,11 @@ class ProcessLock
         ];
     }
 
+    /**
+     * Inspect multiple locks matching id pattern.
+     * @param string $idPattern Lock identifier pattern. Use '*' for wildcard.
+     * @return array
+     */
     public function inspectLocksByPattern($idPattern)
     {
         $keyPattern = $this->generateLockKey($idPattern);
@@ -258,6 +262,20 @@ class ProcessLock
         }
 
         return $results;
+    }
+
+    /**
+     * Forces removal of specified lock.
+     * WARNING: This is not intended for normal lock management by the owning
+     * process. Use releaseLock instead.
+     * This is for "external" lock management processes.
+     * @param string $id Lock identifier.
+     * @return boolean
+     */
+    public function forceRemoveLock($id)
+    {
+        $key = $this->generateLockKey($id);
+        return $this->redisManager->del($key) ? true : false;
     }
 
     /* Generates a lock key (at the site-level).

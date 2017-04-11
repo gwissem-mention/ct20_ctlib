@@ -6,10 +6,16 @@ use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\Reference;
 
 
-
+/**
+ * Compiler pass for registering ProcessLockConsumerInterface services.
+ * @author Mike Turoff
+ */
 class ProcessLockCompilerPass implements CompilerPassInterface
 {
 
+    /**
+     * {@inheritDoc}
+     */
     public function process(ContainerBuilder $container)
     {
         if ($container->hasDefinition('process_lock.manager') == false) {
@@ -29,7 +35,7 @@ class ProcessLockCompilerPass implements CompilerPassInterface
                 $serviceId,
                 new Reference($serviceId)
             ];
-            $definition->addMethodCall('addConsumer', $args);
+            $definition->addMethodCall('registerConsumer', $args);
         }
     }
 }
