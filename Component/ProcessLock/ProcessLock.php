@@ -1,5 +1,4 @@
 <?php
-
 namespace CTLib\Component\ProcessLock;
 
 /**
@@ -108,7 +107,7 @@ class ProcessLock
         if ($timeout < 1) {
             throw new \InvalidArgumentException("ProcessLock: (refreshLock) minimum timeout value of 1 expected for id {$id}: timeout of {$timeout} given instead");
         }
-        
+
         // generate key name
         $key = $this->generateLockKey($id);
 
@@ -221,6 +220,62 @@ class ProcessLock
 
             return false;
         }
+    }
+
+    /**
+     * Inspects single lock.
+     * @param string $id Lock identifier.
+     * @return array
+     */
+    public function inspectLock($id)
+    {
+        $key = $this->generateLockKey($id);
+        $ttl = $this->redisManager->ttl($key);
+
+        if ($ttl == -2) {
+            return [];
+        }
+
+        return [
+            'key' => $key,
+            'ttl' => $ttl
+        ];
+    }
+
+    /**
+     * Inspect multiple locks matching id pattern.
+     * @param string $idPattern Lock identifier pattern. Use '*' for wildcard.
+     * @return array
+     */
+    public function inspectLocksByPattern($idPattern)
+    {
+        $keyPattern = $this->generateLockKey($idPattern);
+        $keys = $this->redisManager->scanForKeys($keyPattern);
+        $results = [];
+
+        foreach ($keys as $key) {
+            $ttl = $this->redisManager->ttl($key);
+            $results[] = [
+                'key' => $key,
+                'ttl' => $ttl
+            ];
+        }
+
+        return $results;
+    }
+
+    /**
+     * Forces removal of specified lock.
+     * WARNING: This is not intended for normal lock management by the owning
+     * process. Use releaseLock instead.
+     * This is for "external" lock management processes.
+     * @param string $id Lock identifier.
+     * @return boolean
+     */
+    public function forceRemoveLock($id)
+    {
+        $key = $this->generateLockKey($id);
+        return $this->redisManager->del($key) ? true : false;
     }
 
     /* Generates a lock key (at the site-level).
