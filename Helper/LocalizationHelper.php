@@ -261,26 +261,14 @@ class LocalizationHelper
             $value = $value->getTimestamp();
         }
 
-        try {
-            $formatter = new \IntlDateFormatter(
-                $locale,
-                null,
-                null,
-                $timezone->getName(),
-                null,
-                $format
-            );
-        } catch (\Exception $ex) {
-            $timezone = new \DateTimeZone($this->getSessionTimezone());
-            $formatter = new \IntlDateFormatter(
-                $locale,
-                null,
-                null,
-                $timezone->getName(),
-                null,
-                $format
-            );
-        }
+        $formatter = new \IntlDateFormatter(
+            $locale,
+            null,
+            null,
+            $timezone->getName(),
+            null,
+            $format
+        );
 
         if (!$formatter) {
             $timezone = new \DateTimeZone($this->getSessionTimezone());
