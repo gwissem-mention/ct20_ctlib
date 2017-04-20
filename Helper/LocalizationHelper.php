@@ -282,8 +282,20 @@ class LocalizationHelper
             );
         }
 
-        if ($formatter === false) {
-            throw new \Exception("Could not compile format: $format. \nError: " . $formatter->getErrorMessage());
+        if (!$formatter) {
+            $timezone = new \DateTimeZone($this->getSessionTimezone());
+            $formatter = new \IntlDateFormatter(
+                $locale,
+                null,
+                null,
+                $timezone->getName(),
+                null,
+                $format
+            );
+
+            if (!$formatter) {
+                throw new \Exception("Could not compile format: $format. \nError: " . $formatter->getErrorMessage());
+            }
         }
 
         if (is_string($value)) {
