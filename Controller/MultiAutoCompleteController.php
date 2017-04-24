@@ -37,8 +37,7 @@ class MultiAutoCompleteController extends AutoCompleteController
     {
         $assetLoader
             ->addAppJs('autocomplete.multiple.extension.js')
-            ->addInlineJs('$("#'.$domId.'").multiautocomplete('.$json.');')
-            ->addAppCss('autocomplete.css');
+            ->addInlineJs('$("#'.$domId.'").multiautocomplete('.$json.');');
     }
 
     /**

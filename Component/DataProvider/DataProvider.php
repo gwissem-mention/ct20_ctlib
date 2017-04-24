@@ -299,7 +299,7 @@ class DataProvider
         $cnf->cachePages        = $request->get('cachedPage', 0);
         $cnf->filters           = $request->get('filters', array());
         $cnf->sorts             = $request->get('sorts', array());
-        $cnf->suppressTotal     = $request->get('suppressTotal', true);
+        $cnf->suppressTotal     = $request->get('suppressTotal', false);
         $cnf->suppressResults   = $request->get('suppressResults', false);
         list(
             $requestedFields,

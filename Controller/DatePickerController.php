@@ -38,7 +38,6 @@ class DatePickerController extends DynaPartController
         ));
 
         $assetLoader
-            ->addAppCss('datepicker.css')
             ->addInlineJs('$("#'.$domId.'").datepicker(' . $json . ');');
     }
 

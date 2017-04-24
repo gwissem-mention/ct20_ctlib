@@ -49,6 +49,10 @@ class CtApiDocumentDataAccess implements DataAccessInterface
      */
     protected $maxResults;
 
+    /**
+     * @var integer
+     */
+    protected $includeCount;
 
     /**
      * @param CtApiCaller   $apiCaller
@@ -63,6 +67,7 @@ class CtApiDocumentDataAccess implements DataAccessInterface
         $this->sorts        = null;
         $this->offset       = 0;
         $this->maxResults   = 0;
+        $this->includeCount = true;
     }
 
     /**
@@ -166,6 +171,19 @@ class CtApiDocumentDataAccess implements DataAccessInterface
     }
 
     /**
+     * Sets the filters for the next request.
+     *
+     * @param array $filters
+     *
+     * @return DataAccessInterface
+     */
+    public function setFilters(array $filters)
+    {
+        $this->filters = $filters;
+        return $this;
+    }
+
+    /**
      * {@inheritdoc}
      *
      * Add a sort that will be applied when the data is retrieved.
@@ -240,6 +258,16 @@ class CtApiDocumentDataAccess implements DataAccessInterface
     }
 
     /**
+     * Returns current filters
+     *
+     * @return array
+     */
+    public function getFilters()
+    {
+        return $this->filters;
+    }
+
+    /**
      * Reinitialize internal data
      *
      * @return void
@@ -251,6 +279,20 @@ class CtApiDocumentDataAccess implements DataAccessInterface
         $this->sorts        = null;
         $this->offset       = 0;
         $this->maxResults   = 0;
+        $this->includeCount = true;
+    }
+
+    /**
+     * Set whether or not to include the count of the results.
+     *
+     * @param bool $includeCount
+     *
+     * @return DataAccessInterface
+     */
+    public function setIncludeCount($includeCount)
+    {
+        $this->includeCount = $includeCount;
+        return $this;
     }
 
     /**
@@ -294,12 +336,13 @@ class CtApiDocumentDataAccess implements DataAccessInterface
     {
         // Formulate query string from $this->fields,
         // $this->filters, $this->sorts, $this->offset, $this->maxResults
-        $queryString                = [];
-        $queryString['fields']      = $this->fields;
-        $queryString['criteria']    = $this->filters;
-        $queryString['sort']        = $this->sorts;
-        $queryString['offset']      = $this->offset;
-        $queryString['numRecords']  = $this->maxResults;
+        $queryString                 = [];
+        $queryString['fields']       = $this->fields;
+        $queryString['criteria']     = $this->filters;
+        $queryString['sort']         = $this->sorts;
+        $queryString['offset']       = $this->offset;
+        $queryString['numRecords']   = $this->maxResults;
+        $queryString['includeCount'] = $this->includeCount;
 
         return $queryString;
     }

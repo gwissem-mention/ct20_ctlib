@@ -100,6 +100,14 @@ class DataProvider
         $output->start($fields);
 
         $data = $dataAccess->getData();
+        $count = 0;
+
+        if (isset($data['count'])) {
+            $count = $data['count'];
+        }
+        if (isset($data['data'])) {
+            $data = $data['data'];
+        }
 
         foreach ($data as $rawRecord) {
             $record  = [];
@@ -122,6 +130,6 @@ class DataProvider
             }
         }
 
-        return $output->end();
+        return $output->end($count);
     }
 }

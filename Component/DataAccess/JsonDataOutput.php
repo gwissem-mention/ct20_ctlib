@@ -46,11 +46,11 @@ class JsonDataOutput implements DataOutputInterface
     /**
      * {@inheritdoc}
      *
-     * @param array $fields
+     * @param int $count
      *
      * @return string
      */
-    public function end()
+    public function end($count = 0)
     {
         return json_encode($this->records);
     }

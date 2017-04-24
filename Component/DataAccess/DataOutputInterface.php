@@ -22,6 +22,7 @@ interface DataOutputInterface
     public function addRecord(array $record);
 
     /**
+     * @param int $count
      */
-    public function end();
+    public function end($count = 0);
 }
