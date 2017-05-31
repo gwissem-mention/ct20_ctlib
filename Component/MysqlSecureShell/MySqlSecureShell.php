@@ -3,6 +3,7 @@ namespace CTLib\Component\MySqlSecureShell;
 
 use CTLib\Component\Monolog\Logger;
 use CTLib\Util\Util;
+use CTLib\Component\Database\DatabaseConnectionParameters;
 
 
 /**
@@ -68,35 +69,32 @@ class MySqlSecureShell
     /**
      * Execute one or more SQL queries.
      * @param string $sql
-     * @param string $dbHost
-     * @param string $dbName
+     * @param DatabaseConnectionParameters $connParams
      * @return void
      * @throws InvalidArgumentException
      * @throws MySqlSecureShellExecuteException
      * @throws MySqlSecureShellConfigException
      */
-    public function execute($sql, $dbHost, $dbName = null)
+    public function execute($sql, DatabaseConnectionParameters $connParams)
     {
         if (empty($sql)) {
             throw new \InvalidArgumentException('$sql is required and cannot be empty string');
-        }
-
-        if (empty($dbHost)) {
-            throw new \InvalidArgumentException('$dbHost is required and cannot be empty string');
-        }
-
-        if (!is_null($dbName) && empty($dbName)) {
-            throw new \InvalidArgumentException('$dbName cannot be empty string');
         }
 
         $tempFile = $this->saveSqlToTempFile($sql);
 
         $cmd = $this->getBaseCommand();
 
-        $cmd .= " --host=" . $dbHost;
+        if ($connParams->getHost()) {
+            $cmd .= " --host=" . $connParams->getHost();
+        }
 
-        if ($dbName) {
-            $cmd .= " --database=" . $dbName;
+        if ($connParams->getPort()) {
+            $cmd .= " --port=" . $connParams->getPort();
+        }
+
+        if ($connParams->getDbName()) {
+            $cmd .= " --database=" . $connParams->getDbName();
         }
 
         $cmd .= " --execute='source {$tempFile}'";
