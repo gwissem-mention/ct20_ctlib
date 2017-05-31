@@ -3,6 +3,7 @@ namespace CTLib\Component\MySqlSecureShell;
 
 use CTLib\Component\Monolog\Logger;
 use CTLib\Util\Util;
+use CTLib\Component\Database\DatabaseConnectionParameters;
 
 
 /**
@@ -21,13 +22,15 @@ class MySqlSecureShell
 
     /**
      * @var string
-     * Path to file that contains the database user name and password.
-     * The file should contain the following:
-     *
-     *  user=<user name>
-     *  password=<password>
+     * Path to file that contains the database username.
      */
-    protected $pathToUserFile;
+    protected $pathToUsernameFile;
+
+    /**
+     * @var string
+     * Path to file that contains the database password.
+     */
+    protected $pathToPasswordFile;
 
     /**
      * @var string
@@ -44,54 +47,54 @@ class MySqlSecureShell
 
     /**
      * @param Logger $logger
-     * @param string $pathToUserFile
+     * @param string $pathToUsernameFile
+     * @param string $pathToPasswordFile
      * @param string $pathToBinary
      * @param string $pathToTempDir
      */
     public function __construct(
         Logger $logger,
-        $pathToUserFile,
+        $pathToUsernameFile,
+        $pathToPasswordFile,
         $pathToBinary,
         $pathToTempDir
     ) {
-        $this->logger           = $logger;
-        $this->pathToUserFile   = $pathToUserFile;
-        $this->pathToBinary     = $pathToBinary;
-        $this->pathToTempDir    = $pathToTempDir;
+        $this->logger               = $logger;
+        $this->pathToUsernameFile   = $pathToUsernameFile;
+        $this->pathToPasswordFile   = $pathToPasswordFile;
+        $this->pathToBinary         = $pathToBinary;
+        $this->pathToTempDir        = $pathToTempDir;
     }
 
     /**
      * Execute one or more SQL queries.
      * @param string $sql
-     * @param string $dbHost
-     * @param string $dbName
+     * @param DatabaseConnectionParameters $connParams
      * @return void
      * @throws InvalidArgumentException
      * @throws MySqlSecureShellExecuteException
      * @throws MySqlSecureShellConfigException
      */
-    public function execute($sql, $dbHost, $dbName = null)
+    public function execute($sql, DatabaseConnectionParameters $connParams)
     {
         if (empty($sql)) {
             throw new \InvalidArgumentException('$sql is required and cannot be empty string');
-        }
-
-        if (empty($dbHost)) {
-            throw new \InvalidArgumentException('$dbHost is required and cannot be empty string');
-        }
-
-        if (!is_null($dbName) && empty($dbName)) {
-            throw new \InvalidArgumentException('$dbName cannot be empty string');
         }
 
         $tempFile = $this->saveSqlToTempFile($sql);
 
         $cmd = $this->getBaseCommand();
 
-        $cmd .= " --host=" . $dbHost;
+        if ($connParams->getHost()) {
+            $cmd .= " --host=" . $connParams->getHost();
+        }
 
-        if ($dbName) {
-            $cmd .= " --database=" . $dbName;
+        if ($connParams->getPort()) {
+            $cmd .= " --port=" . $connParams->getPort();
+        }
+
+        if ($connParams->getDbName()) {
+            $cmd .= " --database=" . $connParams->getDbName();
         }
 
         $cmd .= " --execute='source {$tempFile}'";
@@ -124,17 +127,19 @@ class MySqlSecureShell
             throw new MySqlSecureShellConfigException("MySQL client binary '{$this->pathToBinary}' is not executable");
         }
 
-        if (is_readable($this->pathToUserFile) == false) {
-            throw new MySqlSecureShellConfigException("User file '{$this->pathToUserFile}' is not readable file");
+        if (is_readable($this->pathToUsernameFile) == false) {
+            throw new MySqlSecureShellConfigException("Username file '{$this->pathToUsernameFile}' is not readable");
         }
 
-        $catUserName = '`grep user= ' . $this->pathToUserFile
-                     . ' | sed "s/^user=//"`';
-        $catPassword = '`grep password= ' . $this->pathToUserFile
-                     . ' | sed "s/^password=//"`';
+        if (is_readable($this->pathToPasswordFile) == false) {
+            throw new MySqlSecureShellConfigException("Password file '{$this->pathToPasswordFile}' is not readable");
+        }
+
+        $catUsername = '`cat ' . $this->pathToUsernameFile . '`';
+        $catPassword = '`cat ' . $this->pathToPasswordFile . '`';
 
         $this->baseCmd = $this->pathToBinary
-             . " --user=" . $catUserName
+             . " --user=" . $catUsername
              . " --password=" . $catPassword
              . " ";
 
