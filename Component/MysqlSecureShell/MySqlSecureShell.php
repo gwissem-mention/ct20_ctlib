@@ -21,13 +21,15 @@ class MySqlSecureShell
 
     /**
      * @var string
-     * Path to file that contains the database user name and password.
-     * The file should contain the following:
-     *
-     *  user=<user name>
-     *  password=<password>
+     * Path to file that contains the database username.
      */
-    protected $pathToUserFile;
+    protected $pathToUsernameFile;
+
+    /**
+     * @var string
+     * Path to file that contains the database password.
+     */
+    protected $pathToPasswordFile;
 
     /**
      * @var string
@@ -44,20 +46,23 @@ class MySqlSecureShell
 
     /**
      * @param Logger $logger
-     * @param string $pathToUserFile
+     * @param string $pathToUsernameFile
+     * @param string $pathToPasswordFile
      * @param string $pathToBinary
      * @param string $pathToTempDir
      */
     public function __construct(
         Logger $logger,
-        $pathToUserFile,
+        $pathToUsernameFile,
+        $pathToPasswordFile,
         $pathToBinary,
         $pathToTempDir
     ) {
-        $this->logger           = $logger;
-        $this->pathToUserFile   = $pathToUserFile;
-        $this->pathToBinary     = $pathToBinary;
-        $this->pathToTempDir    = $pathToTempDir;
+        $this->logger               = $logger;
+        $this->pathToUsernameFile   = $pathToUsernameFile;
+        $this->pathToPasswordFile   = $pathToPasswordFile;
+        $this->pathToBinary         = $pathToBinary;
+        $this->pathToTempDir        = $pathToTempDir;
     }
 
     /**
@@ -124,17 +129,19 @@ class MySqlSecureShell
             throw new MySqlSecureShellConfigException("MySQL client binary '{$this->pathToBinary}' is not executable");
         }
 
-        if (is_readable($this->pathToUserFile) == false) {
-            throw new MySqlSecureShellConfigException("User file '{$this->pathToUserFile}' is not readable file");
+        if (is_readable($this->pathToUsernameFile) == false) {
+            throw new MySqlSecureShellConfigException("Username file '{$this->pathToUsernameFile}' is not readable");
         }
 
-        $catUserName = '`grep user= ' . $this->pathToUserFile
-                     . ' | sed "s/^user=//"`';
-        $catPassword = '`grep password= ' . $this->pathToUserFile
-                     . ' | sed "s/^password=//"`';
+        if (is_readable($this->pathToPasswordFile) == false) {
+            throw new MySqlSecureShellConfigException("Password file '{$this->pathToPasswordFile}' is not readable");
+        }
+
+        $catUsername = '`cat ' . $this->pathToUsernameFile . '`';
+        $catPassword = '`cat ' . $this->pathToPasswordFile . '`';
 
         $this->baseCmd = $this->pathToBinary
-             . " --user=" . $catUserName
+             . " --user=" . $catUsername
              . " --password=" . $catPassword
              . " ";
 

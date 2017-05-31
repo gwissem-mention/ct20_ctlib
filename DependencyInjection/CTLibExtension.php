@@ -160,7 +160,7 @@ class CTLibExtension extends Extension
         );
         $container->setDefinition('process_lock.manager', $def);
 
-        
+
     }
 
     protected function loadLoggingServices($config, $container)
@@ -839,17 +839,26 @@ class CTLibExtension extends Extension
             return;
         }
 
-        $serviceId = 'mysql_secure_shell';
-        $class = 'CTLib\Component\MySqlSecureShell\MySqlSecureShell';
-        $args = [
-            new Reference('logger'),
-            $config['user_file_path'],
-            $config['mysql_binary_path'],
-            $config['temp_dir_path']
-        ];
+        $mysqlBinaryPath = $config['mysql_binary_path'];
+        $tempDirPath = $config['temp_dir_path'];
 
-        $def = new Definition($class, $args);
-        $container->setDefinition($serviceId, $def);
+        $class = 'CTLib\Component\MySqlSecureShell\MySqlSecureShell';
+        $loggerReference = new Reference('logger');
+
+        foreach ($config['accounts'] as $accountName => $accountConfig) {
+            $serviceId = "mysql_secure_shell.{$accountName}";
+
+            $args = [
+                $loggerReference,
+                $accountConfig['username_file'],
+                $accountConfig['password_file'],
+                $mysqlBinaryPath,
+                $tempDirPath
+            ];
+
+            $def = new Definition($class, $args);
+            $container->setDefinition($serviceId, $def);
+        }
     }
 
     protected function loadHipChatServices($config, $container)
