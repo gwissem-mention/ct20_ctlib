@@ -73,10 +73,10 @@ class PdfDataOutput implements DataOutputInterface
     /**
      * {@inheritdoc}
      *
-     * @param array $fields
+     * @param int $count
      *
      */
-    public function end()
+    public function end($count = 0)
     {
         $html = '';
 

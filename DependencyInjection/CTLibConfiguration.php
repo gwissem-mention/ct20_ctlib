@@ -33,8 +33,10 @@ class CTLibConfiguration implements ConfigurationInterface
                 ->append($this->addSharedCacheNode())
                 ->append($this->addEncryptNode())
                 ->append($this->addMapServiceNode())
+                ->append($this->addSessionSignatureCheckNode())
                 ->append($this->addLocalizationNode())
                 ->append($this->addPushNode())
+                ->append($this->addCsrfNode())
                 ->append($this->addMutexNode())
                 ->append($this->addUrlsNode())
                 ->append($this->addViewNode())
@@ -42,9 +44,40 @@ class CTLibConfiguration implements ConfigurationInterface
                 ->append($this->addHtmlToPdfNode())
                 ->append($this->addActionLoggerNode())
                 ->append($this->addFilteredObjectIndexNode())
+                ->append($this->addWebServiceRequestAuthenticationNode())
+                ->append($this->addMySqlSecureShellNode())
+                ->append($this->addHipChatNode())
+                ->append($this->addInputSanitizationListenerNode())
+                ->append($this->addAwsS3Node())
             ->end();
 
         return $tb;
+    }
+
+    protected function addAwsS3Node()
+    {
+        $tb = new TreeBuilder;
+        $node = $tb->root('aws_s3');
+
+        $node
+            ->canBeEnabled()
+            ->children()
+                ->scalarNode('region')
+                    ->isRequired()
+                ->end()
+                ->scalarNode('bucket')
+                    ->isRequired()
+                ->end()
+                ->scalarNode('key')
+                    ->isRequired()
+                ->end()
+                ->scalarNode('secret')
+                    ->isRequired()
+                ->end()
+            ->end()
+        ->end();
+
+        return $node;
     }
 
     protected function addCacheManagerNode()
@@ -280,12 +313,7 @@ class CTLibConfiguration implements ConfigurationInterface
         $node = $tb->root('route_inspector');
 
         $node
-            ->canBeEnabled()
-            ->children()
-                ->scalarNode('namespace')
-                    ->isRequired()
-                ->end()
-            ->end()
+            ->canBeDisabled()
         ->end();
 
         return $node;
@@ -426,6 +454,23 @@ class CTLibConfiguration implements ConfigurationInterface
                         ->end()
 
                     ->end()
+                ->end()
+            ->end()
+        ->end();
+
+        return $node;
+    }
+
+    protected function addCsrfNode()
+    {
+        $tb = new TreeBuilder;
+        $node = $tb->root('csrf');
+
+        $node
+            ->canBeEnabled()
+            ->children()
+                ->booleanNode('enforce_check')
+                    ->defaultFalse()
                 ->end()
             ->end()
         ->end();
@@ -755,6 +800,18 @@ class CTLibConfiguration implements ConfigurationInterface
         return $node;
     }
 
+    protected function addSessionSignatureCheckNode()
+    {
+        $tb = new TreeBuilder;
+        $node = $tb->root('session_signature_check');
+
+        $node
+            ->canBeEnabled()
+        ->end();
+
+        return $node;
+    }
+
     protected function addLocalizationNode()
     {
         $tb = new TreeBuilder;
@@ -831,6 +888,11 @@ class CTLibConfiguration implements ConfigurationInterface
                 ->end()
                 ->arrayNode('js')
                     ->children()
+                        ->arrayNode('routes')
+                            ->prototype('scalar')
+                                ->isRequired()
+                            ->end()
+                        ->end()
                         ->arrayNode('translations')
                             ->prototype('scalar')
                                 ->isRequired()
@@ -950,4 +1012,116 @@ class CTLibConfiguration implements ConfigurationInterface
 
         return $node;
     }
+
+    protected function addInputSanitizationListenerNode()
+    {
+        $tb = new TreeBuilder;
+        $node = $tb->root('input_sanitization_listener');
+
+        $node
+            ->canBeEnabled()
+            ->children()
+                ->scalarNode('redirect')
+                    ->info('The redirect URL to be used when validation fails')
+                    ->isRequired()
+                ->end()
+                ->booleanNode('invalidate_session')
+                    ->defaultFalse()
+                    ->info('Indicates whether to invalidate session')
+                ->end()
+            ->end();
+
+        return $node;
+    }
+
+    protected function addWebServiceRequestAuthenticationNode()
+    {
+        $tb = new TreeBuilder;
+        $node = $tb->root('web_service_authentication');
+
+        $node
+            ->canBeEnabled()
+            ->end();
+
+        return $node;
+    }
+
+    protected function addMySqlSecureShellNode()
+    {
+        $tb = new TreeBuilder;
+        $node = $tb->root('mysql_secure_shell');
+
+        $node
+            ->canBeEnabled()
+            ->children()
+                ->scalarNode('mysql_binary_path')
+                    ->info('Absolute path to mysql binary')
+                    ->defaultValue('/usr/bin/mysql')
+                ->end()
+                ->scalarNode('temp_dir_path')
+                    ->info('The path where temporary query files will be saved')
+                    ->defaultValue('/tmp')
+                ->end()
+                ->arrayNode('accounts')
+                ->info('Define each secure account')
+                ->useAttributeAsKey('accountName')
+                ->isRequired()
+                ->requiresAtLeastOneElement()
+                ->prototype('array')
+                    ->children()
+                        ->scalarNode('username_file')
+                            ->info('The path to the database username file')
+                            ->isRequired()
+                        ->end()
+                        ->scalarNode('password_file')
+                            ->info('The path to the database password file')
+                            ->isRequired()
+                        ->end()
+                    ->end()
+                ->end()
+            ->end();
+
+        return $node;
+    }
+
+    protected function addHipChatNode()
+    {
+        $tb = new TreeBuilder;
+        $node = $tb->root('hipchat');
+
+        $node
+            ->canBeEnabled()
+            ->children()
+                ->scalarNode('group_name')
+                    ->info('The name of your HipChat group')
+                    ->isRequired()
+                ->end()
+                ->arrayNode('rooms')
+                    ->info('The set of rooms that can be notified')
+                    ->isRequired()
+                    ->requiresAtLeastOneElement()
+                    ->useAttributeAsKey('roomName')
+                    ->prototype('array')
+                        ->children()
+                            ->arrayNode('notifiers')
+                                ->info('The set of notifiers registered to this room')
+                                ->isRequired()
+                                ->requiresAtLeastOneElement()
+                                ->useAttributeAsKey('notifierName')
+                                ->prototype('array')
+                                    ->children()
+                                        ->scalarNode('token')
+                                            ->info('Authentication token required to post notifications into room')
+                                            ->isRequired()
+                                        ->end()
+                                    ->end()
+                                ->end()
+                            ->end()
+                        ->end()
+                    ->end()
+                ->end();
+
+            return $node;
+        }
+
 }

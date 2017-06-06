@@ -26,7 +26,7 @@ class ActionGroupController extends DynaPartController
                 unset($action->objectId);
             }
         }
-        
+
         $json->setObject($jsonObject);
 
         $this->numActions = count($jsonObject->actions);
@@ -39,8 +39,6 @@ class ActionGroupController extends DynaPartController
             )
             ->addInlineJs(
                 '$("#'.$domId.'").actionGroup(' . $json->toJson() . ');'
-            )->addAppCss(
-                'actionGroup.css'
             );
     }
 

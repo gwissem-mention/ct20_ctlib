@@ -1,12 +1,12 @@
 <?php
 namespace CTLib\DependencyInjection;
 
-use Symfony\Component\HttpKernel\DependencyInjection\Extension,
-    Symfony\Component\DependencyInjection\ContainerBuilder,
-    Symfony\Component\Config\Definition\Processor,
-    Symfony\Component\DependencyInjection\Definition,
-    Symfony\Component\DependencyInjection\Reference,
-    CTLib\Util\Arr;
+use Symfony\Component\HttpKernel\DependencyInjection\Extension;
+use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\Config\Definition\Processor;
+use Symfony\Component\DependencyInjection\Definition;
+use Symfony\Component\DependencyInjection\Reference;
+use CTLib\Util\Arr;
 
 
 class CTLibExtension extends Extension
@@ -30,7 +30,9 @@ class CTLibExtension extends Extension
         $this->loadSharedCacheServices($config['shared_cache'], $container);
         $this->loadEncryptServices($config['encrypt'], $container);
         $this->loadPushServices($config['push'], $container);
+        $this->loadCsrfServices($config['csrf'], $container);
         $this->loadMapServices($config['map_service'], $container);
+        $this->loadSessionSignatureCheckServices($config['session_signature_check'], $container);
         $this->loadLocalizationServices($config['localization'], $container);
         $this->loadMutexServices($config['mutex'], $container);
         $this->loadUrlsServices($config['urls'], $container);
@@ -39,6 +41,49 @@ class CTLibExtension extends Extension
         $this->loadHtmlToPdfServices($config['html_to_pdf'], $container);
         $this->loadActionLogServices($config['action_log'], $container);
         $this->loadFilteredObjectIndexServices($config['filtered_object_index'], $container);
+        $this->loadInputSanitizationListenerServices($config['input_sanitization_listener'], $container);
+        $this->loadAwsS3Services($config['aws_s3'], $container);
+        $this->loadConsoleServices([], $container);
+        $this->loadWebServiceRequestAuthenticationServices($config['web_service_authentication'], $container);
+        $this->loadGarbageCollectionServices([], $container);
+        $this->loadMySqlSecureShellServices($config['mysql_secure_shell'], $container);
+        $this->loadHipChatServices($config['hipchat'], $container);
+    }
+
+    protected function loadSessionSignatureCheckServices($config, $container)
+    {
+        if (! $config['enabled']) {
+            return;
+        }
+
+        $def = new Definition(
+            'CTLib\Listener\SessionSignatureCheckListener',
+            [new Reference('logger')]);
+
+        $def->addTag('kernel.event_listener', ['event' => 'kernel.request']);
+
+        $container->setDefinition('session_signature_check_listener', $def);
+    }
+
+    protected function loadAwsS3Services($config, $container)
+    {
+        if (!$config['enabled']) {
+            return;
+        }
+
+        $args = [
+            $config['region'],
+            $config['bucket'],
+            $config['key'],
+            $config['secret'],
+            new Reference('logger')
+        ];
+
+        $def = new Definition(
+            'CTLib\Component\AWS\AwsS3',
+            $args
+        );
+        $container->setDefinition("aws_s3", $def);
     }
 
     protected function loadCacheManagerServices($config, $container)
@@ -61,7 +106,8 @@ class CTLibExtension extends Extension
 
         $args = [
             $config['namespace'],
-            new Reference($config['redis_client'])
+            new Reference($config['redis_client']),
+            new Reference('logger')
         ];
 
         $def = new Definition(
@@ -83,7 +129,8 @@ class CTLibExtension extends Extension
             $args = [
                 $entityConfig['namespace'],
                 new Reference($entityConfig['redis_client']),
-                $entityConfig['ttl']
+                $entityConfig['ttl'],
+                new Reference('logger')
             ];
             $def = new Definition($serviceClass, $args);
 
@@ -102,6 +149,18 @@ class CTLibExtension extends Extension
         ];
         $def = new Definition('CTLib\Component\ProcessLock\ProcessLock', $args);
         $container->setDefinition('process_lock', $def);
+
+        $args = [
+            new Reference('process_lock'),
+            new Reference('logger')
+        ];
+        $def = new Definition(
+            'CTLib\Component\ProcessLock\ProcessLockManager',
+            $args
+        );
+        $container->setDefinition('process_lock.manager', $def);
+
+
     }
 
     protected function loadLoggingServices($config, $container)
@@ -240,11 +299,12 @@ class CTLibExtension extends Extension
     {
         if (! $config['enabled']) { return; }
 
-        $args = array(
+        $args = [
             new Reference('router'),
-            new Reference('cache'),
-            $config['namespace']
-        );
+            new Reference('logger'),
+            $container->getParameter('kernel.cache_dir'),
+            $container->getParameter('kernel.debug')
+        ];
         $def = new Definition('CTLib\Component\Routing\RouteInspector', $args);
         $container->setDefinition('route_inspector', $def);
     }
@@ -386,6 +446,37 @@ class CTLibExtension extends Extension
 
     }
 
+    protected function loadCsrfServices($config, $container)
+    {
+        if (!$config['enabled']) {
+            return;
+        }
+
+        $def = new Definition(
+            'CTLib\Component\Csrf\CsrfExtension',
+            [new Reference('session'), new Reference('logger')]);
+
+        $def->addTag('twig.extension');
+
+        $container->setDefinition('csrf_twig_extension', $def);
+
+        $def = new Definition(
+            'CTLib\Component\Csrf\CsrfInitListener',
+            [new Reference('logger')]);
+
+        $def->addTag('kernel.event_listener', ['event' => 'kernel.request']);
+
+        $container->setDefinition('csrf_init_listener', $def);
+
+        $def = new Definition(
+            'CTLib\Component\Csrf\CsrfCheckListener',
+            [new Reference('route_inspector'), new Reference('logger'), $config['enforce_check']]);
+
+        $def->addTag('kernel.event_listener', ['event' => 'kernel.controller']);
+
+        $container->setDefinition('csrf_check_listener', $def);
+    }
+
     protected function loadMapServices($config, $container)
     {
         if (! $config['enabled']) {
@@ -517,6 +608,9 @@ class CTLibExtension extends Extension
         $container->setDefinition('js', $def);
 
         if (array_key_exists('js', $config)) {
+            if ($config['js']['routes']) {
+                $def->addMethodCall('addRoute', $config['js']['routes']);
+            }
             if ($config['js']['translations']) {
                 $def->addMethodCall('addTranslation', $config['js']['translations']);
             }
@@ -669,4 +763,131 @@ class CTLibExtension extends Extension
             $container->setDefinition($serviceId, $def);
         }
     }
+
+    protected function loadInputSanitizationListenerServices($config, $container)
+    {
+        if (!$config['enabled']) {
+            return;
+        }
+
+        $args = [
+            $config['redirect'],
+            new Reference('logger')
+        ];
+
+        $def = new Definition('CTLib\Component\Security\InputSanitizationListener', $args);
+        $def->addTag('kernel.event_listener', ['event' => 'kernel.request']);
+
+        if (isset($config['invalidate_session'])) {
+            $def
+                ->addMethodCall(
+                    'setInvalidateSession',
+                    [$config['invalidate_session']]
+                );
+        }
+
+        $container->setDefinition('input_sanitization_listener', $def);
+    }
+
+    protected function loadConsoleServices($config, $container)
+    {
+        $class = 'CTLib\Component\Console\SymfonyCommandExecutorFactory';
+        $args = [
+            $container->getParameter('kernel.root_dir'),
+            new Reference('logger')
+        ];
+
+        $def = new Definition($class, $args);
+        $container->setDefinition('symfony_command_executor_factory', $def);
+    }
+
+    protected function loadWebServiceRequestAuthenticationServices($config, $container)
+    {
+        if (!$config['enabled']) {
+            return;
+        }
+
+        $serviceId = 'web_service_request_authentication_verifier';
+        $class = 'CTLib\Component\Security\WebService\WebServiceRequestAuthenticationVerifier';
+        $args = [
+            new Reference('logger')
+        ];
+
+        $def = new Definition($class, $args);
+
+        $tagAttributes = ['event' => 'kernel.request'];
+        $def->addTag('kernel.event_listener', $tagAttributes);
+
+        $container->setDefinition($serviceId, $def);
+    }
+
+    protected function loadGarbageCollectionServices($config, $container)
+    {
+        $serviceId = "garbage_collection_manager";
+        $class = "CTLib\Component\GarbageCollection\GarbageCollectionManager";
+        $args = [
+            new Reference('logger')
+        ];
+
+        $def = new Definition($class, $args);
+        $container->setDefinition($serviceId, $def);
+    }
+
+    protected function loadMySqlSecureShellServices($config, $container)
+    {
+        if (!$config['enabled']) {
+            return;
+        }
+
+        $mysqlBinaryPath = $config['mysql_binary_path'];
+        $tempDirPath = $config['temp_dir_path'];
+
+        $class = 'CTLib\Component\MySqlSecureShell\MySqlSecureShell';
+        $loggerReference = new Reference('logger');
+
+        foreach ($config['accounts'] as $accountName => $accountConfig) {
+            $serviceId = "mysql_secure_shell.{$accountName}";
+
+            $args = [
+                $loggerReference,
+                $accountConfig['username_file'],
+                $accountConfig['password_file'],
+                $mysqlBinaryPath,
+                $tempDirPath
+            ];
+
+            $def = new Definition($class, $args);
+            $container->setDefinition($serviceId, $def);
+        }
+    }
+
+    protected function loadHipChatServices($config, $container)
+    {
+        if (!$config['enabled']) {
+            return;
+        }
+
+        $serviceId = 'hipchat.room_notifier';
+        $class = 'CTLib\Component\HipChat\HipChatRoomNotificationManager';
+        $args = [
+            $config['group_name'],
+            new Reference('logger')
+        ];
+
+        $def = new Definition($class, $args);
+
+        // Add rooms.
+        foreach ($config['rooms'] as $roomName => $roomConfig) {
+            $args = [$roomName];
+            $def->addMethodCall('registerRoom', $args);
+
+            foreach ($roomConfig['notifiers'] as $notifierName => $notifierConfig) {
+                $args = [$roomName, $notifierName, $notifierConfig['token']];
+                $def->addMethodCall('registerRoomNotifier', $args);
+            }
+        }
+
+        $container->setDefinition($serviceId, $def);
+    }
+
 }
