@@ -11,14 +11,26 @@ class HipChatRoomNotifier
 {
     /**
      * @var string
-     * Name of the HipChat group that owns the rooms.
+     * Name of the HipChat group that owns the room.
      */
     protected $groupName;
 
-    protected $room;
+    /**
+     * @var string
+     * Name of the HipChat room.
+     */
+    protected $roomName;
 
-    protected $token;
+    /**
+     * @var string
+     * Authentication token used to post notifications.
+     */
+    protected $authToken;
 
+    /**
+     * @var boolean
+     * Indicates whether to purposefully disable delivery.
+     */
     protected $disableDelivery;
 
     /**
@@ -26,24 +38,30 @@ class HipChatRoomNotifier
      */
     protected $logger;
 
+    /**
+     * @var string
+     * URL to post HipChat notification.
+     */
+    protected $sendUrl;
+
 
     /**
      * @param string $groupName
-     * @parm string $room
-     * @param string $token
+     * @parm string $roomName
+     * @param string $authToken
      * @parm boolean $disableDelivery
      * @param Logger $logger
      */
     public function __construct(
         $groupName,
-        $room,
-        $token,
+        $roomName,
+        $authToken,
         $disableDelivery,
         Logger $logger
     ) {
         $this->groupName        = $groupName;
-        $this->room             = $room;
-        $this->token            = $token;
+        $this->roomName         = $roomName;
+        $this->authToken        = $authToken;
         $this->disableDelivery  = $disableDelivery;
         $this->logger           = $logger;
     }
@@ -62,28 +80,65 @@ class HipChatRoomNotifier
         $url = $this->getSendNotificationUrl();
 
         $curl = curl_init($url);
+        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($curl, CURLOPT_POST, true);
         curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($notification));
         curl_setopt($curl, CURLOPT_HTTPHEADER, ['Content-type: application/json']);
-        curl_exec($curl);
+        $response = curl_exec($curl);
 
-        // @TODO handle response
+        $httpStatusCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+
+        if ($httpStatusCode != 204) {
+            throw new HipChatRoomNotificationDeliveryException(
+                "Failed to POST notification to '{$url}'. HipChat returned HTTP {$httpStatusCode} with response: '{$response}'"
+            );
+        }
+    }
+
+    /**
+     * Returns $groupName.
+     * @return string
+     */
+    public function getGroupName()
+    {
+        return $this->groupName;
+    }
+
+    /**
+     * Returns $roomName.
+     * @return string
+     */
+    public function getRoomName()
+    {
+        return $this->roomName;
+    }
+
+    /**
+     * Returns $authToken.
+     * @return string
+     */
+    public function getAuthToken()
+    {
+        return $this->authToken;
     }
 
     /**
      * Returns URL to send notification.
-     * @param string $roomName
-     * @param string $notifierName
      * @return string
-     * @throws InvalidArgumentException
      */
     protected function getSendNotificationUrl()
     {
-        if (isset($this->hipChatUrl) == false) {
-            $this->hipChatUrl = "https://" . $this->groupName . ".hipchat.com"
-                              . "/v2/room/" . $this->room
-                              . "/notification?auth_token=" . $this->token;
+        if (isset($this->sendUrl) == false) {
+            // Use rawurlencode because HipChat requires '%20' for space instead
+            // of '+' used by urlencode.
+            $encodedRoomName = rawurlencode($this->roomName);
+
+            $this->sendUrl = "https://" . $this->groupName . ".hipchat.com"
+                              . "/v2/room/" . $encodedRoomName
+                              . "/notification"
+                              . "?auth_token=" . $this->authToken;
         }
-        return $this->hipChatUrl;
+        return $this->sendUrl;
     }
 
 }
