@@ -75,6 +75,7 @@ class HipChatRoomNotifier
     {
         if ($this->disableDelivery) {
             $this->logger->debug("HipChatRoomNotifier: delivery explicitly disabled");
+            return;
         }
 
         $url = $this->getSendNotificationUrl();
