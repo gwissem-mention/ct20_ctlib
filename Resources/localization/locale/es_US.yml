@@ -1,9 +1,10 @@
 datetime:
-    dateNames: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
-    dayNamesMin: ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
-    dayNamesShort: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-    monthNames:	['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
-    monthNamesShort: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+    dateNames: ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado']
+    dayNamesMin: ['lu', 'ma', 'mi', 'ju', 'vi', 'sa', 'do']
+    dayNamesShort: ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom']
+    monthNames:	['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
+    monthNamesShort: ['janv', 'fevr', 'mars', 'avil', 'mai', 'juin', 'juil', 'aout', 'sept', 'oct', 'nov', 'dec']
     ampmNames: ['AM', 'PM']
     formats:
         longDate: MMMM d, yyyy
