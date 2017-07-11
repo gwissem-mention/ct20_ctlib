@@ -7,7 +7,7 @@ datetime:
     monthNamesShort: ['janv', 'fevr', 'mars', 'avil', 'mai', 'juin', 'juil', 'aout', 'sept', 'oct', 'nov', 'dec']
     ampmNames: ['AM', 'PM']
     formats:
-        longDate: MMMM d, yyyy
+        longDate: EEEE, MMMM d, yyyy
         shortDate: M/dd/yyyy
         casualDate: MMM d, yyyy
 
