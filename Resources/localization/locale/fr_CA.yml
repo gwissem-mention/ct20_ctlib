@@ -1,0 +1,50 @@
+datetime:
+    dateNames: ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi']
+    dayNamesMin: ['di', 'lu', 'ma', 'me', 'je', 've', 'sa']
+    dayNamesShort: ['dim', 'lun', 'mar', 'mer', 'jeu', 'ven', 'sam']
+    monthNames:	['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre']
+    monthNamesShort: ['janv', 'févr', 'mars', 'avr', 'mai', 'juin', 'juil', 'août', 'sept', 'oct', 'nov', 'déc']
+    ampmNames: ['du matin', 'de l’après-midi']
+    formats:
+        longDate: yyyy MMMM d
+        shortDate: yyyy-M-dd
+        casualDate: MMM d, yyyy
+
+        longTime: h:mm a
+        shortTime: h:mm a
+        casualTime: h:mm a
+
+        longTimezone: zzzz
+        shortTimezone: z
+        casualTimezone: z
+
+dateinput:
+    entryFormat: YYYY-MM-DD
+    datepickerFormat: Y-m-d
+    dateFormat: yy-mm-dd
+    timepickerFormat: g:i A
+    timeFormat: h:mm TT
+
+number:
+    currency: CAD
+    format: "#,##0.##"
+
+subdivisions:
+    - [AB, Alberta]
+    - [BC, British Columbia]
+    - [MB, Manitoba]
+    - [NB, New Brunswick]
+    - [NL, Newfoundland and Labrador]
+    - [NS, Nova Scotia]
+    - [ON, Ontario]
+    - [PE, Prince Edward Island]
+    - [QC, Quebec]
+    - [SK, Saskatchewan]
+
+timezones:
+    'America/St_Johns':     Newfoundland
+    'America/Blanc-Sablon': Atlantic
+    'America/Montreal':     Eastern
+    'America/Winnipeg':     Central
+    'America/Edmonton':     Mountain
+    'America/Vancouver':    Pacific
