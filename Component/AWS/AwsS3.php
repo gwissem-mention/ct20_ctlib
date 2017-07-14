@@ -163,12 +163,11 @@ class AwsS3
         // Create a pool.
         $pool = new CommandPool($s3Client, $commands, [
             'rejected' => function (
-                AwsException $reason,
+                S3Exception $reason,
                 $iterKey,
                 PromiseInterface $aggregatePromise
             ) {
-                $result = false;
-                $this->logger()->error("AwsS3::writeBatch - data transfer to S3 failed: $reason");
+                throw $reason;
             }
         ]);
 
@@ -176,7 +175,7 @@ class AwsS3
         $promise = $pool->promise();
         $promise->wait();
 
-        return $result;
+        return count($files);
     }
 
     /**
