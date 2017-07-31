@@ -31,20 +31,20 @@ number:
 
 subdivisions:
     - [AB, Alberta]
-    - [BC, British Columbia]
+    - [BC, Colombie-Britannique]
     - [MB, Manitoba]
-    - [NB, New Brunswick]
-    - [NL, Newfoundland and Labrador]
-    - [NS, Nova Scotia]
+    - [NB, Nouveau-Brunswick]
+    - [NL, Terre-Neuve-et-Labrador]
+    - [NS, Nouvelle-Écosse]
     - [ON, Ontario]
-    - [PE, Prince Edward Island]
-    - [QC, Quebec]
+    - [PE, Île-du-Prince-Édouard]
+    - [QC, Québec]
     - [SK, Saskatchewan]
 
 timezones:
-    'America/St_Johns':     Newfoundland
-    'America/Blanc-Sablon': Atlantic
-    'America/Montreal':     Eastern
-    'America/Winnipeg':     Central
-    'America/Edmonton':     Mountain
-    'America/Vancouver':    Pacific
+    'America/St_Johns':     de Terre-Neuve
+    'America/Blanc-Sablon': de l'Atlantique
+    'America/Montreal':     de l'Est
+    'America/Winnipeg':     du Centre
+    'America/Edmonton':     des Rocheuses
+    'America/Vancouver':    du Pacifique
