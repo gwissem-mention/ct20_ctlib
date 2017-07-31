@@ -10,9 +10,9 @@ datetime:
         shortDate: yyyy-M-dd
         casualDate: MMM d, yyyy
 
-        longTime: h:mm a
-        shortTime: h:mm a
-        casualTime: h:mm a
+        longTime: HH:mm
+        shortTime: HH:mm
+        casualTime: HH:mm
 
         longTimezone: zzzz
         shortTimezone: z
@@ -22,12 +22,12 @@ dateinput:
     entryFormat: YYYY-MM-DD
     datepickerFormat: Y-m-d
     dateFormat: yy-mm-dd
-    timepickerFormat: g:i A
-    timeFormat: h:mm TT
+    timepickerFormat: G:i
+    timeFormat: HH:mm TT
 
 number:
     currency: CAD
-    format: "#,##0.##"
+    format: "#.##0,##"
 
 subdivisions:
     - [AB, Alberta]
