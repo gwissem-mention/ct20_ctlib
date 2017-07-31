@@ -10,9 +10,9 @@ datetime:
         shortDate: yyyy-M-dd
         casualDate: MMM d, yyyy
 
-        longTime: HH:mm a
-        shortTime: HH:mm a
-        casualTime: HH:mm a
+        longTime: HH:mm
+        shortTime: HH:mm
+        casualTime: HH:mm
 
         longTimezone: zzzz
         shortTimezone: z
@@ -22,7 +22,7 @@ dateinput:
     entryFormat: YYYY-MM-DD
     datepickerFormat: Y-m-d
     dateFormat: yy-mm-dd
-    timepickerFormat: G:i A
+    timepickerFormat: G:i
     timeFormat: HH:mm TT
 
 number:
