@@ -27,7 +27,7 @@ dateinput:
 
 number:
     currency: CAD
-    format: "#.##0,##"
+    format: "# ##0,##"
 
 subdivisions:
     - [AB, Alberta]
