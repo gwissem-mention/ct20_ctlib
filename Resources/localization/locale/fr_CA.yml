@@ -6,9 +6,9 @@ datetime:
     monthNamesShort: ['janv', 'févr', 'mars', 'avr', 'mai', 'juin', 'juil', 'août', 'sept', 'oct', 'nov', 'déc']
     ampmNames: ['du matin', 'de l’après-midi']
     formats:
-        longDate: yyyy MMMM d
-        shortDate: yyyy-M-dd
-        casualDate: MMM d, yyyy
+        longDate: d mmmmm yyyy
+        shortDate: yyyy-MM-dd
+        casualDate: d mmmmm yyyy
 
         longTime: HH:mm
         shortTime: HH:mm
@@ -19,9 +19,9 @@ datetime:
         casualTimezone: z
 
 dateinput:
-    entryFormat: YYYY-MM-DD
-    datepickerFormat: Y-m-d
-    dateFormat: yy-mm-dd
+    entryFormat: DD/MM/YYYY
+    datepickerFormat: d/m/Y
+    dateFormat: dd/mm/yy
     timepickerFormat: G:i
     timeFormat: HH:mm TT
 
@@ -48,3 +48,4 @@ timezones:
     'America/Winnipeg':     du Centre
     'America/Edmonton':     des Rocheuses
     'America/Vancouver':    du Pacifique
+g
