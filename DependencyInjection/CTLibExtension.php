@@ -867,27 +867,27 @@ class CTLibExtension extends Extension
             return;
         }
 
-        $serviceId = 'hipchat.room_notifier';
-        $class = 'CTLib\Component\HipChat\HipChatRoomNotificationManager';
-        $args = [
-            $config['group_name'],
-            new Reference('logger')
-        ];
+        $class = 'CTLib\Component\HipChat\HipChatRoomNotifier';
 
-        $def = new Definition($class, $args);
+        $groupName = $config['group_name'];
+        $disableDelivery = $config['disable_delivery'];
 
-        // Add rooms.
-        foreach ($config['rooms'] as $roomName => $roomConfig) {
-            $args = [$roomName];
-            $def->addMethodCall('registerRoom', $args);
+        foreach ($config['notifiers'] as $notifierName => $notifierConfig) {
+            $room = $notifierConfig['room'];
+            $token = $notifierConfig['token'];
 
-            foreach ($roomConfig['notifiers'] as $notifierName => $notifierConfig) {
-                $args = [$roomName, $notifierName, $notifierConfig['token']];
-                $def->addMethodCall('registerRoomNotifier', $args);
-            }
+            $serviceId = "hipchat.{$notifierName}.room_notifier";
+            $args = [
+                $groupName,
+                $room,
+                $token,
+                $disableDelivery,
+                new Reference('logger')
+            ];
+
+            $def = new Definition($class, $args);
+            $container->setDefinition($serviceId, $def);
         }
-
-        $container->setDefinition($serviceId, $def);
     }
 
 }
