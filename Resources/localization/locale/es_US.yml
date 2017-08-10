@@ -1,20 +1,30 @@
-# NOT PROFESSIONALLY TRANSLATED!!!
-
 datetime:
-    longDate: EEEE, MMMM d, yyyy
-    shortDate: M/dd/yyyy
-    minDate: mm/dd/yyyy
-    longTime: h:mm a z
-    shortTime: h:mm a
-    abbreviatedDate: MMM d
+
     dateNames: ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado']
     dayNamesMin: ['lu', 'ma', 'mi', 'ju', 'vi', 'sa', 'do']
     dayNamesShort: ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom']
     monthNames:	['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
     monthNamesShort: ['janv', 'fevr', 'mars', 'avil', 'mai', 'juin', 'juil', 'aout', 'sept', 'oct', 'nov', 'dec']
+    ampmNames: ['AM', 'PM']
+    formats:
+        longDate: EEEE, MMMM d, yyyy
+        shortDate: M/dd/yyyy
+        casualDate: MMM d, yyyy
+
+        longTime: h:mm a
+        shortTime: h:mm a
+        casualTime: h:mm a
+
+        longTimezone: zzzz
+        shortTimezone: z
+        casualTimezone: z
 
 dateinput:
     entryFormat: MM/DD/YYYY
+    datepickerFormat: m/d/Y
+    dateFormat: mm/dd/yy
+    timepickerFormat: g:i A
+    timeFormat: h:mm TT
 
 number:
     currency: USD

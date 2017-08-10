@@ -122,7 +122,10 @@ class ProcessLockManager
         if (empty($params)) {
             // Lock ID is static string. Cheaper to using single lock finder
             // because it doesn't scan through Redis keys.
-            return $this->findLockForConsumer($consumerId);
+            $lock = $this->findLockForConsumer($consumerId);
+            // Coerce into array if lock found because findLocksForConsumer
+            // must return array of locks.
+            return empty($lock) ? [] : [$lock];
         }
 
         $wildcardId = $this->getWildcardLockIdForConsumer($consumerId);
