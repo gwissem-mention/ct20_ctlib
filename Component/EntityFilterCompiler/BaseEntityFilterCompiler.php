@@ -2,6 +2,8 @@
 
 namespace CTLib\Component\EntityFilterCompiler;
 
+use Doctrine\Common\Util\ClassUtils;
+
 /**
  * Abstract compiler class used by all other entity filter compilers.
  *
@@ -50,7 +52,9 @@ abstract class BaseEntityFilterCompiler implements EntityFilterCompiler
      */
     public function supportsEntity($entity)
     {
-        if (get_class($entity) !== $this->supportedClassName) {
+        // Use ClassUtils to get proper class name
+        // as passed $entity could be a Proxy class of the real entity
+        if (ClassUtils::getClass($entity) !== $this->supportedClassName) {
             return false;
         }
         return true;
