@@ -60,6 +60,7 @@ class MapProviderManager
      */
     protected $apis;
 
+
     /**
      * @param string $defaultCountry
      * @param Logger $logger
@@ -115,17 +116,19 @@ class MapProviderManager
         $providerId,
         $tokens,
         $allowedQualityCodes,
-        $batchSize = null)
+        $batchSize = null,
+        $validatedTokenChecks)
     {
         if (!isset($this->providers[$providerId])) {
             throw new \Exception("Can not find provider with provider id: {$providerId}");
         }
 
         $this->geocoders[$country][] = array(
-            'providerId'          => $providerId,
-            'tokens'              => $tokens,
-            'allowedQualityCodes' => $allowedQualityCodes,
-            'batchSize'           => $batchSize
+            'providerId'           => $providerId,
+            'tokens'               => $tokens,
+            'allowedQualityCodes'  => $allowedQualityCodes,
+            'batchSize'            => $batchSize,
+            'validatedTokenChecks' => $validatedTokenChecks
         );
     }
 
@@ -233,7 +236,7 @@ class MapProviderManager
             $geocodeProvider = $this->providers[$geocoder['providerId']];
             $this->logger->debug("Geocode provider is {$geocoder['providerId']} with priority {$priority}.");
 
-            $result = array();
+            $result = [];
 
             //filter address components by tokens configuration
             $filteredAddress = $this
@@ -248,7 +251,22 @@ class MapProviderManager
                         $geocoder['allowedQualityCodes']);
 
                 if (isset($result['isValidated']) && $result['isValidated']) {
-                    return $result;
+
+                    if(!empty($this->geocoders[$country]['validatedTokenChecks'])) {
+
+                        foreach($this->geocoders[$country]['validatedTokenChecks'] as $check) {
+
+                            if($address[$check] != $geocodeResult[$check]) {
+                                $this->logger->debug("Geocode validatedTokenChecks could not validate on: $check.");
+                                $result['isValidated'] = 0;
+                                return $result;
+                            }
+
+                        }
+
+                    } else {
+                        return $result;
+                    }
                 }
 
                 //save the first priority geocode result
@@ -259,6 +277,8 @@ class MapProviderManager
                     $geocodeResult['subdivision'] == '') {
                     $geocodeResult = $result;
                 }
+
+
             } catch (\Exception $e) {
                 $this->logger->warn("Geocode provider exception: {$e}.");
             }

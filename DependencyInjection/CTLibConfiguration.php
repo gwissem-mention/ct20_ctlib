@@ -598,6 +598,11 @@ class CTLibConfiguration implements ConfigurationInterface
                                     ->scalarNode('batchSize')
 										->defaultValue(1)
                                     ->end()
+
+                                    ->arrayNode('validatedTokenChecks')
+                                        ->prototype('scalar')->end()
+                                    ->end()
+
                                 ->end()
                             ->end()
                         ->end()
@@ -625,6 +630,11 @@ class CTLibConfiguration implements ConfigurationInterface
                                     ->scalarNode('batchSize')
 										->defaultValue(1)
                                     ->end()
+
+                                    ->arrayNode('validatedTokenChecks')
+                                        ->prototype('scalar')->end()
+                                    ->end()
+
                                 ->end()
                             ->end()
                         ->end()
@@ -652,6 +662,11 @@ class CTLibConfiguration implements ConfigurationInterface
                                     ->scalarNode('batchSize')
 										->defaultValue(1)
                                     ->end()
+
+                                    ->arrayNode('validatedTokenChecks')
+                                        ->prototype('scalar')->end()
+                                    ->end()
+
                                 ->end()
                             ->end()
                         ->end()
