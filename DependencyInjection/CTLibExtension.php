@@ -508,7 +508,8 @@ class CTLibExtension extends Extension
                     $geoConfig['provider'],
                     $geoConfig['tokens'],
                     $geoConfig['allowedQualityCodes'],
-                    $geoConfig['batchSize']
+                    $geoConfig['batchSize'],
+                    $geoConfig['validatedTokenChecks']
                     );
                 $mgrDef->addMethodCall('registerGeocoder', $args);
             }
