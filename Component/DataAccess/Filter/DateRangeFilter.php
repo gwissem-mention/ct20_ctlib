@@ -248,12 +248,12 @@ class DateRangeFilter implements DataAccessFilterInterface
     protected function getWeekIds($startDateTime, $endDateTime)
     {
         //get the ISO week year of date for 'same vs. future' check
-        $startYear = date('o', $startDateTime->getTimestamp());
-        $endYear = date('o', $endDateTime->getTimestamp());
+        $startYear = $startDateTime->format('o');
+        $endYear = $endDateTime->format('o');
 
         //get ISO Week Id
-        $startWeekId = date('W', $startDateTime->getTimestamp());
-        $endWeekId = date('W', $endDateTime->getTimestamp());
+        $startWeekId = $startDateTime->format('W');
+        $endWeekId = $endDateTime->format('W');
 
         $weekIds = [];
 
@@ -268,9 +268,14 @@ class DateRangeFilter implements DataAccessFilterInterface
             // the EndWeek is in the future (range spans into next year), roll back to start of year (week 1)
             $endWeekIds = range(1, $endWeekId);
 
+            $endOfStartYear = new \DateTime(
+                $startYear . '-12-31 23:59:59',
+                $startDateTime->getTimezone()
+            );
+
             // $using startWeekId, loop to end of Start Year
-            $endOfStartYear = date('W', strtotime($startYear . '-12-31 23:59:59'));
-            $startWeekIds = range($startWeekId, $endOfStartYear);
+            $weekEndOfStartYear = $endOfStartYear->format('W');
+            $startWeekIds = range($startWeekId, $weekEndOfStartYear);
 
             $weekIds = array_unique(array_merge($startWeekIds, $endWeekIds));
         }
