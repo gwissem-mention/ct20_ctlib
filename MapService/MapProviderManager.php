@@ -291,9 +291,9 @@ class MapProviderManager
     }
 
     /**
-     * Simple token check to make sure tokens defined in the member's location and geocoded location match coming back
-     * from google when they say its valid, however Google wanted to change the token something else.
-     * Toekns are defined in config.yml -> geocoder -> country -> validatedTokenChecks
+     * Simple token check to make sure tokens in the member's location and geocoded location match coming back
+     * from google when they say its valid, however Google had changed the token to something else.
+     * tokens are defined in config.yml -> geocoder -> country -> validatedTokenChecks
      *
      * @param $address
      * @param $geocoderAddress
