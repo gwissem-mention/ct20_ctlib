@@ -250,23 +250,11 @@ class MapProviderManager
                         $filteredAddress,
                         $geocoder['allowedQualityCodes']);
 
+                //do our token check
+                $result['isValidated'] = $this->validateTokenCheck($address, $result);
+
                 if (isset($result['isValidated']) && $result['isValidated']) {
-
-                    if(!empty($this->geocoders[$country]['validatedTokenChecks'])) {
-
-                        foreach($this->geocoders[$country]['validatedTokenChecks'] as $check) {
-
-                            if($address[$check] != $geocodeResult[$check]) {
-                                $this->logger->debug("Geocode validatedTokenChecks could not validate on: $check.");
-                                $result['isValidated'] = 0;
-                                return $result;
-                            }
-
-                        }
-
-                    } else {
-                        return $result;
-                    }
+                    return $result;
                 }
 
                 //save the first priority geocode result
@@ -287,6 +275,26 @@ class MapProviderManager
         //if all geocoder fails to validate without exception, return the 
         //result from the geocoder with first priority
         return $geocodeResult;
+    }
+
+
+    public function validateTokenCheck($address, $geocoderAddress)
+    {
+        $country = Arr::get('countryCode', $address, $this->defaultCountry);
+
+        if (!empty($this->geocoders[$country]['validatedTokenChecks'])) {
+
+            foreach ($this->geocoders[$country]['validatedTokenChecks'] as $check) {
+
+                if ($address[$check] != $geocoderAddress[$check]) {
+                    $this->logger->debug("Geocode validatedTokenChecks could not validate on: $check.");
+                    return false;
+                }
+
+            }
+        }
+
+        return true;
     }
 
     /**
