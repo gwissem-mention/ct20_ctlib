@@ -600,6 +600,7 @@ class CTLibConfiguration implements ConfigurationInterface
                                     ->end()
 
                                     ->arrayNode('validatedTokenChecks')
+                                        ->info('Define each token to be validated')
                                         ->prototype('scalar')->end()
                                     ->end()
 
@@ -632,6 +633,7 @@ class CTLibConfiguration implements ConfigurationInterface
                                     ->end()
 
                                     ->arrayNode('validatedTokenChecks')
+                                        ->info('Define each token to be validated')
                                         ->prototype('scalar')->end()
                                     ->end()
 
@@ -664,6 +666,7 @@ class CTLibConfiguration implements ConfigurationInterface
                                     ->end()
 
                                     ->arrayNode('validatedTokenChecks')
+                                        ->info('Define each token to be validated')
                                         ->prototype('scalar')->end()
                                     ->end()
 
