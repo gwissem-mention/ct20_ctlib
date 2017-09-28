@@ -281,10 +281,10 @@ class MapProviderManager
     public function validateTokenCheck($address, $geocoderAddress)
     {
         $country = Arr::get('countryCode', $address, $this->defaultCountry);
+        $geocoderValidatedTokenChecks = (!empty($this->geocoders[$country][0]['validatedTokenChecks']) ?: false);
+        if ($geocoderValidatedTokenChecks) {
 
-        if (!empty($this->geocoders[$country]['validatedTokenChecks'])) {
-
-            foreach ($this->geocoders[$country]['validatedTokenChecks'] as $check) {
+            foreach ($geocoderValidatedTokenChecks as $check) {
 
                 if ($address[$check] != $geocoderAddress[$check]) {
                     $this->logger->debug("Geocode validatedTokenChecks could not validate on: $check.");
