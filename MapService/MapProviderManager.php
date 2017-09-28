@@ -281,16 +281,24 @@ class MapProviderManager
     public function validateTokenCheck($address, $geocoderAddress)
     {
         $country = Arr::get('countryCode', $address, $this->defaultCountry);
-        $geocoderValidatedTokenChecks = (!empty($this->geocoders[$country][0]['validatedTokenChecks']) ?: false);
+
+        /**
+         * The arrya 0 here is due to bad pratice from the config.yml side of things. maybe in the future we can clean
+         * this up. For now we will always just have one ittoration in the array after a country and loaded in.
+         *
+         * TODO: Clean up config.yml -> geocoder -> coutry
+        */
+        $geocoderValidatedTokenChecks = (!empty($this->geocoders[$country][0]['validatedTokenChecks']) ?
+            $this->geocoders[$country][0]['validatedTokenChecks']
+            : false
+        );
+
         if ($geocoderValidatedTokenChecks) {
-
             foreach ($geocoderValidatedTokenChecks as $check) {
-
                 if ($address[$check] != $geocoderAddress[$check]) {
                     $this->logger->debug("Geocode validatedTokenChecks could not validate on: $check.");
                     return false;
                 }
-
             }
         }
 
