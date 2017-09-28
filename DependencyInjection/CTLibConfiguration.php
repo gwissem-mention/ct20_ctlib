@@ -598,12 +598,12 @@ class CTLibConfiguration implements ConfigurationInterface
                                     ->scalarNode('batchSize')
 										->defaultValue(1)
                                     ->end()
-
                                     ->arrayNode('validatedTokenChecks')
                                         ->info('Define each token to be validated')
-                                        ->prototype('scalar')->end()
+                                        ->prototype('enum')
+                                        ->values(array('street', 'city', 'district', 'locality', 'subdivision', 'country'))
+                                        ->end()
                                     ->end()
-
                                 ->end()
                             ->end()
                         ->end()
@@ -631,12 +631,12 @@ class CTLibConfiguration implements ConfigurationInterface
                                     ->scalarNode('batchSize')
 										->defaultValue(1)
                                     ->end()
-
                                     ->arrayNode('validatedTokenChecks')
                                         ->info('Define each token to be validated')
-                                        ->prototype('scalar')->end()
+                                        ->prototype('enum')
+                                        ->values(array('street', 'city', 'district', 'locality', 'subdivision', 'country'))
+                                        ->end()
                                     ->end()
-
                                 ->end()
                             ->end()
                         ->end()
@@ -664,12 +664,12 @@ class CTLibConfiguration implements ConfigurationInterface
                                     ->scalarNode('batchSize')
 										->defaultValue(1)
                                     ->end()
-
                                     ->arrayNode('validatedTokenChecks')
                                         ->info('Define each token to be validated')
-                                        ->prototype('scalar')->end()
+                                        ->prototype('enum')
+                                        ->values(array('street', 'city', 'district', 'locality', 'subdivision', 'country'))
+                                        ->end()
                                     ->end()
-
                                 ->end()
                             ->end()
                         ->end()

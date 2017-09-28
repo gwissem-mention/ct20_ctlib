@@ -260,10 +260,10 @@ class MapProviderManager
             try {
                 if($result['isValidated']) {
                     //do our token check
-                    $tokenCheck = $this->isValidateGeocodedAddress($address, $result, $country);
+                    $tokenCheck = $this->isValidateGeocodedAddress($address, $result, $geocoder['validatedTokenChecks'], $country);
                     if (!$tokenCheck) {
                         $result['isValidated'] = 0;
-                        $result['qualityCode'] = TOKEN_CHECK_FAIL;
+                        $result['qualityCode'] = self::TOKEN_CHECK_FAIL;
                     }
                 }
             } catch (\Exception $e) {
@@ -299,21 +299,15 @@ class MapProviderManager
      * @param $geocoderAddress
      * @return bool
      */
-    private function isValidateGeocodedAddress($address, $geocoderAddress, $country)
+    private function isValidateGeocodedAddress($address, $geocoderAddress, array $tokens, $country)
     {
-        /**
-         * The array 0 is here due to bad pratice from the config.yml, maybe in the future we can clean
-         * this up. For now we will always just have one iteration in the array after a country and loaded in.
-         *
-         * TODO: Clean up config.yml -> geocoder -> country
-        */
-        $tokens = $this->geocoders[$country][0]['validatedTokenChecks'];
-        if (!empty($tokens)) {
-            foreach ($tokens as $token) {
-                if ($address[$token] != $geocoderAddress[$token]) {
-                    $this->logger->debug("Geocode validatedTokenChecks could not validate on: $token.");
-                    return false;
-                }
+        if (empty($tokens)) {
+            return;
+        }
+        foreach ($tokens as $token) {
+            if ($address[$token] != $geocoderAddress[$token]) {
+                $this->logger->debug("Geocode validatedTokenChecks could not validate on: $token.");
+                return false;
             }
         }
         return true;
