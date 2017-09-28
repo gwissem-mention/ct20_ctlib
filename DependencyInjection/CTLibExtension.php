@@ -503,14 +503,14 @@ class CTLibExtension extends Extension
 
         foreach ($config['geocoders'] as $country => $geocoderConfigs) {
             foreach ($geocoderConfigs as $geoConfig) {
-                $args = array(
-                    $country,
-                    $geoConfig['provider'],
-                    $geoConfig['tokens'],
-                    $geoConfig['allowedQualityCodes'],
-                    $geoConfig['batchSize'],
-                    $geoConfig['validatedTokenChecks']
-                    );
+                $args = [
+                        $country,
+                        $geoConfig['provider'],
+                        $geoConfig['tokens'],
+                        $geoConfig['allowedQualityCodes'],
+                        $geoConfig['batchSize'],
+                        $geoConfig['validatedTokenChecks']
+                    ];
                 $mgrDef->addMethodCall('registerGeocoder', $args);
             }
         }
@@ -518,10 +518,10 @@ class CTLibExtension extends Extension
         foreach ($config['reverseGeocoders'] as
             $country => $reverseGeocoderConfigs) {
             foreach ($reverseGeocoderConfigs as $reverseGeoConfig) {
-                $args = array(
+                $args = [
                     $country,
                     $reverseGeoConfig['provider']
-                    );
+                    ];
                 $mgrDef->addMethodCall('registerReverseGeocoder', $args);
             }
         }

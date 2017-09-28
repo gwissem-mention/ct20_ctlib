@@ -117,19 +117,19 @@ class MapProviderManager
         $tokens,
         $allowedQualityCodes,
         $batchSize = null,
-        $validatedTokenChecks)
-    {
+        $validatedTokenChecks
+    ) {
         if (!isset($this->providers[$providerId])) {
             throw new \Exception("Can not find provider with provider id: {$providerId}");
         }
 
-        $this->geocoders[$country][] = array(
+        $this->geocoders[$country][] = [
             'providerId'           => $providerId,
             'tokens'               => $tokens,
             'allowedQualityCodes'  => $allowedQualityCodes,
             'batchSize'            => $batchSize,
             'validatedTokenChecks' => $validatedTokenChecks
-        );
+        ];
     }
 
     /** Register map service geocoders
@@ -151,9 +151,9 @@ class MapProviderManager
             throw new \Exception("Can not find provider with provider id: {$providerId}");
         }
 
-        $this->reverseGeocoders[$country][] = array(
+        $this->reverseGeocoders[$country][] = [
             'providerId' => $providerId
-        );
+        ];
     }
 
     /** Register map service router
@@ -166,9 +166,9 @@ class MapProviderManager
             throw new \Exception("Can not find provider with provider id: {$providerId}");
         }
 
-        $this->routers[$country] = array(
+        $this->routers[$country] = [
             'providerId' => $providerId
-        );
+        ];
     }
 
     /**
@@ -231,7 +231,7 @@ class MapProviderManager
             throw new \Exception("Can not find geocode provider for country {$country}");
         }
 
-        $geocodeResult = array();
+        $geocodeResult = [];
         foreach ($this->geocoders[$country] as $priority => $geocoder) {
             $geocodeProvider = $this->providers[$geocoder['providerId']];
             $this->logger->debug("Geocode provider is {$geocoder['providerId']} with priority {$priority}.");
@@ -277,23 +277,25 @@ class MapProviderManager
         return $geocodeResult;
     }
 
-
+    /**
+     * Simple token check to make sure tokens defined in config.yml are the same.
+     *
+     * @param $address
+     * @param $geocoderAddress
+     * @return bool
+     */
     public function validateTokenCheck($address, $geocoderAddress)
     {
         $country = Arr::get('countryCode', $address, $this->defaultCountry);
 
         /**
-         * The arrya 0 here is due to bad pratice from the config.yml side of things. maybe in the future we can clean
-         * this up. For now we will always just have one ittoration in the array after a country and loaded in.
+         * The array 0 is here due to bad pratice from the config.yml, maybe in the future we can clean
+         * this up. For now we will always just have one iteration in the array after a country and loaded in.
          *
-         * TODO: Clean up config.yml -> geocoder -> coutry
+         * TODO: Clean up config.yml -> geocoder -> country
         */
-        $geocoderValidatedTokenChecks = (!empty($this->geocoders[$country][0]['validatedTokenChecks']) ?
-            $this->geocoders[$country][0]['validatedTokenChecks']
-            : false
-        );
-
-        if ($geocoderValidatedTokenChecks) {
+        $geocoderValidatedTokenChecks = $this->geocoders[$country][0]['validatedTokenChecks'];
+        if (!empty($geocoderValidatedTokenChecks)) {
             foreach ($geocoderValidatedTokenChecks as $check) {
                 if ($address[$check] != $geocoderAddress[$check]) {
                     $this->logger->debug("Geocode validatedTokenChecks could not validate on: $check.");
