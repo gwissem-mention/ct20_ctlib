@@ -258,7 +258,7 @@ class MapProviderManager
             }
 
             try {
-                if($result['isValidated']) {
+                if ($result['isValidated']) {
                     //do our token check
                     $tokenCheck = $this->isAcceptableGeocodedAddress($address, $result, $geocoder['validatedTokenChecks']);
                     if (!$tokenCheck) {
@@ -303,7 +303,7 @@ class MapProviderManager
     private function isAcceptableGeocodedAddress(array $address, array $geocoderAddress, array $checkTokens)
     {
         if (empty($checkTokens)) {
-            return;
+            return true;
         }
         foreach ($checkTokens as $token) {
             if ($address[$token] != $geocoderAddress[$token]) {
