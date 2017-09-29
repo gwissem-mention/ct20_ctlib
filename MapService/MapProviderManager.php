@@ -260,7 +260,7 @@ class MapProviderManager
             try {
                 if($result['isValidated']) {
                     //do our token check
-                    $tokenCheck = $this->isValidateGeocodedAddress($address, $result, $geocoder['validatedTokenChecks'], $country);
+                    $tokenCheck = $this->isAcceptableGeocodedAddress($address, $result, $geocoder['validatedTokenChecks']);
                     if (!$tokenCheck) {
                         $result['isValidated'] = 0;
                         $result['qualityCode'] = self::TOKEN_CHECK_FAIL;
@@ -299,12 +299,12 @@ class MapProviderManager
      * @param $geocoderAddress
      * @return bool
      */
-    private function isValidateGeocodedAddress($address, $geocoderAddress, array $tokens, $country)
+    private function isAcceptableGeocodedAddress(array $address, array $geocoderAddress, array $checkTokens)
     {
-        if (empty($tokens)) {
+        if (empty($checkTokens)) {
             return;
         }
-        foreach ($tokens as $token) {
+        foreach ($checkTokens as $token) {
             if ($address[$token] != $geocoderAddress[$token]) {
                 $this->logger->debug("Geocode validatedTokenChecks could not validate on: $token.");
                 return false;
