@@ -28,6 +28,11 @@ class MapProviderManager
     /**
      * @var string
      */
+    const TOKEN_CHECK_FAIL              = 'TOKENFAILURE';
+
+    /**
+     * @var string
+     */
     protected $defaultCountry;
 
     /**
@@ -115,18 +120,20 @@ class MapProviderManager
         $providerId,
         $tokens,
         $allowedQualityCodes,
-        $batchSize = null)
-    {
+        $batchSize = null,
+        $validatedTokenChecks
+    ) {
         if (!isset($this->providers[$providerId])) {
             throw new \Exception("Can not find provider with provider id: {$providerId}");
         }
 
-        $this->geocoders[$country][] = array(
-            'providerId'          => $providerId,
-            'tokens'              => $tokens,
-            'allowedQualityCodes' => $allowedQualityCodes,
-            'batchSize'           => $batchSize
-        );
+        $this->geocoders[$country][] = [
+            'providerId'           => $providerId,
+            'tokens'               => $tokens,
+            'allowedQualityCodes'  => $allowedQualityCodes,
+            'batchSize'            => $batchSize,
+            'validatedTokenChecks' => $validatedTokenChecks
+        ];
     }
 
     /** Register map service geocoders
@@ -148,9 +155,9 @@ class MapProviderManager
             throw new \Exception("Can not find provider with provider id: {$providerId}");
         }
 
-        $this->reverseGeocoders[$country][] = array(
+        $this->reverseGeocoders[$country][] = [
             'providerId' => $providerId
-        );
+        ];
     }
 
     /** Register map service router
@@ -163,9 +170,9 @@ class MapProviderManager
             throw new \Exception("Can not find provider with provider id: {$providerId}");
         }
 
-        $this->routers[$country] = array(
+        $this->routers[$country] = [
             'providerId' => $providerId
-        );
+        ];
     }
 
     /**
@@ -228,12 +235,12 @@ class MapProviderManager
             throw new \Exception("Can not find geocode provider for country {$country}");
         }
 
-        $geocodeResult = array();
+        $geocodeResult = [];
         foreach ($this->geocoders[$country] as $priority => $geocoder) {
             $geocodeProvider = $this->providers[$geocoder['providerId']];
             $this->logger->debug("Geocode provider is {$geocoder['providerId']} with priority {$priority}.");
 
-            $result = array();
+            $result = [];
 
             //filter address components by tokens configuration
             $filteredAddress = $this
@@ -246,27 +253,65 @@ class MapProviderManager
                     ->geocode(
                         $filteredAddress,
                         $geocoder['allowedQualityCodes']);
-
-                if (isset($result['isValidated']) && $result['isValidated']) {
-                    return $result;
-                }
-
-                //save the first priority geocode result
-                if (! $geocodeResult) {
-                    $geocodeResult = $result;
-                } elseif ($geocodeResult['street'] == '' &&
-                    $geocodeResult['city'] == '' &&
-                    $geocodeResult['subdivision'] == '') {
-                    $geocodeResult = $result;
-                }
             } catch (\Exception $e) {
                 $this->logger->warn("Geocode provider exception: {$e}.");
             }
+
+            try {
+                if ($result['isValidated']) {
+                    //do our token check
+                    $tokenCheck = $this->isAcceptableGeocodedAddress($address, $result, $geocoder['validatedTokenChecks']);
+                    if (!$tokenCheck) {
+                        $result['isValidated'] = 0;
+                        $result['qualityCode'] = self::TOKEN_CHECK_FAIL;
+                    }
+                }
+            } catch (\Exception $e) {
+                $this->logger->warn('Unable to validate tokens: ' . $e->getMessage());
+            }
+
+            if (isset($result['isValidated']) && $result['isValidated']) {
+                return $result;
+            }
+
+            //save the first priority geocode result
+            if (! $geocodeResult) {
+                $geocodeResult = $result;
+            } elseif ($geocodeResult['street'] == '' &&
+                $geocodeResult['city'] == '' &&
+                $geocodeResult['subdivision'] == '') {
+                $geocodeResult = $result;
+            }
+
         }
 
         //if all geocoder fails to validate without exception, return the 
         //result from the geocoder with first priority
         return $geocodeResult;
+    }
+
+    /**
+     * Simple token check to make sure tokens in the member's location and geocoded location match coming back
+     * from google when they say its valid, however Google had changed the token to something else.
+     * tokens are defined in config.yml -> geocoder -> country -> validatedTokenChecks
+     *
+     * @param array $address
+     * @param array $geocoderAddress
+     * @param array $checkTokens
+     * @return bool|void
+     */
+    private function isAcceptableGeocodedAddress(array $address, array $geocoderAddress, array $checkTokens)
+    {
+        if (empty($checkTokens)) {
+            return true;
+        }
+        foreach ($checkTokens as $token) {
+            if ($address[$token] != $geocoderAddress[$token]) {
+                $this->logger->debug("Geocode validatedTokenChecks could not validate on: $token.");
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
