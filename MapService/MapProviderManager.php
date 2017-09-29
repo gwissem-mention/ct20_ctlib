@@ -295,9 +295,10 @@ class MapProviderManager
      * from google when they say its valid, however Google had changed the token to something else.
      * tokens are defined in config.yml -> geocoder -> country -> validatedTokenChecks
      *
-     * @param $address
-     * @param $geocoderAddress
-     * @return bool
+     * @param array $address
+     * @param array $geocoderAddress
+     * @param array $checkTokens
+     * @return bool|void
      */
     private function isAcceptableGeocodedAddress(array $address, array $geocoderAddress, array $checkTokens)
     {
