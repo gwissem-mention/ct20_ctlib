@@ -51,9 +51,9 @@ class Google implements Geocoder, ReverseGeocoder, Router, TimeZoner
      * Implements method in Geocoder
      *
      */
-    public function geocode($address, $allowedQualityCodes)
+    public function geocode(array $address, array $allowedQualityCodes, array $componentSortOrder)
     {
-        $requestData = $this->buildGeocodeRequestData($address);
+        $requestData = $this->buildGeocodeRequestData($address, $componentSortOrder);
         $response = $this->getGeocodeResponse($requestData);
         $this->logger->debug("Google: geocode response is {$response}.");
 
@@ -424,21 +424,18 @@ class Google implements Geocoder, ReverseGeocoder, Router, TimeZoner
     /**
      * Build Address Request array sending to google
      *
-     * @param array $address contains address compenents
-     * @return formatted request data for google
-     *
+     * @param array $address
+     * @param array $componentSortOrder
+     * @return string
      */
-    protected function buildGeocodeRequestData($address)
+    protected function buildGeocodeRequestData(array $address, array $componentSortOrder)
     {
-        $addressStr = '';
-        foreach ($address as $component => $value) {
-            if (Arr::get($component, $address)) {
-                $addressStr .= $value . " ";
-            }
-        }
+        $properlyOrderedAddressComponents = array_merge(
+            array_flip($componentSortOrder),
+            array_filter($address)
+        );
 
-        $requestData = str_replace(' ', '+', $addressStr);
-        return $requestData;
+        return urlencode(implode(" ", $properlyOrderedAddressComponents));
     }
 
     /**

@@ -9,6 +9,7 @@ interface Geocoder
     *
     * @param array $address
     * @param array $allowedQualityCodes
+    * @param array $componentSortOrder
     * @return array array(
     *                  qualityCode => ...,
     *                  street => ...,
@@ -24,5 +25,5 @@ interface Geocoder
     *              )
     *
     */
-    public function geocode($address, $allowedQualityCodes);
+    public function geocode(array $address, array $allowedQualityCodes, array $componentSortOrder);
 }

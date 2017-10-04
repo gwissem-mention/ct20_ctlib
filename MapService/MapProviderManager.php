@@ -113,6 +113,8 @@ class MapProviderManager
      * @param string $allowedQualityCodes quality codes set for
      * address validation
      * @param string $batchSize batch limit for map service supports
+     * @param array validatedTokenChecks
+     * @param array componentSortOrder
      * batch geocode
      */
     public function registerGeocoder(
@@ -121,7 +123,8 @@ class MapProviderManager
         $tokens,
         $allowedQualityCodes,
         $batchSize = null,
-        $validatedTokenChecks
+        $validatedTokenChecks,
+        $componentSortOrder
     ) {
         if (!isset($this->providers[$providerId])) {
             throw new \Exception("Can not find provider with provider id: {$providerId}");
@@ -132,7 +135,8 @@ class MapProviderManager
             'tokens'               => $tokens,
             'allowedQualityCodes'  => $allowedQualityCodes,
             'batchSize'            => $batchSize,
-            'validatedTokenChecks' => $validatedTokenChecks
+            'validatedTokenChecks' => $validatedTokenChecks,
+            'componentSortOrder'   => $componentSortOrder
         ];
     }
 
@@ -249,10 +253,14 @@ class MapProviderManager
                     $geocoder['tokens']);
 
             try {
+
                 $result = $geocodeProvider
                     ->geocode(
                         $filteredAddress,
-                        $geocoder['allowedQualityCodes']);
+                        $geocoder['allowedQualityCodes'],
+                        $geocoder['componentSortOrder']
+                    );
+
             } catch (\Exception $e) {
                 $this->logger->warn("Geocode provider exception: {$e}.");
             }
