@@ -50,10 +50,15 @@ class Google implements Geocoder, ReverseGeocoder, Router, TimeZoner
     /**
      * Implements method in Geocoder
      *
+     * @param array $address
+     * @param array $allowedQualityCodes
+     * @param array $componentOrderedWhitelist
+     * @return array|mixed
+     * @throws \Exception
      */
-    public function geocode(array $address, array $allowedQualityCodes, array $componentSortOrder)
+    public function geocode(array $address, array $allowedQualityCodes, array $componentOrderedWhitelist)
     {
-        $requestData = $this->buildGeocodeRequestData($address, $componentSortOrder);
+        $requestData = $this->buildGeocodeRequestData($address, $componentOrderedWhitelist);
         $response = $this->getGeocodeResponse($requestData);
         $this->logger->debug("Google: geocode response is {$response}.");
 
@@ -424,18 +429,26 @@ class Google implements Geocoder, ReverseGeocoder, Router, TimeZoner
     /**
      * Build Address Request array sending to google
      *
+     * This method does 3 things
+     * 1) Order the array $address components supplied from $componentOrderedWhitelist defined in config.yml
+     * 2) Only allow the whitelisting of $address components supplied from $componentOrderedWhitelist
+     * 3) Return a string that is a built up order of $componentOrderedWhitelist that is URL encoded.
+     *
      * @param array $address
-     * @param array $componentSortOrder
+     * @param array $componentOrderedWhitelist
      * @return string
      */
-    protected function buildGeocodeRequestData(array $address, array $componentSortOrder)
-    {
-        $properlyOrderedAddressComponents = array_merge(
-            array_flip($componentSortOrder),
-            array_filter($address)
+    function buildGeocodeRequestData($address, $componentOrderedWhitelist) {
+
+        $properlyOrderedWhitelistAddressComponents = array_intersect_key(
+            array_merge(
+                array_flip($componentOrderedWhitelist),
+                array_filter($address)
+            ),
+            array_flip($componentOrderedWhitelist)
         );
 
-        return urlencode(implode(" ", $properlyOrderedAddressComponents));
+        return urlencode(implode(" ", $properlyOrderedWhitelistAddressComponents));
     }
 
     /**

@@ -33,11 +33,11 @@ class MapQuest implements Geocoder, BatchGeocoder, ReverseGeocoder, Router
      *
      * @param array $address
      * @param array $allowedQualityCodes
-     * @param array $componentSortOrder
+     * @param array $componentOrderedWhitelist
      * @return array|mixed
      * @throws \Exception
      */
-    public function geocode(array $address, array $allowedQualityCodes, array $componentSortOrder)
+    public function geocode(array $address, array $allowedQualityCodes, array $componentOrderedWhitelist)
     {
         $requestData = $this->buildGeocodeRequestData($address);
 

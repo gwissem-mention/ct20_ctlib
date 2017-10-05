@@ -106,7 +106,8 @@ class MapProviderManager
         return $this->providers;
     }
 
-    /** Register map service geocoder
+    /**
+     * Register map service geocoder
      * @param string $country
      * @param string $providerId provider name
      * @param string $tokens tokens to filter address components
@@ -114,7 +115,7 @@ class MapProviderManager
      * address validation
      * @param string $batchSize batch limit for map service supports
      * @param array validatedTokenChecks
-     * @param array componentSortOrder
+     * @param array componentOrderedWhitelist
      * batch geocode
      */
     public function registerGeocoder(
@@ -124,19 +125,19 @@ class MapProviderManager
         $allowedQualityCodes,
         $batchSize = null,
         $validatedTokenChecks,
-        $componentSortOrder
+        $componentOrderedWhitelist
     ) {
         if (!isset($this->providers[$providerId])) {
             throw new \Exception("Can not find provider with provider id: {$providerId}");
         }
 
         $this->geocoders[$country][] = [
-            'providerId'           => $providerId,
-            'tokens'               => $tokens,
-            'allowedQualityCodes'  => $allowedQualityCodes,
-            'batchSize'            => $batchSize,
-            'validatedTokenChecks' => $validatedTokenChecks,
-            'componentSortOrder'   => $componentSortOrder
+            'providerId'                => $providerId,
+            'tokens'                    => $tokens,
+            'allowedQualityCodes'       => $allowedQualityCodes,
+            'batchSize'                 => $batchSize,
+            'validatedTokenChecks'      => $validatedTokenChecks,
+            'componentOrderedWhitelist' => $componentOrderedWhitelist
         ];
     }
 
@@ -258,7 +259,7 @@ class MapProviderManager
                     ->geocode(
                         $filteredAddress,
                         $geocoder['allowedQualityCodes'],
-                        $geocoder['componentSortOrder']
+                        $geocoder['componentOrderedWhitelist']
                     );
 
             } catch (\Exception $e) {
