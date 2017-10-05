@@ -262,7 +262,7 @@ class MapProviderManager
                     //do our token check
                     $tokenCheck = $this->isAcceptableGeocodedAddress($address, $result, $geocoder['validatedTokenChecks']);
                     if (!$tokenCheck) {
-                        $result['isValidated'] = 0;
+                        $result['isValidated'] = false;
                         $result['qualityCode'] = self::TOKEN_CHECK_FAIL;
                     }
                 }
