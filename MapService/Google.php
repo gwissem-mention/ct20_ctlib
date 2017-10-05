@@ -440,7 +440,7 @@ class Google implements Geocoder, ReverseGeocoder, Router, TimeZoner
      */
     function buildGeocodeRequestData($address, $componentOrderedWhitelist) {
 
-        $properlyOrderedWhitelistAddressComponents = array_intersect_key(
+        $orderedWhitelistAddressComponents = array_intersect_key(
             array_merge(
                 array_flip($componentOrderedWhitelist),
                 array_filter($address)
@@ -448,7 +448,7 @@ class Google implements Geocoder, ReverseGeocoder, Router, TimeZoner
             array_flip($componentOrderedWhitelist)
         );
 
-        return urlencode(implode(" ", $properlyOrderedWhitelistAddressComponents));
+        return urlencode(implode(" ", $orderedWhitelistAddressComponents));
     }
 
     /**
