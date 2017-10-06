@@ -50,10 +50,15 @@ class Google implements Geocoder, ReverseGeocoder, Router, TimeZoner
     /**
      * Implements method in Geocoder
      *
+     * @param array $address
+     * @param array $allowedQualityCodes
+     * @param array $componentOrderedWhitelist
+     * @return array|mixed
+     * @throws \Exception
      */
-    public function geocode($address, $allowedQualityCodes)
+    public function geocode(array $address, array $allowedQualityCodes, array $componentOrderedWhitelist)
     {
-        $requestData = $this->buildGeocodeRequestData($address);
+        $requestData = $this->buildGeocodeRequestData($address, $componentOrderedWhitelist);
         $response = $this->getGeocodeResponse($requestData);
         $this->logger->debug("Google: geocode response is {$response}.");
 
@@ -424,21 +429,26 @@ class Google implements Geocoder, ReverseGeocoder, Router, TimeZoner
     /**
      * Build Address Request array sending to google
      *
-     * @param array $address contains address compenents
-     * @return formatted request data for google
+     * This method does 3 things
+     * 1) Order the array $address components supplied from $componentOrderedWhitelist defined in config.yml
+     * 2) Only allow the whitelisting of $address components supplied from $componentOrderedWhitelist
+     * 3) Return a string that is a built up order of $componentOrderedWhitelist that is URL encoded.
      *
+     * @param array $address
+     * @param array $componentOrderedWhitelist
+     * @return string
      */
-    protected function buildGeocodeRequestData($address)
-    {
-        $addressStr = '';
-        foreach ($address as $component => $value) {
-            if (Arr::get($component, $address)) {
-                $addressStr .= $value . " ";
-            }
+    function buildGeocodeRequestData($address, $componentOrderedWhitelist) {
+
+        $urlComponentArray = [];
+
+        foreach($componentOrderedWhitelist as $whiteListComponentKey)
+        {
+            $urlComponentArray[] = Arr::get($whiteListComponentKey, $address);
         }
 
-        $requestData = str_replace(' ', '+', $addressStr);
-        return $requestData;
+        return urlencode(implode(" ", array_filter($urlComponentArray)));
+
     }
 
     /**

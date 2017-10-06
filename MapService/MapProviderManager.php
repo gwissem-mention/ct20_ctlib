@@ -106,13 +106,16 @@ class MapProviderManager
         return $this->providers;
     }
 
-    /** Register map service geocoder
+    /**
+     * Register map service geocoder
      * @param string $country
      * @param string $providerId provider name
      * @param string $tokens tokens to filter address components
      * @param string $allowedQualityCodes quality codes set for
      * address validation
      * @param string $batchSize batch limit for map service supports
+     * @param array validatedTokenChecks
+     * @param array componentOrderedWhitelist
      * batch geocode
      */
     public function registerGeocoder(
@@ -121,18 +124,20 @@ class MapProviderManager
         $tokens,
         $allowedQualityCodes,
         $batchSize = null,
-        $validatedTokenChecks
+        $validatedTokenChecks,
+        $componentOrderedWhitelist
     ) {
         if (!isset($this->providers[$providerId])) {
             throw new \Exception("Can not find provider with provider id: {$providerId}");
         }
 
         $this->geocoders[$country][] = [
-            'providerId'           => $providerId,
-            'tokens'               => $tokens,
-            'allowedQualityCodes'  => $allowedQualityCodes,
-            'batchSize'            => $batchSize,
-            'validatedTokenChecks' => $validatedTokenChecks
+            'providerId'                => $providerId,
+            'tokens'                    => $tokens,
+            'allowedQualityCodes'       => $allowedQualityCodes,
+            'batchSize'                 => $batchSize,
+            'validatedTokenChecks'      => $validatedTokenChecks,
+            'componentOrderedWhitelist' => $componentOrderedWhitelist
         ];
     }
 
@@ -249,10 +254,14 @@ class MapProviderManager
                     $geocoder['tokens']);
 
             try {
+
                 $result = $geocodeProvider
                     ->geocode(
                         $filteredAddress,
-                        $geocoder['allowedQualityCodes']);
+                        $geocoder['allowedQualityCodes'],
+                        $geocoder['componentOrderedWhitelist']
+                    );
+
             } catch (\Exception $e) {
                 $this->logger->warn("Geocode provider exception: {$e}.");
             }
