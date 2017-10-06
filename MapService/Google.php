@@ -440,15 +440,12 @@ class Google implements Geocoder, ReverseGeocoder, Router, TimeZoner
      */
     function buildGeocodeRequestData($address, $componentOrderedWhitelist) {
 
-        $orderedWhitelistAddressComponents = array_intersect_key(
-            array_merge(
-                array_flip($componentOrderedWhitelist),
-                array_filter($address)
-            ),
-            array_flip($componentOrderedWhitelist)
-        );
+        $componentsAsKeys         = array_flip($componentOrderedWhitelist);
+        $componentValues          = array_filter($address);
+        $orderList                = array_merge($componentsAsKeys, $componentValues);
+        $digestedComponentValues  = array_intersect_key($componentsAsKeys, $orderList);
 
-        return urlencode(implode(" ", $orderedWhitelistAddressComponents));
+        return urlencode(implode(" ", $digestedComponentValues));
     }
 
     /**
