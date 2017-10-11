@@ -685,7 +685,7 @@ class CTLibConfiguration implements ConfigurationInterface
                                     ->arrayNode('componentOrderedWhitelist')
                                         ->info('Define how the order and whitelist of geocoded address should be.')
                                         ->prototype('enum')
-                                        ->values(['street', 'street1', 'street2', 'street3', 'city', 'district', 'locality', 'subdivision', 'countryCode', 'lat', 'lng'])
+                                        ->values(['street', 'street1', 'street2', 'street3', 'city', 'district', 'locality', 'subdivision', 'countryCode', 'postalCode', 'lat', 'lng'])
                                         ->end()
                                     ->end()
                                 ->end()
