@@ -843,7 +843,7 @@ class LocalizationHelper
      */
     public function getDatepickerPhpFormat($locale = null)
     {
-		return $this->getLocaleConfigValue("dateinput.datepickerFormat", $locale);
+        return $this->getLocaleConfigValue("dateTimeFormats.phpDate", $locale);
     }
 
     /**
@@ -855,27 +855,66 @@ class LocalizationHelper
      */
     public function getTimepickerPhpFormat($locale = null)
     {
-		return $this->getLocaleConfigValue("dateinput.timepickerFormat", $locale);
+        return $this->getLocaleConfigValue("dateTimeFormats.phpDate", $locale);
     }
 
     /**
-     * Convert timepicker format into PHP datatime format
+     * Get date and time picker format combined for the front end
      *
-     * @param string locale
      * @return string PHP datetime format
      *
      */
-    public function getTimepickerFormat($locale = null)
+    public function getDateTimePickerFormat()
     {
-        $timepickerFormat = $this->getLocaleConfigValue("dateinput.timeFormat");
-        switch ($timepickerFormat) {
-            case "h:mm TT":
-                return "h:i T";
-			case "hh:mm":
-				return "G:i";
-			default:
-                return $timepickerFormat;
+        return $this->getLocaleConfigValue("dateTimeFormats.jsDate") . ' ' .
+            $this->getLocaleConfigValue("dateTimeFormats.jsTime");
+    }
+
+    /**
+     * Configuration for the jquery.ui.datepicker plugin on the front end.
+     * Currently this is used in the dynapart and dumped into the javascript
+     * for the times where a dynapart is not appropriate
+     *
+     * @return array
+     */
+    public function getDatePickerConfig()
+    {
+        return [
+            'changeMonth'       => true,
+            'changeYear'        => true,
+            'dayNames'          => $this->getLocaleConfigValue('datetime.dateNames'),
+            'dayNamesMin'       => $this->getLocaleConfigValue('datetime.dayNamesMin'),
+            'dayNamesShort'     => $this->getLocaleConfigValue('datetime.dayNamesShort'),
+            'monthNames'        => $this->getLocaleConfigValue('datetime.monthNames'),
+            'monthNamesShort'   => $this->getLocaleConfigValue('datetime.monthNamesShort'),
+            'firstDay'          => $this->getCountryConfigValue('datetime.firstDayInWeek'),
+            'dateFormat'        => $this->getLocaleConfigValue('dateTimeFormats.jsDate'),
+            'dateTimeFormat'    => $this->getDateTimePickerFormat()
+        ];
+    }
+
+    public function getTimePickerConfig()
+    {
+        $timeFormat = $this->getLocaleConfigValue('dateTimeFormats.jsTime');
+        return [
+            'showLeadingZero'   => true,
+            'showPeriod'        => (bool) strpos($timeFormat, 'A') === 0,
+            'amPmText'          => $this->getLocaleConfigValue('datetime.ampmNames')
+        ];
+    }
+
+    /**
+     * Converts javascript formatted date and time to a PHP
+     * DateTime object
+     */
+    public function convertJsDateTimeStringToPHPObject($timeString, $timeZone)
+    {
+        $format = $this->getDateTimePickerFormat();
+        if (!is_a($timeZone, 'DateTimeZone')) {
+            $timeZone = new \DateTimeZone($timeZone);
         }
+
+        return \DateTime::createFromFormat($format, $timeString, $timeZone);
     }
 
     /**
