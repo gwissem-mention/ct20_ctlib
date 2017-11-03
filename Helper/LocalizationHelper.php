@@ -440,6 +440,27 @@ class LocalizationHelper
     }
 
     /**
+     * Parse the number out of a local oriented string
+     *
+     * @param $number  Number string
+     * @param string  $locale  Locale
+     *
+     * @return float
+     */
+    public function parseNumber($number, $locale = null)
+    {
+        $fmt = new \NumberFormatter($locale, \NumberFormatter::DECIMAL);
+        $fmt->setPattern(
+            $this->getLocaleConfigValue("number.format", $locale)
+        );
+        $result = $fmt->parse($number);
+        if ($result === false) {
+            throw new \Exception("Can not parse {$number} into a string");
+        }
+        return $result;
+    }
+    
+    /**
      * Format the duration in second into localized minutes
      *
      * @param integer $second  Time in seconds.
