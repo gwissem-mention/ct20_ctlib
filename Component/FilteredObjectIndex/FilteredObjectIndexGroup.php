@@ -397,7 +397,9 @@ class FilteredObjectIndexGroup
         }
 
         $this->redis->sInter(...$intersectionKeys);
-        $this->redis->del($tmpUnionKeys);
+        if ($tmpUnionKeys) {
+            $this->redis->del($tmpUnionKeys);
+        }
         $results = $this->redis->exec();
 
         // Only interested in the SINTER result from the overall pipeline
@@ -482,6 +484,4 @@ class FilteredObjectIndexGroup
     {
         return "{$this->keyNamespace}:{$key}";
     }
-
-
 }
