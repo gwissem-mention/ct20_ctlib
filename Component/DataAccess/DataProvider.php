@@ -25,6 +25,7 @@ class DataProvider
     {
         $this->fields        = [];
         $this->onRecordAdded = null;
+        $this->onBeforeRecordAdded = null;
     }
 
     /**
@@ -35,6 +36,16 @@ class DataProvider
     public function setOnRecordAdded($method)
     {
         $this->onRecordAdded = $method;
+    }
+
+    /**
+     * @param $method
+     *
+     * @throws \Exception
+     */
+    public function setOnBeforeRecordAdded($method)
+    {
+        $this->onBeforeRecordAdded = $method;
     }
 
     /**
@@ -123,6 +134,11 @@ class DataProvider
                 }
                 $record[$alias] = $value;
             }
+
+            if ($this->onBeforeRecordAdded) {
+                call_user_func($this->onBeforeRecordAdded, &$record, $output);
+            }
+
             $output->addRecord($record);
 
             if ($this->onRecordAdded) {
