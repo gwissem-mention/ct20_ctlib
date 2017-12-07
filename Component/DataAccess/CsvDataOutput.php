@@ -58,6 +58,7 @@ class CsvDataOutput implements DataOutputInterface
         $memorySize = $this->bufferSize * 1048576;
         //allocate file output buffer in memory
         $this->fileHandle = fopen('php://temp/maxmemory:' . $memorySize, 'w');
+        fprintf($this->fileHandle, chr(0xEF).chr(0xBB).chr(0xBF));
 
         if (!$this->fileHandle) {
             throw new \Exception("CSV file buffer creation failed");
