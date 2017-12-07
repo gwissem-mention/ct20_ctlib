@@ -58,6 +58,7 @@ class CsvDataOutput implements DataOutputInterface
         $memorySize = $this->bufferSize * 1048576;
         //allocate file output buffer in memory
         $this->fileHandle = fopen('php://temp/maxmemory:' . $memorySize, 'w');
+        //Send UTF-8 Header to Excel
         fprintf($this->fileHandle, chr(0xEF).chr(0xBB).chr(0xBF));
 
         if (!$this->fileHandle) {

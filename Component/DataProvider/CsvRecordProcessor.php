@@ -29,6 +29,7 @@ class CsvRecordProcessor extends DownloadRecordProcessor
     {
         $this->fileName   = $this->createTempFileName("rst");
         $this->fileHandle = fopen($this->fileName, "w");
+        //Send UTF-8 Header to Excel
         fprintf($this->fileHandle, chr(0xEF).chr(0xBB).chr(0xBF));
 
         if (!$this->fileHandle) {
