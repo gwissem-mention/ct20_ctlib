@@ -136,7 +136,7 @@ class DataProvider
             }
 
             if ($this->onBeforeRecordAdded) {
-                call_user_func_array($this->onBeforeRecordAdded, [&$record], $output);
+                call_user_func_array($this->onBeforeRecordAdded, [&$record]);
             }
 
             $output->addRecord($record);
