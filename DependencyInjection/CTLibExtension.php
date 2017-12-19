@@ -177,6 +177,8 @@ class CTLibExtension extends Extension
                         array(new Reference('kernel')));
             $def->addTag('monolog.processor');
             $container->setDefinition('monolog.processors.runtime', $def);
+
+            $this->loadSentry($config['sentry'], $container);
         }
 
         $def = new Definition(
@@ -208,6 +210,14 @@ class CTLibExtension extends Extension
             default:
                 throw new \Exception("Invalid logging type '{$config['type']}'");
         }
+    }
+
+    protected function loadSentry($config, $container)
+    {
+        $ravenDef = new Definition('Raven_Client', array($config['dsn']));
+        $def = new Definition('Monolog\Handler\RavenHandler', array($ravenDef));
+        $def->addTag('monolog.handler');
+        $container->setDefinition('monolog.handler.raven', $def);
     }
 
     protected function loadSystemAlertServices($config, $container)
