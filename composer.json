@@ -5,7 +5,8 @@
     "require": {
         "php": ">=5.4.0",
         "cangelis/pdf": "2.1.*",
-        "celltrak/redis-bundle": "^1.1 || dev-develop"
+        "celltrak/redis-bundle": "^1.1 || dev-develop",
+        "sentry/sentry": ">=0.18.0"
     },
     "autoload": {
         "psr-4": { "CTLib\\": "" }

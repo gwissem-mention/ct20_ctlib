@@ -196,6 +196,11 @@ class CTLibConfiguration implements ConfigurationInterface
                 ->booleanNode('runtime_enabled')
                     ->defaultFalse()
                 ->end()
+                ->arrayNode('sentry')
+                    ->children()
+                        ->scalarNode('dsn')->end()
+                    ->end()
+                ->end()
             ->end()
         ->end();
 
