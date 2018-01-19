@@ -199,6 +199,8 @@ class CTLibConfiguration implements ConfigurationInterface
                 ->arrayNode('sentry')
                     ->children()
                         ->scalarNode('dsn')->end()
+                        ->scalarNode('version')->end()
+                        ->scalarNode('environment')->end()
                     ->end()
                 ->end()
             ->end()
