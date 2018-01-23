@@ -9,7 +9,7 @@ namespace CTLib\Component\Monolog;
  */
 class Logger extends \Monolog\Logger implements \Symfony\Component\HttpKernel\Log\LoggerInterface
 {
-    
+
     /**
      * @var string
      *

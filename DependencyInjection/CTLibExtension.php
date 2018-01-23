@@ -7,6 +7,7 @@ use Symfony\Component\Config\Definition\Processor;
 use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\Reference;
 use CTLib\Util\Arr;
+use Monolog\Logger;
 
 
 class CTLibExtension extends Extension
@@ -177,9 +178,9 @@ class CTLibExtension extends Extension
                         array(new Reference('kernel')));
             $def->addTag('monolog.processor');
             $container->setDefinition('monolog.processors.runtime', $def);
-
-            $this->loadSentry($config['sentry'], $container);
         }
+
+        $this->loadSentry($config['sentry'], $container);
 
         $def = new Definition(
                     'CTLib\Component\Monolog\SanitizeProcessor',
@@ -214,8 +215,19 @@ class CTLibExtension extends Extension
 
     protected function loadSentry($config, $container)
     {
-        $ravenDef = new Definition('Raven_Client', array($config['dsn']));
-        $def = new Definition('Monolog\Handler\RavenHandler', array($ravenDef));
+        $tags = array(
+          'tags' => array(
+            'version' => $config['tags']['version'],
+            'environment' =>  $config['tags']['environment'],
+            'site_id' =>  $config['tags']['site_id'],
+            'country' =>  $config['tags']['country']
+          )
+        );
+        $ravenDef = new Definition(
+          'Raven_Client',
+          array($config['dsn'], $tags)
+        );
+        $def = new Definition('Monolog\Handler\RavenHandler', array($ravenDef, Logger::ERROR));
         $def->addTag('monolog.handler');
         $container->setDefinition('monolog.handler.raven', $def);
     }
