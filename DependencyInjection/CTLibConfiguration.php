@@ -203,7 +203,7 @@ class CTLibConfiguration implements ConfigurationInterface
                             ->children()
                                 ->scalarNode('version')->end()
                                 ->scalarNode('environment')->end()
-                                ->scalarNode('site_id')->end()
+                                ->scalarNode('site_id')->defaultNull()->end()
                                 ->scalarNode('country')->end()
                             ->end()
                         ->end()
