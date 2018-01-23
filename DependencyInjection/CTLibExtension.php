@@ -7,6 +7,7 @@ use Symfony\Component\Config\Definition\Processor;
 use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\Reference;
 use CTLib\Util\Arr;
+use Monolog\Logger;
 
 
 class CTLibExtension extends Extension
