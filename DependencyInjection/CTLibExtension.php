@@ -219,10 +219,14 @@ class CTLibExtension extends Extension
           'tags' => array(
             'version' => $config['tags']['version'],
             'environment' =>  $config['tags']['environment'],
-            'site_id' =>  $config['tags']['site_id'],
+            'site_id' => $config['tags']['site_id'],
             'country' =>  $config['tags']['country']
           )
         );
+
+        // remove any null tag values
+        $tags['tags'] = array_filter($tags['tags']);
+
         $ravenDef = new Definition(
           'Raven_Client',
           array($config['dsn'], $tags)
