@@ -217,8 +217,10 @@ class CTLibExtension extends Extension
     {
         $tags = array(
           'tags' => array(
-            'version' => $config['version'],
-            'environment' =>  $config['environment']
+            'version' => $config['tags']['version'],
+            'environment' =>  $config['tags']['environment'],
+            'site_id' =>  $config['tags']['site_id'],
+            'country' =>  $config['tags']['country']
           )
         );
         $ravenDef = new Definition(
