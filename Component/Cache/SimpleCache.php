@@ -128,4 +128,19 @@ class SimpleCache
             return 'NA';
         }
     }
+
+    /**
+     * Clear ALL the contents of the SSC Key.
+     *
+     * @return string|null
+     */
+    public function flush()
+    {
+        try {
+            return $this->redis->del($this->cacheKey);
+        } catch (\Exception $ex) {
+            $this->logger->warn('SimpleCache: failed to read from Redis');
+            return null;
+        }
+    }
 }
