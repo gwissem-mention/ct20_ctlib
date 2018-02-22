@@ -47,6 +47,7 @@ class CTLibConfiguration implements ConfigurationInterface
                 ->append($this->addWebServiceRequestAuthenticationNode())
                 ->append($this->addMySqlSecureShellNode())
                 ->append($this->addHipChatNode())
+                ->append($this->addMSTeamsNode())
                 ->append($this->addInputSanitizationListenerNode())
                 ->append($this->addAwsS3Node())
             ->end();
@@ -1162,6 +1163,42 @@ class CTLibConfiguration implements ConfigurationInterface
                             ->end()
                             ->scalarNode('token')
                                 ->info('The HipChat authentication token')
+                                ->isRequired()
+                            ->end()
+                        ->end()
+                    ->end()
+                ->end();
+    }
+
+    protected function addMSTeamsNode()
+    {
+        $tb = new TreeBuilder;
+        $node = $tb->root('ms_teams');
+
+        $node
+            ->canBeEnabled()
+            ->children()
+                ->booleanNode('disable_delivery')
+                    ->info('Indicates whether to disable notification delivery')
+                    ->defaultFalse()
+                ->end()
+                ->arrayNode('notifiers')
+                    ->info('The set of supported MS Teams notifiers')
+                    ->isRequired()
+                    ->requiresAtLeastOneElement()
+                    ->useAttributeAsKey('notifierName')
+                    ->prototype('array')
+                        ->children()
+                            ->scalarNode('channel')
+                                ->info('The id of the MS Teams channel')
+                                ->isRequired()
+                            ->end()
+                            ->scalarNode('token')
+                                ->info('The MS Teams authentication token')
+                                ->isRequired()
+                            ->end()
+                            ->scalarNode('connector')
+                                ->info('The MS Teams authentication token')
                                 ->isRequired()
                             ->end()
                         ->end()
