@@ -261,36 +261,14 @@ class LocalizationHelper
             $value = $value->getTimestamp();
         }
 
-        $formatter = new \IntlDateFormatter(
-            $locale,
-            null,
-            null,
-            $timezone->getName(),
-            null,
-            $format
-        );
-
-        if (!$formatter) {
-            $timezone = new \DateTimeZone($this->getSessionTimezone());
-            $formatter = new \IntlDateFormatter(
-                $locale,
-                null,
-                null,
-                $timezone->getName(),
-                null,
-                $format
-            );
-
-            if (!$formatter) {
-                throw new \Exception("Could not compile format: $format. \nError: " . $formatter->getErrorMessage());
-            }
-        }
-
         if (is_string($value)) {
             $value = (int) $value;
         }
 
-        $formattedDatetime = $formatter->format($value);
+        $dateTime = new \DateTime('now', $timezone);
+        $dateTime = $dateTime->setTimestamp($value);
+
+        $formattedDatetime = $dateTime->format($format);
 
         if ($formattedDatetime === false) {
             if ($value instanceof \DateTime) {
@@ -459,7 +437,7 @@ class LocalizationHelper
         }
         return $result;
     }
-    
+
     /**
      * Format the duration in second into localized minutes
      *
