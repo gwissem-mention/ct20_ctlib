@@ -277,6 +277,7 @@ class LocalizationHelper
             }
             throw new \Exception("Could not format: $value. \nError: " . $formatter->getErrorMessage());
         }
+        
         return $formattedDatetime;
     }
 
