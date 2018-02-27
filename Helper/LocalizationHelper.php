@@ -265,10 +265,11 @@ class LocalizationHelper
             $value = (int) $value;
         }
 
-        $dateTime = new \DateTime('now', $timezone);
-        $dateTime = $dateTime->setTimestamp($value);
+        $formatter = new \IntlDateFormatter($locale, null, null);
+        $formatter->setTimezone($timezone->getName());
+        $formatter->setPattern($format);
 
-        $formattedDatetime = $dateTime->format($format);
+        $formattedDatetime = $formatter->format($value);
 
         if ($formattedDatetime === false) {
             if ($value instanceof \DateTime) {
