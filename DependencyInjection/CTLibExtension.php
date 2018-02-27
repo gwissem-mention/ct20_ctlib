@@ -215,25 +215,24 @@ class CTLibExtension extends Extension
 
     protected function loadSentry($config, $container)
     {
-        $tags = array(
-          'tags' => array(
-            'version' => $config['tags']['version'],
-            'environment' =>  $config['tags']['environment'],
-            'site_id' => $config['tags']['site_id'],
-            'country' =>  $config['tags']['country']
-          )
-        );
+        if (empty($config['dsn'])) {
+            return;
+        }
 
-        // remove any null tag values
-        $tags['tags'] = array_filter($tags['tags']);
+        $options = [
+            'release'       => $config['release'],
+            'environment'   => $config['environment'],
+            'site'          => $config['site'],
+            'tags'          => $config['tags']
+        ];
 
-        $ravenDef = new Definition(
-          'Raven_Client',
-          array($config['dsn'], $tags)
+        $ravenDef = new Definition('Raven_Client', [$config['dsn'], $options]);
+        $handlerDef = new Definition(
+            'Monolog\Handler\RavenHandler',
+            [$ravenDef, Logger::ERROR]
         );
-        $def = new Definition('Monolog\Handler\RavenHandler', array($ravenDef, Logger::ERROR));
-        $def->addTag('monolog.handler');
-        $container->setDefinition('monolog.handler.raven', $def);
+        $handlerDef->addTag('monolog.handler');
+        $container->setDefinition('monolog.handler.raven', $handlerDef);
     }
 
     protected function loadSystemAlertServices($config, $container)
