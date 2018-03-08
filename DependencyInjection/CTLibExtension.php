@@ -49,6 +49,7 @@ class CTLibExtension extends Extension
         $this->loadGarbageCollectionServices([], $container);
         $this->loadMySqlSecureShellServices($config['mysql_secure_shell'], $container);
         $this->loadHipChatServices($config['hipchat'], $container);
+        $this->loadMSTeamsServices($config['ms_teams'], $container);
     }
 
     protected function loadSessionSignatureCheckServices($config, $container)
@@ -917,4 +918,30 @@ class CTLibExtension extends Extension
         }
     }
 
+    protected function loadMSTeamsServices($config, $container)
+    {
+        if (!$config['enabled']) {
+            return;
+        }
+
+        $class = 'CTLib\Component\MSTeams\MessageCardService';
+
+        $disableDelivery = $config['disable_delivery'];
+
+        foreach ($config['notifiers'] as $notifierName => $notifierConfig) {
+            $serviceId = "ms_teams.{$notifierName}.channel_notifier";
+            $args = [
+                $notifierConfig['channel'],
+                $notifierConfig['token'],
+                $notifierConfig['connector'],
+                $disableDelivery,
+                new Reference('logger')
+            ];
+
+            $def = new Definition($class, $args);
+            $container->setDefinition($serviceId, $def);
+        }
+    }
+
 }
+
