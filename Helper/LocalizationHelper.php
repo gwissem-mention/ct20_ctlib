@@ -261,34 +261,13 @@ class LocalizationHelper
             $value = $value->getTimestamp();
         }
 
-        $formatter = new \IntlDateFormatter(
-            $locale,
-            null,
-            null,
-            $timezone->getName(),
-            null,
-            $format
-        );
-
-        if (!$formatter) {
-            $timezone = new \DateTimeZone($this->getSessionTimezone());
-            $formatter = new \IntlDateFormatter(
-                $locale,
-                null,
-                null,
-                $timezone->getName(),
-                null,
-                $format
-            );
-
-            if (!$formatter) {
-                throw new \Exception("Could not compile format: $format. \nError: " . $formatter->getErrorMessage());
-            }
-        }
-
         if (is_string($value)) {
             $value = (int) $value;
         }
+
+        $formatter = new \IntlDateFormatter($locale, null, null);
+        $formatter->setTimezone($timezone->getName());
+        $formatter->setPattern($format);
 
         $formattedDatetime = $formatter->format($value);
 
@@ -298,7 +277,6 @@ class LocalizationHelper
             }
             throw new \Exception("Could not format: $value. \nError: " . $formatter->getErrorMessage());
         }
-
         return $formattedDatetime;
     }
 
