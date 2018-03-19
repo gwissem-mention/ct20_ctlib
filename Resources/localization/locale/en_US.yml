@@ -96,7 +96,7 @@ timezones:
     'America/Los_Angeles':  Pacific
     'America/Phoenix':      Arizona (Mountain/Pacific)
     'America/Juneau':       Alaska
-    #'Pacific/Honolulu':     Hawaii
+    'Pacific/Honolulu':     Hawaii
     #'Pacific/Guam':         ChST
     #'Pacific/Samoa':        SST
     #'Pacific/Wake':         Wake Island
