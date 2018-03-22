@@ -22,23 +22,9 @@ class DatePickerController extends DynaPartController
      */
     protected function addDynaPartDependencies($domId, $json, $assetLoader, $jsHelper)
     {
-        $localizer = $this->localizer();
+        $json->merge($this->localizer()->getDatePickerConfig());
 
-        //load needed css and javascript lib and script
-        $json->merge(array(
-            "changeMonth"     => true,
-            "changeYear"      => true,
-            "dayNames"        => $localizer->getLocaleConfigValue("datetime.dateNames"),
-            "dayNamesMin"     => $localizer->getLocaleConfigValue("datetime.dayNamesMin"),
-            "dayNamesShort"   => $localizer->getLocaleConfigValue("datetime.dayNamesShort"),
-            "monthNames"      => $localizer->getLocaleConfigValue("datetime.monthNames"),
-            "monthNamesShort" => $localizer->getLocaleConfigValue("datetime.monthNamesShort"),
-            "firstDay"        => $localizer->getCountryConfigValue("datetime.firstDayInWeek"),
-            "dateFormat"      => $localizer->getLocaleConfigValue("dateinput.dateFormat")
-        ));
-
-        $assetLoader
-            ->addInlineJs('$("#'.$domId.'").datepicker(' . $json . ');');
+        $assetLoader->addInlineJs('$("#'.$domId.'").datepicker(' . $json . ');');
     }
 
     /**

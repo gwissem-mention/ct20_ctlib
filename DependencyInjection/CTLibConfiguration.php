@@ -1167,6 +1167,8 @@ class CTLibConfiguration implements ConfigurationInterface
                         ->end()
                     ->end()
                 ->end();
+
+        return $node;
     }
 
     protected function addMSTeamsNode()

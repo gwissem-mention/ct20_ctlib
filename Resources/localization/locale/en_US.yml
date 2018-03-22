@@ -18,12 +18,20 @@ datetime:
         shortTimezone: z
         casualTimezone: z
 
+# Working to depricate these
 dateinput:
     entryFormat: MM/DD/YYYY
     datepickerFormat: m/d/Y
     dateFormat: mm/dd/yy
     timepickerFormat: g:i A
     timeFormat: h:mm TT
+
+#introduing these new formats because the labels of the others made it difficult to tell what they were being used for
+dateTimeFormats:
+    jsDate: MM/DD/YYYY
+    phpDate: m/d/Y
+    jsTime: HH:mm A
+    phpTime: g:i A
 
 number:
     currency: USD
@@ -96,7 +104,7 @@ timezones:
     'America/Los_Angeles':  Pacific
     'America/Phoenix':      Arizona (Mountain/Pacific)
     'America/Juneau':       Alaska
-    #'Pacific/Honolulu':     Hawaii
+    'Pacific/Honolulu':     Hawaii
     #'Pacific/Guam':         ChST
     #'Pacific/Samoa':        SST
     #'Pacific/Wake':         Wake Island
