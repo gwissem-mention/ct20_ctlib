@@ -4,13 +4,13 @@ namespace CTLib\Twig\Extension;
 
 class LocalizerExtension extends \Twig_Extension
 {
-    
+
     /**
      * @var Localizer
      */
     protected $localizer;
 
-    
+
     /**
      * @param Localizer $localizer
      */
@@ -32,10 +32,12 @@ class LocalizerExtension extends \Twig_Extension
      */
     public function getFunctions()
     {
-        return array(
-            'distanceUnit'  => new \Twig_Function_Method($this, 'getCountryDistanceUnit'),
-            'subdivisions'  => new \Twig_Function_Method($this, 'getSubdivisionsFromLocale'),
-        );
+        return [
+            'distanceUnit'      => new \Twig_Function_Method($this, 'getCountryDistanceUnit'),
+            'subdivisions'      => new \Twig_Function_Method($this, 'getSubdivisionsFromLocale'),
+            'CTLibDatePickerConfig'  => new \Twig_Function_Method($this, 'getDatePickerConfig'),
+            'CTLibTimePickerConfig'  => new \Twig_Function_Method($this, 'getTimePickerConfig')
+        ];
     }
 
     /**
@@ -43,7 +45,7 @@ class LocalizerExtension extends \Twig_Extension
      */
     public function getFilters()
     {
-        return array(
+        return [
             'formatDatetime'    => new \Twig_Filter_Method($this, 'formatDatetime'),
             'longDate'          => new \Twig_Filter_Method($this, 'longDate'),
             'shortDate'         => new \Twig_Filter_Method($this, 'shortDate'),
@@ -56,8 +58,8 @@ class LocalizerExtension extends \Twig_Extension
             'casualDateTime'    => new \Twig_Filter_Method($this, 'casualDateTime'),
             'currency'          => new \Twig_Filter_Method($this, 'currency'),
             'shortDistance'     => new \Twig_Filter_Method($this, 'shortDistance'),
-            'fullDistance'      => new \Twig_Filter_Method($this, 'fullDistance'),
-        );
+            'fullDistance'      => new \Twig_Filter_Method($this, 'fullDistance')
+        ];
     }
 
     /**
@@ -81,6 +83,26 @@ class LocalizerExtension extends \Twig_Extension
     public function getSubdivisionsFromLocale($locale=null)
     {
         return $this->localizer->getSubdivisionsFromLocale($locale);
+    }
+
+    /**
+     * Gets the date picker config for the front end
+     *
+     * @return array
+     */
+    public function getDatePickerConfig()
+    {
+        return json_encode($this->localizer->getDatePickerConfig());
+    }
+
+    /**
+     * Gets the time picker config for the front end
+     *
+     * @return array
+     */
+    public function getTimePickerConfig()
+    {
+        return json_encode($this->localizer->getTimePickerConfig());
     }
 
     /**
@@ -260,10 +282,9 @@ class LocalizerExtension extends \Twig_Extension
      * @param locale $locale locale
      * @return string localized distance in full format
      *
-     */    
+     */
     public function fullDistance($distance, $locale=null)
     {
         return $this->localizer->fullDistance($distance, $locale);
     }
-    
 }
