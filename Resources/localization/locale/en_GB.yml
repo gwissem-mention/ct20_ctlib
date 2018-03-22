@@ -18,20 +18,12 @@ datetime:
         shortTimezone: z
         casualTimezone: z
 
-# Working to depricate these
 dateinput:
     entryFormat: DD/MM/YYYY
     datepickerFormat: d/m/Y
     dateFormat: dd/mm/yy
     timepickerFormat: G:i
     timeFormat: hh:mm
-
-#introduing these new formats because the labels of the others made it difficult to tell what they were being used for
-dateTimeFormats:
-    jsDate: DD/MM/YYYY
-    phpDate: d/m/Y
-    jsTime: HH:mm
-    phpTime: G:i
 
 number:
     currency: GBP
